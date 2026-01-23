@@ -1,85 +1,91 @@
 "use client";
 
-import { AuthForm } from "@/components/auth/auth-form";
-import { Tractor, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useAuth } from "@/firebase";
+import { FirebaseError } from "firebase/app";
+import { Loader2, Tractor } from "lucide-react";
+import { createUserProfile } from "@/lib/user";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleSkipLogin = () => {
     router.push("/");
   };
 
+  const handleAuthError = (error: FirebaseError) => {
+    let title = "Error de autenticación";
+    let description = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
+
+    if (error.code === "auth/popup-closed-by-user") {
+        title = "Inicio de sesión cancelado";
+        description = "Has cancelado el proceso de inicio de sesión.";
+    } else {
+        console.error(error);
+    }
+
+    toast({ variant: "destructive", title, description });
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        await createUserProfile(result.user, { merge: true });
+        toast({
+            title: "¡Sesión iniciada con Google!",
+            description: "Has iniciado sesión correctamente.",
+        });
+        // The AuthProvider will handle redirect
+    } catch (error) {
+        if (error instanceof FirebaseError) {
+            handleAuthError(error);
+        }
+    } finally {
+        setIsGoogleLoading(false);
+    }
+  };
+
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm">
         <div className="flex flex-col items-center justify-center mb-6">
             <div className="p-2.5 rounded-lg bg-primary mb-4">
                 <Tractor className="h-8 w-8 text-primary-foreground" />
             </div>
             <h1 className="text-3xl font-bold text-primary">AgriTask</h1>
-            <p className="text-muted-foreground mt-1">Tu asistente agrícola inteligente</p>
-        </div>
-        <AuthForm />
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-muted/40 px-2 text-muted-foreground">
-              O
-            </span>
-          </div>
         </div>
         
-        <div className="text-center">
-          <Button variant="outline" className="w-full" onClick={handleSkipLogin}>
-            Continuar en modo local
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="link" size="sm" className="text-muted-foreground mt-2 font-normal">
-                <Info className="mr-2 h-4 w-4" />
-                ¿Qué es el modo local?
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Modo Local (Sin Conexión)</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <div className="space-y-4 text-left mt-4 text-card-foreground">
-                    <p>
-                      Si omites el inicio de sesión, trabajarás en <strong>Modo Local</strong>.
-                    </p>
-                    <p>
-                      Tus datos (lotes, personal, labores) se guardarán de forma segura en este dispositivo y podrás usar la app sin internet.
-                    </p>
-                    <p>
-                      Cuando decidas crear una cuenta o iniciar sesión, toda tu información local se subirá automáticamente a la nube, quedando asociada a tu cuenta para que puedas acceder a ella desde cualquier lugar.
-                    </p>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogAction>¡Entendido!</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-
+        <Card className="text-center">
+            <CardHeader>
+                <CardTitle>Bienvenido a AgriTask</CardTitle>
+                <CardDescription>Inicia sesión o continúa en modo local.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+                    {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.62-4.88 1.62-4.48 0-8.12-3.64-8.12-8.12s3.64-8.12 8.12-8.12c2.48 0 4.3.92 5.24 1.88l2.52-2.52C18.44 2.12 15.48 1 12.48 1 5.8 1 1 5.8 1 12.48s4.8 11.48 11.48 11.48c6.68 0 11.48-4.8 11.48-11.48 0-.72-.08-1.44-.2-2.12H12.48z"></path></svg>}
+                    Iniciar sesión con Google
+                </Button>
+            </CardContent>
+            <CardFooter className="flex-col gap-4">
+                 <Button variant="link" className="text-muted-foreground p-0 h-auto" onClick={handleSkipLogin}>
+                    Omitir y trabajar sin conexión
+                </Button>
+                <p className="text-xs text-muted-foreground px-4">
+                    Tus datos se guardarán de forma segura en este dispositivo y podrás sincronizarlos con una cuenta más tarde.
+                </p>
+            </CardFooter>
+        </Card>
       </div>
     </div>
   );
