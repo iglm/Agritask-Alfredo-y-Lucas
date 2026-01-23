@@ -1,11 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, CheckSquare, PlusCircle } from "lucide-react";
 import { Task, Lot, Staff } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { EmptyState } from "../ui/empty-state";
 
 type TasksTableProps = {
   tasks: Task[];
@@ -13,9 +14,10 @@ type TasksTableProps = {
   staff: Staff[];
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
+  onAdd: () => void;
 };
 
-export function TasksTable({ tasks, lots, staff, onEdit, onDelete }: TasksTableProps) {
+export function TasksTable({ tasks, lots, staff, onEdit, onDelete, onAdd }: TasksTableProps) {
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'N/A';
   const getStaffName = (staffId: string) => staff.find(s => s.id === staffId)?.name || 'N/A';
 
@@ -77,8 +79,18 @@ export function TasksTable({ tasks, lots, staff, onEdit, onDelete }: TasksTableP
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No se encontraron labores. Comienza agregando una.
+                <TableCell colSpan={7} className="h-96 p-0">
+                   <EmptyState
+                    icon={<CheckSquare className="h-10 w-10" />}
+                    title="Programa tu primera labor"
+                    description="Asigna tareas a tu personal y lotes para llevar un control detallado de las actividades de tu finca."
+                    action={
+                      <Button onClick={onAdd}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Nueva Labor
+                      </Button>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LotsTable } from "@/components/lots/lots-table";
 import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
@@ -14,10 +14,13 @@ import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "fireba
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
+
+const LOT_LIMIT = 1;
 
 export default function LotsPage() {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, profile } = useUser();
   const { toast } = useToast();
   
   const lotsQuery = useMemoFirebase(() => 
@@ -30,18 +33,15 @@ export default function LotsPage() {
   const [editingLot, setEditingLot] = useState<Lot | undefined>(undefined);
   const [lotToDelete, setLotToDelete] = useState<Lot | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
 
   const locations = [...new Set((allLots || []).map((lot) => lot.location))];
 
-  useState(() => {
-    setFilteredLots(allLots || []);
-  });
-
-  useState(() => {
+  useEffect(() => {
     if (allLots) {
       setFilteredLots(allLots);
     }
-  });
+  }, [allLots]);
 
   const handleFilterByLocation = (location: string) => {
     if (location === "all") {
@@ -52,8 +52,12 @@ export default function LotsPage() {
   };
 
   const handleAddLot = () => {
-    setEditingLot(undefined);
-    setIsSheetOpen(true);
+    if (profile?.subscription === 'free' && allLots && allLots.length >= LOT_LIMIT) {
+      setIsUpgradeDialogOpen(true);
+    } else {
+      setEditingLot(undefined);
+      setIsSheetOpen(true);
+    }
   };
   
   const handleEditLot = (lot: Lot) => {
@@ -67,7 +71,7 @@ export default function LotsPage() {
   };
 
   const confirmDelete = async () => {
-    if (!lotToDelete) return;
+    if (!lotToDelete || !firestore) return;
     try {
       await deleteDoc(doc(firestore, "lots", lotToDelete.id));
       toast({
@@ -87,7 +91,7 @@ export default function LotsPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
-    if (!user) return;
+    if (!user || !firestore) return;
   
     try {
       if (editingLot) {
@@ -158,7 +162,7 @@ export default function LotsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <LotsTable lots={filteredLots} onEdit={handleEditLot} onDelete={handleDeleteRequest} />
+        <LotsTable lots={filteredLots} onEdit={handleEditLot} onDelete={handleDeleteRequest} onAdd={handleAddLot} />
       )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -192,6 +196,13 @@ export default function LotsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UpgradeDialog
+        open={isUpgradeDialogOpen}
+        onOpenChange={setIsUpgradeDialogOpen}
+        featureName="lotes"
+        limit={LOT_LIMIT}
+      />
     </div>
   );
 }

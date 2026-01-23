@@ -1,17 +1,19 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle } from "lucide-react";
 import { Lot } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { EmptyState } from "../ui/empty-state";
 
 type LotsTableProps = {
   lots: Lot[];
   onEdit: (lot: Lot) => void;
   onDelete: (lot: Lot) => void;
+  onAdd: () => void;
 };
 
-export function LotsTable({ lots, onEdit, onDelete }: LotsTableProps) {
+export function LotsTable({ lots, onEdit, onDelete, onAdd }: LotsTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -55,8 +57,18 @@ export function LotsTable({ lots, onEdit, onDelete }: LotsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  No se encontraron lotes. Comienza creando uno nuevo.
+                <TableCell colSpan={4} className="p-0 h-96">
+                  <EmptyState
+                    icon={<Tractor className="h-10 w-10" />}
+                    title="Crea tu primer lote"
+                    description="Empieza a organizar tu finca añadiendo tu primer lote de terreno."
+                    action={
+                      <Button onClick={onAdd}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Nuevo Lote
+                      </Button>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             )}

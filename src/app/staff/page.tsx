@@ -14,11 +14,13 @@ import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "fireba
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 
+const STAFF_LIMIT = 3;
 
 export default function StaffPage() {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, profile } = useUser();
   const { toast } = useToast();
 
   const staffQuery = useMemoFirebase(() =>
@@ -31,6 +33,7 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>(undefined);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   
   useEffect(() => {
     if (allStaff) {
@@ -47,8 +50,12 @@ export default function StaffPage() {
   };
   
   const handleAddStaff = () => {
-    setEditingStaff(undefined);
-    setIsSheetOpen(true);
+    if (profile?.subscription === 'free' && allStaff && allStaff.length >= STAFF_LIMIT) {
+      setIsUpgradeDialogOpen(true);
+    } else {
+      setEditingStaff(undefined);
+      setIsSheetOpen(true);
+    }
   };
   
   const handleEditStaff = (staffMember: Staff) => {
@@ -62,7 +69,7 @@ export default function StaffPage() {
   };
 
   const confirmDelete = async () => {
-    if (!staffToDelete) return;
+    if (!staffToDelete || !firestore) return;
     try {
       await deleteDoc(doc(firestore, "staff", staffToDelete.id));
       toast({
@@ -82,7 +89,7 @@ export default function StaffPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
-    if (!user) return;
+    if (!user || !firestore) return;
 
     try {
       if (editingStaff) {
@@ -151,7 +158,7 @@ export default function StaffPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <StaffTable staff={filteredStaff} onEdit={handleEditStaff} onDelete={handleDeleteRequest} />
+        <StaffTable staff={filteredStaff} onEdit={handleEditStaff} onDelete={handleDeleteRequest} onAdd={handleAddStaff} />
       )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -183,6 +190,13 @@ export default function StaffPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UpgradeDialog
+        open={isUpgradeDialogOpen}
+        onOpenChange={setIsUpgradeDialogOpen}
+        featureName="personal"
+        limit={STAFF_LIMIT}
+      />
     </div>
   );
 }

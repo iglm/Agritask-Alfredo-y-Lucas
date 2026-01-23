@@ -15,10 +15,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv";
+import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
+
+const TASK_LIMIT = 20;
 
 export default function TasksPage() {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, profile } = useUser();
   const { toast } = useToast();
 
   const tasksQuery = useMemoFirebase(() =>
@@ -41,6 +44,7 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (allTasks) {
@@ -59,8 +63,12 @@ export default function TasksPage() {
   };
 
   const handleAddTask = () => {
-    setEditingTask(undefined);
-    setIsSheetOpen(true);
+    if (profile?.subscription === 'free' && allTasks && allTasks.length >= TASK_LIMIT) {
+      setIsUpgradeDialogOpen(true);
+    } else {
+      setEditingTask(undefined);
+      setIsSheetOpen(true);
+    }
   };
   
   const handleEditTask = (task: Task) => {
@@ -74,7 +82,7 @@ export default function TasksPage() {
   };
 
   const confirmDelete = async () => {
-    if (!taskToDelete) return;
+    if (!taskToDelete || !firestore) return;
     try {
       await deleteDoc(doc(firestore, "tasks", taskToDelete.id));
       toast({
@@ -94,7 +102,7 @@ export default function TasksPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
-    if (!user) return;
+    if (!user || !firestore) return;
   
     try {
       if (editingTask) {
@@ -165,7 +173,7 @@ export default function TasksPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <TasksTable tasks={filteredTasks} lots={lots || []} staff={staff || []} onEdit={handleEditTask} onDelete={handleDeleteRequest} />
+        <TasksTable tasks={filteredTasks} lots={lots || []} staff={staff || []} onEdit={handleEditTask} onDelete={handleDeleteRequest} onAdd={handleAddTask} />
       )}
 
 
@@ -198,6 +206,13 @@ export default function TasksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UpgradeDialog
+        open={isUpgradeDialogOpen}
+        onOpenChange={setIsUpgradeDialogOpen}
+        featureName="labores"
+        limit={TASK_LIMIT}
+      />
     </div>
   );
 }

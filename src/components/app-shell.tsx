@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { toast } = useToast();
   const auth = useAuth();
-  const { user } = useUser();
+  const { user, profile } = useUser();
 
   const handleSignOut = async () => {
     try {
@@ -92,22 +92,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
                     <Avatar className="h-8 w-8">
                         <AvatarFallback className='bg-primary text-primary-foreground'>
-                            {user?.email?.charAt(0).toUpperCase()}
+                            {profile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
                     <div className="text-left group-data-[collapsible=icon]:hidden">
-                        <p className="text-sm font-medium leading-none truncate">{user?.displayName || user?.email}</p>
-                        <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: Premium</p>
+                        <p className="text-sm font-medium leading-none truncate">{profile?.name || user?.email}</p>
+                        <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: {profile?.subscription === 'premium' ? 'Premium' : 'Gratuita'}</p>
                     </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
                 <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
-                </DropdownMenuItem>
+                <Link href="/profile" passHref legacyBehavior>
+                  <DropdownMenuItem>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Perfil</span>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar sesión</span>
@@ -120,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold md:text-xl">
-              {currentPage?.label || 'AgriTask'}
+              {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'AgriTask')}
             </h1>
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>

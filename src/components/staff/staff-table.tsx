@@ -1,18 +1,20 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, Users, PlusCircle } from "lucide-react";
 import { Staff } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { EmptyState } from "../ui/empty-state";
 
 type StaffTableProps = {
   staff: Staff[];
   onEdit: (staffMember: Staff) => void;
   onDelete: (staffMember: Staff) => void;
+  onAdd: () => void;
 };
 
-export function StaffTable({ staff, onEdit, onDelete }: StaffTableProps) {
+export function StaffTable({ staff, onEdit, onDelete, onAdd }: StaffTableProps) {
   const getBadgeVariant = (type: Staff['employmentType']) => {
     switch (type) {
       case 'Permanente': return 'default';
@@ -69,8 +71,18 @@ export function StaffTable({ staff, onEdit, onDelete }: StaffTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  No se encontraron miembros del personal.
+                <TableCell colSpan={5} className="h-96 p-0">
+                  <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title="Añade tu primer miembro del personal"
+                    description="Registra a tus trabajadores para poder asignarles labores y llevar un control de costos."
+                    action={
+                      <Button onClick={onAdd}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Agregar Personal
+                      </Button>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             )}
