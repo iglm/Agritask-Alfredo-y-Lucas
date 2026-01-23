@@ -133,7 +133,7 @@
           "type": "string",
           "description": "Category of the task (Preparation, Sowing, Maintenance, Harvest, Post-Harvest)."
         },
-        "specificTaskType": {
+        "type": {
           "type": "string",
           "description": "Specific type of task."
         },
@@ -144,15 +144,23 @@
         "date": {
           "type": "string",
           "description": "Date of the task.",
-          "format": "date-time"
+          "format": "date"
         },
-        "plannedManDays": {
+        "plannedJournals": {
           "type": "number",
-          "description": "Planned man-days for the task."
+          "description": "Planned man-days (journals) for the task."
         },
         "progress": {
           "type": "number",
           "description": "Progress of the task (0-100%)."
+        },
+        "plannedCost": {
+          "type": "number",
+          "description": "Calculated planned cost for the task."
+        },
+        "actualCost": {
+          "type": "number",
+          "description": "Calculated actual cost based on progress."
         }
       },
       "required": [
@@ -162,8 +170,10 @@
         "category",
         "responsibleId",
         "date",
-        "plannedManDays",
-        "progress"
+        "plannedJournals",
+        "progress",
+        "plannedCost",
+        "actualCost"
       ]
     }
   },

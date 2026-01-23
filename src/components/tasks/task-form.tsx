@@ -18,8 +18,8 @@ import { es } from "date-fns/locale"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
-  lotId: z.string({ required_error: "Por favor selecciona un lote." }),
-  responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }),
+  lotId: z.string({ required_error: "Por favor selecciona un lote." }).min(1, "Por favor selecciona un lote."),
+  responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }).min(1, "Por favor selecciona un responsable."),
   category: z.enum(taskCategories),
   date: z.date({ required_error: "La fecha es obligatoria." }),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
@@ -29,32 +29,40 @@ const taskFormSchema = z.object({
 type TaskFormValues = z.infer<typeof taskFormSchema>
 
 type TaskFormProps = {
-  task?: Task;
+  task?: Partial<Task>;
   onSubmit: (values: Omit<Task, 'id' | 'userId'>) => void;
   lots: Lot[];
   staff: Staff[];
+};
+
+const defaultFormValues: TaskFormValues = {
+    type: "",
+    lotId: "",
+    responsibleId: "",
+    category: "Mantenimiento",
+    date: new Date(),
+    plannedJournals: 0,
+    progress: 0,
 };
 
 export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-        ...task,
-        date: task ? new Date(task.date) : new Date(),
-        progress: task ? task.progress : 0,
-      } || {
-      type: "",
-      progress: 0,
-      plannedJournals: 0,
-      date: new Date(),
-    },
+      ...defaultFormValues,
+      ...task,
+      date: task?.date ? new Date(task.date) : new Date(),
+    }
   });
   
   const progressValue = form.watch('progress');
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
-    if (!responsible) return;
+    if (!responsible) {
+        console.error("Responsable no encontrado");
+        return;
+    };
 
     const plannedCost = values.plannedJournals * responsible.baseDailyRate;
     const actualCost = plannedCost * (values.progress / 100);
@@ -182,7 +190,7 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">{task ? "Actualizar Labor" : "Crear Labor"}</Button>
+        <Button type="submit" className="w-full">{task?.id ? "Actualizar Labor" : "Crear Labor"}</Button>
       </form>
     </Form>
   )
