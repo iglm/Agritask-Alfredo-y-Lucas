@@ -41,24 +41,24 @@ export default function StaffPage() {
 
   return (
     <div>
-      <PageHeader title="Staff Management" actionButtonText="Add New Staff" onActionButtonClick={handleAddStaff}>
+      <PageHeader title="Manejo de personal" actionButtonText="Agregar Personal" onActionButtonClick={handleAddStaff}>
         <div className="flex items-center gap-2">
             <Select onValueChange={handleFilterByType} defaultValue="all">
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder="Filtrar por tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 {employmentTypes.map((type) => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={() => alert('Import from Google Sheets is a planned feature.')}>
-              <Upload className="mr-2 h-4 w-4" /> Import
+            <Button variant="outline" size="sm" onClick={() => alert('La importación desde Google Sheets es una función planificada.')}>
+              <Upload className="mr-2 h-4 w-4" /> Importar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('Export to CSV is a planned feature.')}>
-              <Download className="mr-2 h-4 w-4" /> Export
+            <Button variant="outline" size="sm" onClick={() => alert('La exportación a CSV es una función planificada.')}>
+              <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
         </div>
       </PageHeader>
@@ -68,9 +68,9 @@ export default function StaffPage() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{editingStaff ? 'Edit Staff Member' : 'Create a New Staff Member'}</SheetTitle>
+            <SheetTitle>{editingStaff ? 'Editar Personal' : 'Crear Nuevo Personal'}</SheetTitle>
             <SheetDescription>
-              {editingStaff ? 'Update the details for this staff member.' : 'Fill in the details for the new staff member.'}
+              {editingStaff ? 'Actualiza los detalles de este miembro del personal.' : 'Rellena los detalles para el nuevo miembro del personal.'}
             </SheetDescription>
           </SheetHeader>
           <StaffForm staffMember={editingStaff} onSubmit={handleFormSubmit} />

@@ -11,10 +11,10 @@ import { employmentTypes, type Staff } from "@/lib/types"
 
 const staffFormSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  contact: z.string().min(7, { message: "Contact number is required." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  contact: z.string().min(7, { message: "El número de contacto es obligatorio." }),
   employmentType: z.enum(employmentTypes),
-  dailyRate: z.coerce.number().positive({ message: "Daily rate must be a positive number." }),
+  dailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>
@@ -43,7 +43,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
+              <FormLabel>Nombre Completo</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Carlos Perez" {...field} />
               </FormControl>
@@ -56,7 +56,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
           name="contact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact Number</FormLabel>
+              <FormLabel>Número de Contacto</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., 3101234567" {...field} />
               </FormControl>
@@ -70,11 +70,11 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             name="employmentType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Employment Type</FormLabel>
+                <FormLabel>Tipo de Empleo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a type" />
+                      <SelectValue placeholder="Selecciona un tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -92,7 +92,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             name="dailyRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Daily Rate ($)</FormLabel>
+                <FormLabel>Tarifa Diaria ($)</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -101,7 +101,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             )}
           />
         </div>
-        <Button type="submit" className="w-full">{staffMember ? "Update Staff" : "Create Staff"}</Button>
+        <Button type="submit" className="w-full">{staffMember ? "Actualizar Personal" : "Crear Personal"}</Button>
       </form>
     </Form>
   )

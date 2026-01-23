@@ -27,11 +27,11 @@ export function StaffTable({ staff, onEdit }: StaffTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="hidden md:table-cell">Contact</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Daily Rate</TableHead>
-              <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead className="hidden md:table-cell">Contacto</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead className="text-right">Tarifa Diaria</TableHead>
+              <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -48,18 +48,18 @@ export function StaffTable({ staff, onEdit }: StaffTableProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">Abrir menú</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(staffMember)}>
                            <SquarePen className="mr-2 h-4 w-4" />
-                           Edit
+                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Deleting staff member ${staffMember.name}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando miembro del personal ${staffMember.name}`)}>
                            <Trash2 className="mr-2 h-4 w-4" />
-                           Delete
+                           Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -69,7 +69,7 @@ export function StaffTable({ staff, onEdit }: StaffTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
-                  No staff members found.
+                  No se encontraron miembros del personal.
                 </TableCell>
               </TableRow>
             )}
