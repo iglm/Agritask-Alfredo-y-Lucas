@@ -10,15 +10,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { taskCategories, type Task } from "@/lib/types"
-import { lots, staff } from "@/lib/data"
+import { taskCategories, type Task, type Lot, type Staff } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 const taskFormSchema = z.object({
-  id: z.string().optional(),
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
   lotId: z.string({ required_error: "Por favor selecciona un lote." }),
   responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }),
@@ -32,10 +30,12 @@ type TaskFormValues = z.infer<typeof taskFormSchema>
 
 type TaskFormProps = {
   task?: Task;
-  onSubmit: (values: Task) => void;
+  onSubmit: (values: Omit<Task, 'id' | 'userId'>) => void;
+  lots: Lot[];
+  staff: Staff[];
 };
 
-export function TaskForm({ task, onSubmit }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -56,11 +56,10 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
     const responsible = staff.find(s => s.id === values.responsibleId);
     if (!responsible) return;
 
-    const plannedCost = values.plannedJournals * responsible.dailyRate;
+    const plannedCost = values.plannedJournals * responsible.baseDailyRate;
     const actualCost = plannedCost * (values.progress / 100);
 
-    const fullTaskData: Task = {
-      id: task?.id || `T${Date.now()}`,
+    const fullTaskData: Omit<Task, 'id' | 'userId'> = {
       ...values,
       date: format(values.date, 'yyyy-MM-dd'),
       plannedCost,

@@ -10,11 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { employmentTypes, type Staff } from "@/lib/types"
 
 const staffFormSchema = z.object({
-  id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   contact: z.string().min(7, { message: "El número de contacto es obligatorio." }),
   employmentType: z.enum(employmentTypes),
-  dailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
+  baseDailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>
@@ -31,7 +30,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
       name: "",
       contact: "",
       employmentType: "Temporal",
-      dailyRate: 0,
+      baseDailyRate: 0,
     },
   });
 
@@ -89,7 +88,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
           />
           <FormField
             control={form.control}
-            name="dailyRate"
+            name="baseDailyRate"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tarifa Diaria ($)</FormLabel>

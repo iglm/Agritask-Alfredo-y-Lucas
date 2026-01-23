@@ -1,5 +1,38 @@
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Represents a user's profile information.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Authentication."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "subscription": {
+          "type": "string",
+          "description": "The user's subscription status.",
+          "enum": [
+            "free",
+            "premium"
+          ]
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "subscription"
+      ]
+    },
     "Lot": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Lot",
@@ -9,6 +42,10 @@
         "id": {
           "type": "string",
           "description": "Unique identifier for the Lot entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this lot."
         },
         "name": {
           "type": "string",
@@ -29,6 +66,7 @@
       },
       "required": [
         "id",
+        "userId",
         "name",
         "areaHectares",
         "location"
@@ -43,6 +81,10 @@
         "id": {
           "type": "string",
           "description": "Unique identifier for the Staff entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this staff data."
         },
         "name": {
           "type": "string",
@@ -63,6 +105,7 @@
       },
       "required": [
         "id",
+        "userId",
         "name",
         "employmentType",
         "baseDailyRate"
@@ -77,6 +120,10 @@
         "id": {
           "type": "string",
           "description": "Unique identifier for the Task entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this task."
         },
         "lotId": {
           "type": "string",
@@ -110,6 +157,7 @@
       },
       "required": [
         "id",
+        "userId",
         "lotId",
         "category",
         "responsibleId",
@@ -122,11 +170,27 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Collection for storing user profile information. Each document is owned by a single user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user's unique ID."
+            }
+          ]
+        }
+      },
       {
         "path": "/lots/{lotId}",
         "definition": {
@@ -134,7 +198,7 @@
           "schema": {
             "$ref": "#/backend/entities/Lot"
           },
-          "description": "Collection for storing Lot entities.  Each document represents a land lot with attributes like name, area, location, and technical notes.",
+          "description": "Collection for storing Lot entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
           "params": [
             {
               "name": "lotId",
@@ -150,7 +214,7 @@
           "schema": {
             "$ref": "#/backend/entities/Staff"
           },
-          "description": "Collection for storing Staff entities. Each document represents a staff member with attributes like name, contact, employment type, and base daily rate.",
+          "description": "Collection for storing Staff entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
           "params": [
             {
               "name": "staffId",
@@ -166,7 +230,7 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Collection for storing Task entities.  Each document represents a task with attributes like lotId, category, responsibleId, date, plannedManDays, and progress. Includes denormalized 'lotId' and 'responsibleId' for authorization independence.",
+          "description": "Collection for storing Task entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
           "params": [
             {
               "name": "taskId",
@@ -176,6 +240,6 @@
         }
       }
     ],
-    "reasoning": "To support the AgriTask Master application and its requirements, especially given the intention to monetize access via the Play Store, the Firestore structure is designed with security, scalability, and query performance in mind. The design focuses on authorization independence, clear access modeling, and explicit data clarity. \n\nAuthorization Independence (CRITICAL): The structure avoids hierarchical authorization dependencies by denormalizing authorization context. For example, if access to Tasks depends on Lot attributes or Staff roles, relevant attributes are copied into the Task documents themselves.\n\nStructural Segregation (Homogeneous Security Posture):  Each collection is designed to hold documents with similar security requirements. This simplifies security rules and access management.\n\nAccess Modeling (Standardization and Consistency): Path-based ownership is used for user-specific data (although user specific data is not explicitly defined in the user request, the platform requires the ability to implement roles). The Membership Map pattern is used for collaborative data, enabling role-based access control.\n\nQAPs (Rules are not Filters): The structure supports secure list operations by ensuring that security rules can efficiently validate access without needing to fetch related documents. This is achieved through structural segregation and denormalization.\n\nInvariants: The structure supports the integrity of ownership, timestamps, and denormalized data by using server-side timestamping and validation rules.\n\nSpecific to the application's features:\n\n*   Lot Management: Lotes are stored in a top-level collection `lots`. This supports easy CRUD operations and filtering by location.\n*   Staff Management: Staff members are stored in a top-level collection `staff`. This supports easy CRUD operations and filtering by contract type.\n*   Task Planning: Tasks are stored in a top-level collection `tasks` and linked to Lotes and Staff via denormalized IDs. This enables efficient querying and filtering by lot, staff, category, and date. This allows for rapid filtering and sorting for the calendar and task management features.\n*   Intelligent Dashboard: The structure supports the dashboard KPIs and analytics by providing direct access to the required data (lots, tasks, and staff). Denormalization of relevant data into the `tasks` collection facilitates efficient aggregation and calculation of metrics.\n*   Interactive Calendar: The `tasks` collection allows for efficient querying by date, supporting the interactive calendar view.\n*   Data Interoperability: The structure supports exporting data in CSV/Excel format by providing a clear and consistent schema for each entity. Importing data via Google Sheets can be facilitated by mapping the sheet columns to the corresponding Firestore fields.\n*   Anomaly Detection Tool: Data structure supports the AI-powered anomaly detection tool by providing well-structured data for analysis. The tool can access task progress data and identify anomalies based on predefined rules."
+    "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information and subscription status, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design directly supports the business requirement of a paid application on the Play Store by providing clear data ownership and the necessary hooks for subscription management."
   }
 }

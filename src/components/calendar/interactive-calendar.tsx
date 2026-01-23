@@ -16,16 +16,10 @@ type InteractiveCalendarProps = {
 export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendarProps) {
   const [month, setMonth] = useState(new Date());
 
-  const tasksByDay = tasks.reduce((acc, task) => {
-    const day = task.date;
-    if (!acc[day]) {
-      acc[day] = [];
-    }
-    acc[day].push(task);
-    return acc;
-  }, {} as Record<string, Task[]>);
-
   const DayWithTasks = ({ date, ...props }: { date: Date, displayMonth?: Date }) => {
+    if (!date) {
+      return <div></div>;
+    }
     const tasksForDay = tasks.filter(task => isSameDay(parseISO(task.date), date));
     return (
       <div className="relative h-full">

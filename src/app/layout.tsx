@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
+import { FirebaseClientProvider } from '@/firebase';
+import { AuthProvider } from '@/components/auth/auth-provider';
 
 export const metadata: Metadata = {
   title: 'AgriTask',
@@ -29,7 +31,11 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AppShell>{children}</AppShell>
+        <FirebaseClientProvider>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

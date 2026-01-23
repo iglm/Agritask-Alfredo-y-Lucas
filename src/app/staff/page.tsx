@@ -1,26 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StaffTable } from "@/components/staff/staff-table";
 import { StaffForm } from "@/components/staff/staff-form";
 import { PageHeader } from "@/components/page-header";
-import { staff as allStaff } from "@/lib/data";
 import { employmentTypes, type Staff } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 export default function StaffPage() {
+  const { firestore } = useFirebase();
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const staffQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null
+  , [firestore, user]);
+  const { data: allStaff, isLoading } = useCollection<Staff>(staffQuery);
+
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [filteredStaff, setFilteredStaff] = useState<Staff[]>(allStaff);
+  const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>(undefined);
+  const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  useEffect(() => {
+    if (allStaff) {
+      setFilteredStaff(allStaff);
+    }
+  }, [allStaff]);
 
   const handleFilterByType = (type: string) => {
     if (type === "all") {
-      setFilteredStaff(allStaff);
+      setFilteredStaff(allStaff || []);
     } else {
-      setFilteredStaff(allStaff.filter((s) => s.employmentType === type));
+      setFilteredStaff((allStaff || []).filter((s) => s.employmentType === type));
     }
   };
   
@@ -34,9 +56,70 @@ export default function StaffPage() {
     setIsSheetOpen(true);
   };
 
-  const handleFormSubmit = (staffMember: Staff) => {
-    console.log("Form submitted for staff member:", staffMember);
-    setIsSheetOpen(false);
+  const handleDeleteRequest = (staffMember: Staff) => {
+    setStaffToDelete(staffMember);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!staffToDelete) return;
+    try {
+      await deleteDoc(doc(firestore, "staff", staffToDelete.id));
+      toast({
+        title: "Personal eliminado",
+        description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar al miembro del personal. Inténtalo de nuevo.",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setStaffToDelete(null);
+    }
+  };
+
+  const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
+    if (!user) return;
+
+    try {
+      if (editingStaff) {
+        const staffRef = doc(firestore, "staff", editingStaff.id);
+        await setDoc(staffRef, { ...values, userId: user.uid }, { merge: true });
+        toast({
+          title: "¡Personal actualizado!",
+          description: "Los detalles del miembro del personal han sido actualizados.",
+        });
+      } else {
+        const newDocRef = doc(collection(firestore, "staff"));
+        await setDoc(newDocRef, { ...values, id: newDocRef.id, userId: user.uid });
+        toast({
+          title: "¡Personal creado!",
+          description: "El nuevo miembro del personal ha sido agregado.",
+        });
+      }
+      setIsSheetOpen(false);
+      setEditingStaff(undefined);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Algo salió mal.",
+        description: "No se pudo guardar el miembro del personal. Por favor, inténtalo de nuevo.",
+      });
+    }
+  };
+
+  const handleExport = () => {
+    if (filteredStaff.length > 0) {
+      exportToCsv(`personal-${new Date().toISOString()}.csv`, filteredStaff);
+    } else {
+      toast({
+        title: "No hay datos para exportar",
+        description: "Filtra los datos que deseas exportar.",
+      });
+    }
   };
 
   return (
@@ -57,13 +140,19 @@ export default function StaffPage() {
             <Button variant="outline" size="sm" onClick={() => alert('La importación desde Google Sheets es una función planificada.')}>
               <Upload className="mr-2 h-4 w-4" /> Importar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('La exportación a CSV es una función planificada.')}>
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
         </div>
       </PageHeader>
       
-      <StaffTable staff={filteredStaff} onEdit={handleEditStaff} />
+      {isLoading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <StaffTable staff={filteredStaff} onEdit={handleEditStaff} onDelete={handleDeleteRequest} />
+      )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
@@ -76,6 +165,24 @@ export default function StaffPage() {
           <StaffForm staffMember={editingStaff} onSubmit={handleFormSubmit} />
         </SheetContent>
       </Sheet>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente al miembro del personal <span className="font-bold">{staffToDelete?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,10 +2,15 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { tasks, lots } from "@/lib/data"
+import { Lot, Task } from "@/lib/types"
 import { useMemo } from "react"
 
-export function InvestmentChart() {
+type InvestmentChartProps = {
+  lots: Lot[];
+  tasks: Task[];
+};
+
+export function InvestmentChart({ lots, tasks }: InvestmentChartProps) {
   const chartData = useMemo(() => {
     const dataByLot: { [key: string]: { name: string, planned: number, actual: number } } = {};
     
@@ -21,7 +26,7 @@ export function InvestmentChart() {
     });
 
     return Object.values(dataByLot);
-  }, []);
+  }, [lots, tasks]);
 
   return (
     <Card>

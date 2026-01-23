@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { detectAnomalies, type AnomalyDetectionOutput } from "@/ai/flows/anomaly-detection";
-import { tasks } from "@/lib/data";
+import { Task } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { BrainCircuit, AlertTriangle, Loader2 } from "lucide-react";
 
-export function AnomalyDetector() {
+export function AnomalyDetector({ tasks }: { tasks: Task[] }) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +18,12 @@ export function AnomalyDetector() {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    if(tasks.length === 0){
+      setError("No hay labores para analizar. Agrega algunas labores primero.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const taskData = JSON.stringify(tasks);
       const detectionResult = await detectAnomalies({ taskData });

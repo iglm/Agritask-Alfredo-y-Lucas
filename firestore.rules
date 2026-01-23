@@ -1,38 +1,3 @@
-/**
- * Core Philosophy: This ruleset establishes a secure "authenticated-only" environment.
- * It is designed for a single-tenant or admin-managed application where any signed-in
- * user has full access to manage all data (lots, staff, and tasks). Access is
- * completely denied to the public (unauthenticated users), which is a critical
- * requirement for a paid application.
- *
- * Data Structure: The data is organized into three flat, top-level collections:
- * /lots/{lotId}
- * /staff/{staffId}
- * /tasks/{taskId}
- * This flat structure simplifies queries and rules, as there are no complex
- * hierarchical relationships to secure.
- *
- * Key Security Decisions:
- * - Authenticated Access Only: The primary security boundary is authentication. A user
- *   must be signed in to perform any action (read or write) on any data.
- * - No Granular Ownership: The current data models for Lot, Staff, and Task do not
- *   contain an 'ownerId' or 'userId' field. Therefore, rules cannot restrict access
- *   to specific users. The model assumes any authenticated user is an administrator.
- * - Flexible Data Schema: In line with the prototyping philosophy, these rules do not
- *   enforce the specific shape or data types of documents. Validation is limited to
- *   ensuring relational integrity (e.g., the document's internal `id` matches its path ID).
- *
- * Denormalization for Authorization: While the current schema does not support user-
- * specific authorization, it is built to support it in the future. If granular
- * permissions are needed, it is recommended to add an `ownerId` field or a `members`
- * map to the documents. This would allow for simple, performant rule checks without
-t * requiring slow and costly `get()` calls to other documents.
- *
- * Structural Segregation: The use of separate top-level collections for different
- * data types (`lots`, `staff`, `tasks`) is a strong pattern that creates clear security
- * boundaries and improves query performance. Each collection has a uniform security
- * policy applied to it.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -41,92 +6,61 @@ service cloud.firestore {
     // Helper Functions
     // ----------------------------------------------------------------------
 
-    /**
-     * isSignedIn
-     * Checks if the user is authenticated. This is the primary security
-     * gate for the entire application.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * isExistingDoc
-     * Ensures that update and delete operations target a document that
-     * actually exists, preventing writes to non-existent paths.
-     */
-    function isExistingDoc() {
-      return resource != null;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    /**
-     * isNewDocConsistent
-     * On create, validates that the document's internal ID field matches
-     * the document ID in the Firestore path. This enforces data consistency.
-     */
-    function isNewDocConsistent(docId) {
-      return request.resource.data.id == docId;
+    function isNewDocOwner() {
+      return request.resource.data.userId == request.auth.uid;
     }
-
-    /**
-     * isIdImmutable
-     * On update, ensures the document's internal ID field cannot be changed.
-     * This protects the primary key and relational integrity.
-     */
-    function isIdImmutable() {
-      return request.resource.data.id == resource.data.id;
+    
+    function isExistingDocOwner() {
+      return resource.data.userId == request.auth.uid;
+    }
+    
+    // ----------------------------------------------------------------------
+    // User Profile Rules
+    // ----------------------------------------------------------------------
+    match /users/{userId} {
+      // Allow a user to create their own profile document.
+      allow create: if isSignedIn() && isOwner(userId);
+      // Allow a user to read and update their own profile.
+      allow get, update: if isSignedIn() && isOwner(userId);
+      // Disallow deleting profiles.
+      allow delete: if false;
     }
 
     // ----------------------------------------------------------------------
-    // Collection Rules
+    // Data Collection Rules (Lots, Staff, Tasks)
     // ----------------------------------------------------------------------
-
-    /**
-     * @description Manages agricultural lots. Any authenticated user can create,
-     * read, update, and delete any lot document.
-     * @path /lots/{lotId}
-     * @allow (create) An authenticated user creates a new lot document.
-     * @deny (get) An unauthenticated user attempts to read a lot.
-     * @principle Enforces a secure boundary requiring user authentication for all
-     * access, suitable for a private, paid application.
-     */
+    
     match /lots/{lotId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocConsistent(lotId);
-      allow update: if isSignedIn() && isExistingDoc() && isIdImmutable();
-      allow delete: if isSignedIn() && isExistingDoc();
+      // Allow read/delete only if the user is the owner of the document.
+      // List operation is allowed, but client-side queries MUST filter by userId.
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      // Allow create if the new document has the creator's userId.
+      allow create: if isSignedIn() && isNewDocOwner();
+      // Allow update if the user owns the document and isn't changing the owner.
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
 
-    /**
-     * @description Manages staff member information. Any authenticated user can
-     * create, read, update, and delete any staff document.
-     * @path /staff/{staffId}
-     * @allow (update) An authenticated user updates an existing staff member's contact info.
-     * @deny (delete) An unauthenticated user attempts to delete a staff member.
-     * @principle Enforces a secure boundary requiring user authentication for all
-     * access, suitable for a private, paid application.
-     */
     match /staff/{staffId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocConsistent(staffId);
-      allow update: if isSignedIn() && isExistingDoc() && isIdImmutable();
-      allow delete: if isSignedIn() && isExistingDoc();
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
 
-    /**
-     * @description Manages tasks related to lots and staff. Any authenticated user
-     * can create, read, update, and delete any task document.
-     * @path /tasks/{taskId}
-     * @allow (list) An authenticated user lists all tasks for a given date range.
-     * @deny (create) An unauthenticated user attempts to create a new task.
-     * @principle Enforces a secure boundary requiring user authentication for all
-     * access, suitable for a private, paid application.
-     */
     match /tasks/{taskId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocConsistent(taskId);
-      allow update: if isSignedIn() && isExistingDoc() && isIdImmutable();
-      allow delete: if isSignedIn() && isExistingDoc();
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
   }
 }

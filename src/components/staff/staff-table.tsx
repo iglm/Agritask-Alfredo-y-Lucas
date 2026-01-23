@@ -9,21 +9,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 type StaffTableProps = {
   staff: Staff[];
   onEdit: (staffMember: Staff) => void;
+  onDelete: (staffMember: Staff) => void;
 };
 
-export function StaffTable({ staff, onEdit }: StaffTableProps) {
+export function StaffTable({ staff, onEdit, onDelete }: StaffTableProps) {
   const getBadgeVariant = (type: Staff['employmentType']) => {
     switch (type) {
-      case 'Permanent': return 'default';
+      case 'Permanente': return 'default';
       case 'Temporal': return 'secondary';
-      case 'Contractor': return 'outline';
+      case 'Contratista': return 'outline';
       default: return 'default';
     }
   };
 
   return (
     <Card>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -43,7 +44,7 @@ export function StaffTable({ staff, onEdit }: StaffTableProps) {
                   <TableCell>
                     <Badge variant={getBadgeVariant(staffMember.employmentType)}>{staffMember.employmentType}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">${staffMember.dailyRate.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${staffMember.baseDailyRate.toFixed(2)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -57,7 +58,7 @@ export function StaffTable({ staff, onEdit }: StaffTableProps) {
                            <SquarePen className="mr-2 h-4 w-4" />
                            Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando miembro del personal ${staffMember.name}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(staffMember)}>
                            <Trash2 className="mr-2 h-4 w-4" />
                            Eliminar
                         </DropdownMenuItem>

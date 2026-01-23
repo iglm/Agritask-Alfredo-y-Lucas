@@ -10,10 +10,17 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon } from 'lucide-react';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Button } from './ui/button';
 
 const navItems = [
   { href: '/', label: 'Panel', icon: LayoutDashboard },
@@ -25,6 +32,26 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const { user } = useUser();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      // The AuthProvider will handle the redirect
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión.",
+      });
+    }
+  };
 
   const currentPage = navItems.find(item => item.href === pathname || (item.href !== '/' && pathname.startsWith(item.href)));
 
@@ -59,6 +86,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </SidebarMenu>
           </SidebarContent>
+          <SidebarFooter>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
+                    <Avatar className="h-8 w-8">
+                        <AvatarFallback className='bg-primary text-primary-foreground'>
+                            {user?.email?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="text-left group-data-[collapsible=icon]:hidden">
+                        <p className="text-sm font-medium leading-none truncate">{user?.displayName || user?.email}</p>
+                        <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: Premium</p>
+                    </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  <span>Perfil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-muted/40">
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">

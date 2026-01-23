@@ -8,12 +8,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 type LotsTableProps = {
   lots: Lot[];
   onEdit: (lot: Lot) => void;
+  onDelete: (lot: Lot) => void;
 };
 
-export function LotsTable({ lots, onEdit }: LotsTableProps) {
+export function LotsTable({ lots, onEdit, onDelete }: LotsTableProps) {
   return (
     <Card>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -29,7 +30,7 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
                 <TableRow key={lot.id}>
                   <TableCell className="font-medium">{lot.name}</TableCell>
                   <TableCell className="hidden sm:table-cell text-muted-foreground">{lot.location}</TableCell>
-                  <TableCell className="text-right">{lot.area}</TableCell>
+                  <TableCell className="text-right">{lot.areaHectares}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -43,7 +44,7 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
                           <SquarePen className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando lote ${lot.name}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(lot)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Eliminar
                         </DropdownMenuItem>
@@ -55,7 +56,7 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
-                  No se encontraron lotes.
+                  No se encontraron lotes. Comienza creando uno nuevo.
                 </TableCell>
               </TableRow>
             )}

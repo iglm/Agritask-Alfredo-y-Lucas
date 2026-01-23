@@ -10,11 +10,10 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Lot } from "@/lib/types"
 
 const lotFormSchema = z.object({
-  id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  area: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
+  areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   location: z.string().min(2, { message: "La ubicación es obligatoria." }),
-  notes: z.string().optional(),
+  technicalNotes: z.string().optional(),
 });
 
 type LotFormValues = z.infer<typeof lotFormSchema>
@@ -29,9 +28,9 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
     resolver: zodResolver(lotFormSchema),
     defaultValues: lot || {
       name: "",
-      area: 0,
+      areaHectares: 0,
       location: "",
-      notes: "",
+      technicalNotes: "",
     },
   });
 
@@ -54,7 +53,7 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="area"
+            name="areaHectares"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Área (Hectáreas)</FormLabel>
@@ -81,7 +80,7 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
         </div>
         <FormField
           control={form.control}
-          name="notes"
+          name="technicalNotes"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Notas Técnicas</FormLabel>

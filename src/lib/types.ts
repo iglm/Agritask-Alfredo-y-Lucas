@@ -1,21 +1,31 @@
+export type UserProfile = {
+  uid: string;
+  email: string;
+  name?: string;
+  subscription: 'free' | 'premium';
+};
+
 export type Lot = {
   id: string;
+  userId: string;
   name: string;
-  area: number;
+  areaHectares: number;
   location: string;
-  notes?: string;
+  technicalNotes?: string;
 };
 
 export type Staff = {
   id: string;
+  userId: string;
   name: string;
   contact: string;
   employmentType: "Permanente" | "Temporal" | "Contratista";
-  dailyRate: number;
+  baseDailyRate: number;
 };
 
 export type Task = {
   id: string;
+  userId: string;
   lotId: string;
   category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
   type: string;

@@ -1,25 +1,27 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
-import { Task } from "@/lib/types";
+import { Task, Lot, Staff } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { lots, staff } from "@/lib/data";
 
 type TasksTableProps = {
   tasks: Task[];
+  lots: Lot[];
+  staff: Staff[];
   onEdit: (task: Task) => void;
+  onDelete: (task: Task) => void;
 };
 
-export function TasksTable({ tasks, onEdit }: TasksTableProps) {
+export function TasksTable({ tasks, lots, staff, onEdit, onDelete }: TasksTableProps) {
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'N/A';
   const getStaffName = (staffId: string) => staff.find(s => s.id === staffId)?.name || 'N/A';
 
   return (
     <Card>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -64,7 +66,7 @@ export function TasksTable({ tasks, onEdit }: TasksTableProps) {
                           <SquarePen className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando labor ${task.type}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(task)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Eliminar
                         </DropdownMenuItem>
@@ -76,7 +78,7 @@ export function TasksTable({ tasks, onEdit }: TasksTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                  No se encontraron labores.
+                  No se encontraron labores. Comienza agregando una.
                 </TableCell>
               </TableRow>
             )}
