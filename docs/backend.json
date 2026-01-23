@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "Lot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lot",
+      "type": "object",
+      "description": "Represents a land lot with its attributes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Lot entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the lot."
+        },
+        "areaHectares": {
+          "type": "number",
+          "description": "Area of the lot in hectares."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the lot (Vereda/Sector)."
+        },
+        "technicalNotes": {
+          "type": "string",
+          "description": "Technical notes about the lot."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "areaHectares",
+        "location"
+      ]
+    },
+    "Staff": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Staff",
+      "type": "object",
+      "description": "Represents a staff member.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Staff entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the staff member."
+        },
+        "contact": {
+          "type": "string",
+          "description": "Contact information for the staff member."
+        },
+        "employmentType": {
+          "type": "string",
+          "description": "Type of employment (Permanent, Temporary, Contractor)."
+        },
+        "baseDailyRate": {
+          "type": "number",
+          "description": "Base daily rate for the staff member."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "employmentType",
+        "baseDailyRate"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task to be performed.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "lotId": {
+          "type": "string",
+          "description": "Reference to Lot. (Relationship: Lot 1:N Task)"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the task (Preparation, Sowing, Maintenance, Harvest, Post-Harvest)."
+        },
+        "specificTaskType": {
+          "type": "string",
+          "description": "Specific type of task."
+        },
+        "responsibleId": {
+          "type": "string",
+          "description": "Reference to Staff. (Relationship: Staff 1:N Task)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the task.",
+          "format": "date-time"
+        },
+        "plannedManDays": {
+          "type": "number",
+          "description": "Planned man-days for the task."
+        },
+        "progress": {
+          "type": "number",
+          "description": "Progress of the task (0-100%)."
+        }
+      },
+      "required": [
+        "id",
+        "lotId",
+        "category",
+        "responsibleId",
+        "date",
+        "plannedManDays",
+        "progress"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/lots/{lotId}",
+        "definition": {
+          "entityName": "Lot",
+          "schema": {
+            "$ref": "#/backend/entities/Lot"
+          },
+          "description": "Collection for storing Lot entities.  Each document represents a land lot with attributes like name, area, location, and technical notes.",
+          "params": [
+            {
+              "name": "lotId",
+              "description": "Unique identifier for the lot."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/staff/{staffId}",
+        "definition": {
+          "entityName": "Staff",
+          "schema": {
+            "$ref": "#/backend/entities/Staff"
+          },
+          "description": "Collection for storing Staff entities. Each document represents a staff member with attributes like name, contact, employment type, and base daily rate.",
+          "params": [
+            {
+              "name": "staffId",
+              "description": "Unique identifier for the staff member."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Collection for storing Task entities.  Each document represents a task with attributes like lotId, category, responsibleId, date, plannedManDays, and progress. Includes denormalized 'lotId' and 'responsibleId' for authorization independence.",
+          "params": [
+            {
+              "name": "taskId",
+              "description": "Unique identifier for the task."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "To support the AgriTask Master application and its requirements, especially given the intention to monetize access via the Play Store, the Firestore structure is designed with security, scalability, and query performance in mind. The design focuses on authorization independence, clear access modeling, and explicit data clarity. \n\nAuthorization Independence (CRITICAL): The structure avoids hierarchical authorization dependencies by denormalizing authorization context. For example, if access to Tasks depends on Lot attributes or Staff roles, relevant attributes are copied into the Task documents themselves.\n\nStructural Segregation (Homogeneous Security Posture):  Each collection is designed to hold documents with similar security requirements. This simplifies security rules and access management.\n\nAccess Modeling (Standardization and Consistency): Path-based ownership is used for user-specific data (although user specific data is not explicitly defined in the user request, the platform requires the ability to implement roles). The Membership Map pattern is used for collaborative data, enabling role-based access control.\n\nQAPs (Rules are not Filters): The structure supports secure list operations by ensuring that security rules can efficiently validate access without needing to fetch related documents. This is achieved through structural segregation and denormalization.\n\nInvariants: The structure supports the integrity of ownership, timestamps, and denormalized data by using server-side timestamping and validation rules.\n\nSpecific to the application's features:\n\n*   Lot Management: Lotes are stored in a top-level collection `lots`. This supports easy CRUD operations and filtering by location.\n*   Staff Management: Staff members are stored in a top-level collection `staff`. This supports easy CRUD operations and filtering by contract type.\n*   Task Planning: Tasks are stored in a top-level collection `tasks` and linked to Lotes and Staff via denormalized IDs. This enables efficient querying and filtering by lot, staff, category, and date. This allows for rapid filtering and sorting for the calendar and task management features.\n*   Intelligent Dashboard: The structure supports the dashboard KPIs and analytics by providing direct access to the required data (lots, tasks, and staff). Denormalization of relevant data into the `tasks` collection facilitates efficient aggregation and calculation of metrics.\n*   Interactive Calendar: The `tasks` collection allows for efficient querying by date, supporting the interactive calendar view.\n*   Data Interoperability: The structure supports exporting data in CSV/Excel format by providing a clear and consistent schema for each entity. Importing data via Google Sheets can be facilitated by mapping the sheet columns to the corresponding Firestore fields.\n*   Anomaly Detection Tool: Data structure supports the AI-powered anomaly detection tool by providing well-structured data for analysis. The tool can access task progress data and identify anomalies based on predefined rules."
+  }
+}
