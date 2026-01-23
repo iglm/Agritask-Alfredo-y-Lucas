@@ -7,6 +7,7 @@ import type { Task } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { isSameDay, parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
+import type { DayContentProps } from "react-day-picker";
 
 type InteractiveCalendarProps = {
   tasks: Task[];
@@ -16,14 +17,11 @@ type InteractiveCalendarProps = {
 export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendarProps) {
   const [month, setMonth] = useState(new Date());
 
-  const DayWithTasks = ({ date, ...props }: { date: Date, displayMonth?: Date }) => {
-    if (!date) {
-      return <div></div>;
-    }
-    const tasksForDay = tasks.filter(task => isSameDay(parseISO(task.date), date));
+  const DayWithTasks = (props: DayContentProps) => {
+    const tasksForDay = tasks.filter(task => isSameDay(parseISO(task.date), props.date));
     return (
-      <div className="relative h-full">
-        {props.children}
+      <>
+        {props.date.getDate()}
         {tasksForDay.length > 0 && (
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
             {tasksForDay.slice(0, 3).map((task, index) => (
@@ -31,7 +29,7 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
             ))}
           </div>
         )}
-      </div>
+      </>
     );
   };
   
@@ -57,7 +55,7 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
                 head_cell: "w-full",
               }}
               components={{
-                Day: DayWithTasks,
+                DayContent: DayWithTasks,
               }}
             />
           </CardContent>
