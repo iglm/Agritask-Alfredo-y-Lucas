@@ -73,15 +73,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      isActive={pathname === item.href}
-                      tooltip={{ children: item.label }}
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    tooltip={{ children: item.label }}
+                  >
+                    <Link href={item.href}>
                       <item.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -104,12 +105,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
                 <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <Link href="/profile" passHref legacyBehavior>
-                  <DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>Perfil</span>
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar sesión</span>
