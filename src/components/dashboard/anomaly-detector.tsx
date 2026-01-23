@@ -23,7 +23,7 @@ export function AnomalyDetector() {
       const detectionResult = await detectAnomalies({ taskData });
       setResult(detectionResult);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+      setError(e instanceof Error ? e.message : "Ocurrió un error desconocido.");
     } finally {
       setIsLoading(false);
     }
@@ -32,11 +32,11 @@ export function AnomalyDetector() {
   const getSeverityBadge = (severity: 'low' | 'medium' | 'high') => {
     switch (severity) {
       case 'high':
-        return <Badge variant="destructive">High</Badge>;
+        return <Badge variant="destructive">Alta</Badge>;
       case 'medium':
-        return <Badge variant="secondary">Medium</Badge>;
+        return <Badge variant="secondary">Media</Badge>;
       case 'low':
-        return <Badge variant="outline">Low</Badge>;
+        return <Badge variant="outline">Baja</Badge>;
       default:
         return <Badge>{severity}</Badge>;
     }
@@ -47,10 +47,10 @@ export function AnomalyDetector() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BrainCircuit className="h-6 w-6 text-primary" />
-          <span>AI Anomaly Detection</span>
+          <span>Detección de Anomalías con IA</span>
         </CardTitle>
         <CardDescription>
-          Use AI to analyze task data for potential delays, budget overruns, and other issues.
+          Usa IA para analizar los datos de las labores en busca de posibles retrasos, sobrecostos y otros problemas.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,9 +59,9 @@ export function AnomalyDetector() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
+                Analizando...
               </>
-            ) : "Detect Anomalies"}
+            ) : "Detectar Anomalías"}
           </Button>
 
           {error && (
@@ -74,13 +74,13 @@ export function AnomalyDetector() {
 
           {result && (
             <div className="flex flex-col gap-3">
-              <h3 className="font-semibold">Analysis Complete</h3>
+              <h3 className="font-semibold">Análisis Completo</h3>
               {result.anomalies.length > 0 ? (
                 result.anomalies.map((anomaly, index) => (
                   <Alert key={index}>
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle className="flex justify-between items-center">
-                      <span>Anomaly Found (Task {anomaly.taskId || 'N/A'})</span>
+                      <span>Anomalía Encontrada (Labor {anomaly.taskId || 'N/A'})</span>
                       {getSeverityBadge(anomaly.severity)}
                     </AlertTitle>
                     <AlertDescription>{anomaly.description}</AlertDescription>
@@ -88,8 +88,8 @@ export function AnomalyDetector() {
                 ))
               ) : (
                 <Alert>
-                  <AlertTitle>No Anomalies Detected</AlertTitle>
-                  <AlertDescription>All tasks appear to be on track based on the provided data.</AlertDescription>
+                  <AlertTitle>No se Detectaron Anomalías</AlertTitle>
+                  <AlertDescription>Todas las labores parecen estar en orden según los datos proporcionados.</AlertDescription>
                 </Alert>
               )}
             </div>

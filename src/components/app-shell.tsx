@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare } from 'lucide-react';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/', label: 'Panel', icon: LayoutDashboard },
   { href: '/lots', label: 'Lotes', icon: Tractor },
   { href: '/staff', label: 'Personal', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold md:text-xl">
-              {currentPage?.label || 'AgriTask Master'}
+              {currentPage?.label || 'AgriTask'}
             </h1>
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>

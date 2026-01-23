@@ -15,15 +15,16 @@ import { lots, staff } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 const taskFormSchema = z.object({
   id: z.string().optional(),
-  type: z.string().min(2, { message: "Task type is required." }),
-  lotId: z.string({ required_error: "Please select a lot." }),
-  responsibleId: z.string({ required_error: "Please select a responsible person." }),
+  type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
+  lotId: z.string({ required_error: "Por favor selecciona un lote." }),
+  responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }),
   category: z.enum(taskCategories),
-  date: z.date({ required_error: "A date is required." }),
-  plannedJournals: z.coerce.number().min(0, "Cannot be negative."),
+  date: z.date({ required_error: "La fecha es obligatoria." }),
+  plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
   progress: z.number().min(0).max(100),
 });
 
@@ -76,9 +77,9 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
           name="type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Task Type</FormLabel>
+              <FormLabel>Tipo de Labor</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Soil Plowing" {...field} />
+                <Input placeholder="Ej: Arado de suelo" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -90,9 +91,9 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
             name="lotId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Lot</FormLabel>
+                <FormLabel>Lote</FormLabel>
                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select a lot" /></SelectTrigger></FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un lote" /></SelectTrigger></FormControl>
                   <SelectContent><SelectContent>
                     {lots.map(lot => <SelectItem key={lot.id} value={lot.id}>{lot.name}</SelectItem>)}
                   </SelectContent></SelectContent>
@@ -106,9 +107,9 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
             name="responsibleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Responsible</FormLabel>
+                <FormLabel>Responsable</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select a person" /></SelectTrigger></FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una persona" /></SelectTrigger></FormControl>
                   <SelectContent><SelectContent>
                     {staff.map(person => <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>)}
                   </SelectContent></SelectContent>
@@ -122,9 +123,9 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
+                <FormLabel>Categoría</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una categoría" /></SelectTrigger></FormControl>
                   <SelectContent>
                     {taskCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                   </SelectContent>
@@ -138,18 +139,18 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Fecha</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -162,7 +163,7 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
             name="plannedJournals"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Planned Journals</FormLabel>
+                <FormLabel>Jornales Planificados</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -175,14 +176,14 @@ export function TaskForm({ task, onSubmit }: TaskFormProps) {
           name="progress"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Progress - {progressValue}%</FormLabel>
+              <FormLabel>Progreso - {progressValue}%</FormLabel>
               <FormControl>
                 <Slider defaultValue={[field.value]} min={0} max={100} step={5} onValueChange={(value) => field.onChange(value[0])} />
               </FormControl>
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">{task ? "Update Task" : "Create Task"}</Button>
+        <Button type="submit" className="w-full">{task ? "Actualizar Labor" : "Crear Labor"}</Button>
       </form>
     </Form>
   )

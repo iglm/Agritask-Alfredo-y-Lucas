@@ -23,13 +23,13 @@ export function TasksTable({ tasks, onEdit }: TasksTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Task</TableHead>
-              <TableHead className="hidden lg:table-cell">Lot</TableHead>
-              <TableHead className="hidden lg:table-cell">Responsible</TableHead>
-              <TableHead className="hidden sm:table-cell">Category</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Cost (Actual/Planned)</TableHead>
-              <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+              <TableHead>Labor</TableHead>
+              <TableHead className="hidden lg:table-cell">Lote</TableHead>
+              <TableHead className="hidden lg:table-cell">Responsable</TableHead>
+              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
+              <TableHead>Progreso</TableHead>
+              <TableHead className="text-right hidden md:table-cell">Costo (Real/Plan.)</TableHead>
+              <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,18 +55,18 @@ export function TasksTable({ tasks, onEdit }: TasksTableProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">Abrir menú</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(task)}>
                           <SquarePen className="mr-2 h-4 w-4" />
-                          Edit
+                          Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Deleting task ${task.type}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando labor ${task.type}`)}>
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -76,7 +76,7 @@ export function TasksTable({ tasks, onEdit }: TasksTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                  No tasks found.
+                  No se encontraron labores.
                 </TableCell>
               </TableRow>
             )}

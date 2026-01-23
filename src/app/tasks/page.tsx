@@ -39,13 +39,13 @@ export default function TasksPage() {
 
   return (
     <div>
-      <PageHeader title="Task Management" actionButtonText="Add New Task" onActionButtonClick={handleAddTask}>
+      <PageHeader title="Gestión de Labores" actionButtonText="Agregar Nueva Labor" onActionButtonClick={handleAddTask}>
         <Select onValueChange={handleFilterByCategory} defaultValue="all">
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue placeholder="Filtrar por categoría" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">Todas las Categorías</SelectItem>
             {taskCategories.map((category) => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
@@ -58,9 +58,9 @@ export default function TasksPage() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent className="sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>{editingTask ? 'Edit Task' : 'Create a New Task'}</SheetTitle>
+            <SheetTitle>{editingTask ? 'Editar Labor' : 'Crear una Nueva Labor'}</SheetTitle>
             <SheetDescription>
-              {editingTask ? 'Update the details for this task.' : 'Fill in the details for the new task.'}
+              {editingTask ? 'Actualiza los detalles de esta labor.' : 'Completa los detalles para la nueva labor.'}
             </SheetDescription>
           </SheetHeader>
           <TaskForm task={editingTask} onSubmit={handleFormSubmit} />

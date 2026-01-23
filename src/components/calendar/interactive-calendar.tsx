@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import type { Task } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { isSameDay, parseISO } from "date-fns";
+import { isSameDay, parseISO, format } from "date-fns";
+import { es } from "date-fns/locale";
 
 type InteractiveCalendarProps = {
   tasks: Task[];
@@ -51,6 +52,7 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
         <Card>
           <CardContent className="p-2">
             <Calendar
+              locale={es}
               mode="single"
               onSelect={onDateSelect}
               onMonthChange={setMonth}
@@ -70,7 +72,7 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
       <div className="md:col-span-1">
         <Card>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Tasks for {format(month, 'MMMM yyyy')}</h3>
+            <h3 className="text-lg font-semibold mb-4">Labores para {format(month, 'MMMM yyyy', { locale: es })}</h3>
             <div className="space-y-3 max-h-[450px] overflow-y-auto">
               {tasksForMonth.length > 0 ? tasksForMonth
                 .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -78,11 +80,11 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
                 <div key={task.id} className="p-3 bg-muted/50 rounded-lg">
                   <p className="font-semibold text-sm">{task.type}</p>
                   <div className="flex justify-between items-center mt-1">
-                    <p className="text-xs text-muted-foreground">{format(parseISO(task.date), 'MMM d')}</p>
+                    <p className="text-xs text-muted-foreground">{format(parseISO(task.date), 'd MMM', { locale: es })}</p>
                     <Badge variant="outline">{task.category}</Badge>
                   </div>
                 </div>
-              )) : <p className="text-sm text-muted-foreground">No tasks scheduled for this month.</p>}
+              )) : <p className="text-sm text-muted-foreground">No hay labores programadas para este mes.</p>}
             </div>
           </CardContent>
         </Card>

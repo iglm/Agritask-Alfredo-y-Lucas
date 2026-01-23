@@ -25,8 +25,8 @@ export function TasksDistributionChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Task Distribution</CardTitle>
-        <CardDescription>Percentage of tasks by category</CardDescription>
+        <CardTitle>Distribución de Labores</CardTitle>
+        <CardDescription>Porcentaje de labores por categoría</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

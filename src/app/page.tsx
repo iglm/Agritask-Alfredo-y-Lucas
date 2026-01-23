@@ -23,22 +23,22 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Total Lots"
+          title="Lotes Totales"
           value={totalLots}
           icon={<Tractor className="h-6 w-6 text-primary" />}
         />
         <KpiCard
-          title="Planned Cost"
+          title="Costo Planificado"
           value={`$${totalPlannedCost.toLocaleString()}`}
           icon={<DollarSign className="h-6 w-6 text-primary" />}
         />
         <KpiCard
-          title="Actual Cost"
+          title="Costo Real"
           value={`$${totalActualCost.toLocaleString()}`}
           icon={<CheckSquare className="h-6 w-6 text-primary" />}
         />
         <KpiCard
-          title="Avg. Efficiency"
+          title="Eficiencia Prom."
           value={`${overallEfficiency.toFixed(1)}%`}
           icon={<Percent className="h-6 w-6 text-primary" />}
         />

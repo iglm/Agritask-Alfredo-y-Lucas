@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { tasks as allTasks } from "@/lib/data";
 import { Task } from "@/lib/types";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function CalendarPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -31,22 +32,22 @@ export default function CalendarPage() {
     date: format(selectedDate, 'yyyy-MM-dd'),
     lotId: '',
     responsibleId: '',
-    category: 'Maintenance',
+    category: 'Mantenimiento',
     plannedCost: 0,
     actualCost: 0,
   } as Task : undefined;
 
   return (
     <div>
-      <PageHeader title="Operational Agenda" />
+      <PageHeader title="Agenda Operativa" />
       <InteractiveCalendar tasks={allTasks} onDateSelect={handleDateSelect} />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Schedule New Task</DialogTitle>
+            <DialogTitle>Programar Nueva Labor</DialogTitle>
             <DialogDescription>
-              Create a new task for {selectedDate ? format(selectedDate, "PPP") : ""}. Click save when you're done.
+              Crea una nueva labor para {selectedDate ? format(selectedDate, "PPP", { locale: es }) : ""}. Haz clic en guardar cuando termines.
             </DialogDescription>
           </DialogHeader>
           <TaskForm task={taskForForm} onSubmit={handleFormSubmit} />

@@ -45,24 +45,24 @@ export default function LotsPage() {
 
   return (
     <div>
-      <PageHeader title="Lot Management" actionButtonText="Add New Lot" onActionButtonClick={handleAddLot}>
+      <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Nuevo Lote" onActionButtonClick={handleAddLot}>
         <div className="flex items-center gap-2">
             <Select onValueChange={handleFilterByLocation} defaultValue="all">
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by location" />
+                <SelectValue placeholder="Filtrar por ubicación" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
+                <SelectItem value="all">Todas las ubicaciones</SelectItem>
                 {locations.map((location) => (
                   <SelectItem key={location} value={location}>{location}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={() => alert('Import from Google Sheets is a planned feature.')}>
-              <Upload className="mr-2 h-4 w-4" /> Import
+            <Button variant="outline" size="sm" onClick={() => alert('La importación desde Google Sheets es una función planificada.')}>
+              <Upload className="mr-2 h-4 w-4" /> Importar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('Export to CSV is a planned feature.')}>
-              <Download className="mr-2 h-4 w-4" /> Export
+            <Button variant="outline" size="sm" onClick={() => alert('La exportación a CSV es una función planificada.')}>
+              <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
         </div>
       </PageHeader>
@@ -72,9 +72,9 @@ export default function LotsPage() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{editingLot ? 'Edit Lot' : 'Create a New Lot'}</SheetTitle>
+            <SheetTitle>{editingLot ? 'Editar Lote' : 'Crear un Nuevo Lote'}</SheetTitle>
             <SheetDescription>
-              {editingLot ? 'Update the details for this lot.' : 'Fill in the details for the new lot.'}
+              {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
           <LotForm lot={editingLot} onSubmit={handleFormSubmit} />

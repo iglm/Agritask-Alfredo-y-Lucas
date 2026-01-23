@@ -17,10 +17,10 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Location</TableHead>
-              <TableHead className="text-right">Area (Ha)</TableHead>
-              <TableHead className="w-[50px]"><span className="sr-only">Actions</span></TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead className="hidden sm:table-cell">Ubicación</TableHead>
+              <TableHead className="text-right">Área (Ha)</TableHead>
+              <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -34,18 +34,18 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">Abrir menú</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(lot)}>
                           <SquarePen className="mr-2 h-4 w-4" />
-                          Edit
+                          Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Deleting lot ${lot.name}`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => alert(`Eliminando lote ${lot.name}`)}>
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -55,7 +55,7 @@ export function LotsTable({ lots, onEdit }: LotsTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
-                  No lots found.
+                  No se encontraron lotes.
                 </TableCell>
               </TableRow>
             )}

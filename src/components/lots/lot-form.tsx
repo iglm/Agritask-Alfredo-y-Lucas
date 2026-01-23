@@ -11,9 +11,9 @@ import type { Lot } from "@/lib/types"
 
 const lotFormSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  area: z.coerce.number().positive({ message: "Area must be a positive number." }),
-  location: z.string().min(2, { message: "Location is required." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  area: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
+  location: z.string().min(2, { message: "La ubicación es obligatoria." }),
   notes: z.string().optional(),
 });
 
@@ -43,7 +43,7 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Lot Name</FormLabel>
+              <FormLabel>Nombre del Lote</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., El Manantial" {...field} />
               </FormControl>
@@ -57,7 +57,7 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
             name="area"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Area (Hectares)</FormLabel>
+                <FormLabel>Área (Hectáreas)</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -70,7 +70,7 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
+                <FormLabel>Ubicación</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Vereda El Placer" {...field} />
                 </FormControl>
@@ -84,15 +84,15 @@ export function LotForm({ lot, onSubmit }: LotFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Technical Notes</FormLabel>
+              <FormLabel>Notas Técnicas</FormLabel>
               <FormControl>
-                <Textarea placeholder="e.g., Soil type, irrigation details..." {...field} />
+                <Textarea placeholder="Ej: Tipo de suelo, detalles de riego..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">{lot ? "Update Lot" : "Create Lot"}</Button>
+        <Button type="submit" className="w-full">{lot ? "Actualizar Lote" : "Crear Lote"}</Button>
       </form>
     </Form>
   )

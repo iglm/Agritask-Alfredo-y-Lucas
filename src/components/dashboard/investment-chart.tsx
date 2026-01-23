@@ -26,8 +26,8 @@ export function InvestmentChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Investment per Lot</CardTitle>
-        <CardDescription>Planned vs. Executed Costs</CardDescription>
+        <CardTitle>Inversión por Lote</CardTitle>
+        <CardDescription>Costos Planificados vs. Ejecutados</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -44,8 +44,8 @@ export function InvestmentChart() {
               }}
             />
             <Legend wrapperStyle={{fontSize: "14px"}}/>
-            <Bar dataKey="planned" fill="hsl(var(--secondary))" name="Planned" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="actual" fill="hsl(var(--primary))" name="Actual" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="planned" fill="hsl(var(--secondary))" name="Planificado" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="actual" fill="hsl(var(--primary))" name="Real" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

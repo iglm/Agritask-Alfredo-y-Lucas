@@ -10,14 +10,14 @@ export type Staff = {
   id: string;
   name: string;
   contact: string;
-  employmentType: "Permanent" | "Temporal" | "Contractor";
+  employmentType: "Permanente" | "Temporal" | "Contratista";
   dailyRate: number;
 };
 
 export type Task = {
   id: string;
   lotId: string;
-  category: "Preparation" | "Planting" | "Maintenance" | "Harvest" | "Post-Harvest";
+  category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
   type: string;
   responsibleId: string;
   date: string;
@@ -27,5 +27,5 @@ export type Task = {
   actualCost: number;
 };
 
-export const taskCategories: Task['category'][] = ["Preparation", "Planting", "Maintenance", "Harvest", "Post-Harvest"];
-export const employmentTypes: Staff['employmentType'][] = ["Permanent", "Temporal", "Contractor"];
+export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
+export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];

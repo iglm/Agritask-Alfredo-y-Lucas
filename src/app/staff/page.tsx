@@ -41,7 +41,7 @@ export default function StaffPage() {
 
   return (
     <div>
-      <PageHeader title="Manejo de personal" actionButtonText="Agregar Personal" onActionButtonClick={handleAddStaff}>
+      <PageHeader title="Manejo de Personal" actionButtonText="Agregar Personal" onActionButtonClick={handleAddStaff}>
         <div className="flex items-center gap-2">
             <Select onValueChange={handleFilterByType} defaultValue="all">
               <SelectTrigger className="w-[180px]">
