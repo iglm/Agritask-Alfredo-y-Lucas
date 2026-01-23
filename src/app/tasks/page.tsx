@@ -7,37 +7,20 @@ import { PageHeader } from "@/components/page-header";
 import { taskCategories, type Task, type Staff, type Lot } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv";
 import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 
 const TASK_LIMIT = 20;
 
 export default function TasksPage() {
-  const { firestore } = useFirebase();
-  const { user, profile } = useUser();
+  const { profile } = useUser();
+  const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask, deleteTask } = useAppData();
   const { toast } = useToast();
-
-  const tasksQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
-  const { data: allTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
-
-  const lotsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
-  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
-
-  const staffQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
-  const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -51,8 +34,6 @@ export default function TasksPage() {
       setFilteredTasks(allTasks);
     }
   }, [allTasks]);
-
-  const isLoading = tasksLoading || lotsLoading || staffLoading;
 
   const handleFilterByCategory = (category: string) => {
     if (category === "all") {
@@ -82,9 +63,9 @@ export default function TasksPage() {
   };
 
   const confirmDelete = async () => {
-    if (!taskToDelete || !firestore) return;
+    if (!taskToDelete) return;
     try {
-      await deleteDoc(doc(firestore, "tasks", taskToDelete.id));
+      await deleteTask(taskToDelete.id);
       toast({
         title: "Labor eliminada",
         description: `La labor "${taskToDelete.type}" ha sido eliminada.`,
@@ -102,19 +83,15 @@ export default function TasksPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
-    if (!user || !firestore) return;
-  
     try {
       if (editingTask) {
-        const taskRef = doc(firestore, "tasks", editingTask.id);
-        await setDoc(taskRef, { ...values, userId: user.uid }, { merge: true });
+        await updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
         toast({
           title: "¡Labor actualizada!",
           description: "Los detalles de la labor han sido actualizados.",
         });
       } else {
-        const newDocRef = doc(collection(firestore, "tasks"));
-        await setDoc(newDocRef, { ...values, id: newDocRef.id, userId: user.uid });
+        await addTask(values);
         toast({
           title: "¡Labor creada!",
           description: "La nueva labor ha sido agregada a tu lista.",

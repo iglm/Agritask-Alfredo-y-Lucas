@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
-import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -19,14 +18,9 @@ import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 const STAFF_LIMIT = 3;
 
 export default function StaffPage() {
-  const { firestore } = useFirebase();
-  const { user, profile } = useUser();
+  const { profile } = useUser();
+  const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
   const { toast } = useToast();
-
-  const staffQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
-  const { data: allStaff, isLoading } = useCollection<Staff>(staffQuery);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
@@ -69,9 +63,9 @@ export default function StaffPage() {
   };
 
   const confirmDelete = async () => {
-    if (!staffToDelete || !firestore) return;
+    if (!staffToDelete) return;
     try {
-      await deleteDoc(doc(firestore, "staff", staffToDelete.id));
+      await deleteStaff(staffToDelete.id);
       toast({
         title: "Personal eliminado",
         description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
@@ -89,19 +83,15 @@ export default function StaffPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
-    if (!user || !firestore) return;
-
     try {
       if (editingStaff) {
-        const staffRef = doc(firestore, "staff", editingStaff.id);
-        await setDoc(staffRef, { ...values, userId: user.uid }, { merge: true });
+        await updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
         toast({
           title: "¡Personal actualizado!",
           description: "Los detalles del miembro del personal han sido actualizados.",
         });
       } else {
-        const newDocRef = doc(collection(firestore, "staff"));
-        await setDoc(newDocRef, { ...values, id: newDocRef.id, userId: user.uid });
+        await addStaff(values);
         toast({
           title: "¡Personal creado!",
           description: "El nuevo miembro del personal ha sido agregado.",

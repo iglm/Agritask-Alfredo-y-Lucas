@@ -9,8 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
 import { Lot } from "@/lib/types";
-import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -19,15 +18,10 @@ import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 const LOT_LIMIT = 1;
 
 export default function LotsPage() {
-  const { firestore } = useFirebase();
-  const { user, profile } = useUser();
+  const { profile } = useUser();
+  const { lots: allLots, isLoading, addLot, updateLot, deleteLot } = useAppData();
   const { toast } = useToast();
   
-  const lotsQuery = useMemoFirebase(() => 
-    user ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
-  const { data: allLots, isLoading } = useCollection<Lot>(lotsQuery);
-
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredLots, setFilteredLots] = useState<Lot[]>([]);
   const [editingLot, setEditingLot] = useState<Lot | undefined>(undefined);
@@ -71,9 +65,9 @@ export default function LotsPage() {
   };
 
   const confirmDelete = async () => {
-    if (!lotToDelete || !firestore) return;
+    if (!lotToDelete) return;
     try {
-      await deleteDoc(doc(firestore, "lots", lotToDelete.id));
+      await deleteLot(lotToDelete.id);
       toast({
         title: "Lote eliminado",
         description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
@@ -91,21 +85,15 @@ export default function LotsPage() {
   };
 
   const handleFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
-    if (!user || !firestore) return;
-  
     try {
       if (editingLot) {
-        // Update existing lot
-        const lotRef = doc(firestore, "lots", editingLot.id);
-        await setDoc(lotRef, { ...values, userId: user.uid }, { merge: true });
+        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
         toast({
           title: "¡Lote actualizado!",
           description: "Los detalles del lote han sido actualizados.",
         });
       } else {
-        // Create new lot
-        const newDocRef = doc(collection(firestore, "lots"));
-        await setDoc(newDocRef, { ...values, id: newDocRef.id, userId: user.uid });
+        await addLot(values);
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",

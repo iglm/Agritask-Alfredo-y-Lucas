@@ -5,11 +5,10 @@ import { PageHeader } from "@/components/page-header";
 import { InteractiveCalendar } from "@/components/calendar/interactive-calendar";
 import { TaskForm } from "@/components/tasks/task-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, doc, addDoc, setDoc } from "firebase/firestore";
+import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { Lot, Staff, Task } from "@/lib/types";
+import { Task } from "@/lib/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
@@ -17,25 +16,13 @@ import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 const TASK_LIMIT = 20;
 
 export default function CalendarPage() {
-  const { firestore } = useFirebase();
-  const { user, profile } = useUser();
+  const { profile } = useUser();
+  const { tasks: allTasks, lots, staff, isLoading, addTask } = useAppData();
   const { toast } = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
-
-  // Fetch all data needed
-  const tasksQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: allTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
-
-  const lotsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
-
-  const staffQuery = useMemoFirebase(() => user ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
-
-  const isLoading = tasksLoading || lotsLoading || staffLoading;
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -48,11 +35,8 @@ export default function CalendarPage() {
   };
   
   const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
-    if (!user || !firestore) return;
-
     try {
-      const newDocRef = doc(collection(firestore, "tasks"));
-      await setDoc(newDocRef, { ...values, id: newDocRef.id, userId: user.uid });
+      await addTask(values);
       toast({
         title: "¡Labor creada!",
         description: "La nueva labor ha sido agregada a tu agenda.",
@@ -71,7 +55,6 @@ export default function CalendarPage() {
     date: selectedDate,
     progress: 0,
   } : undefined;
-
 
   if (isLoading) {
     return (

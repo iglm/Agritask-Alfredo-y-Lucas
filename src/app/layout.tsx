@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/components/auth/auth-provider';
+import { DataProvider } from '@/firebase/data-provider';
 
 export const metadata: Metadata = {
   title: 'AgriTask',
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           <AuthProvider>
-            <AppShell>{children}</AppShell>
+            <DataProvider>
+              <AppShell>{children}</AppShell>
+            </DataProvider>
           </AuthProvider>
         </FirebaseClientProvider>
         <Toaster />

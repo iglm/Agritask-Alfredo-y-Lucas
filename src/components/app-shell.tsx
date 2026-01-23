@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -88,35 +88,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback className='bg-primary text-primary-foreground'>
-                            {profile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="text-left group-data-[collapsible=icon]:hidden">
-                        <p className="text-sm font-medium leading-none truncate">{profile?.name || user?.email}</p>
-                        <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: {profile?.subscription === 'premium' ? 'Premium' : 'Gratuita'}</p>
-                    </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Perfil</span>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
+                      <Avatar className="h-8 w-8">
+                          <AvatarFallback className='bg-primary text-primary-foreground'>
+                              {profile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                      </Avatar>
+                      <div className="text-left group-data-[collapsible=icon]:hidden">
+                          <p className="text-sm font-medium leading-none truncate">{profile?.name || user?.email}</p>
+                          <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: {profile?.subscription === 'premium' ? 'Premium' : 'Gratuita'}</p>
+                      </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>Perfil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="p-2 group-data-[collapsible=icon]:p-0">
+                <Button asChild className="w-full">
+                  <Link href="/login">
+                    <LogIn className="h-4 w-4" />
+                    <span className="group-data-[collapsible=icon]:hidden">Iniciar Sesión</span>
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </Button>
+              </div>
+            )}
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-muted/40">

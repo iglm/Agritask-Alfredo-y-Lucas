@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-const protectedRoutes = ["/", "/lots", "/staff", "/tasks", "/calendar"];
+// The login page is the only "public" route that a logged-in user shouldn't see.
 const publicRoutes = ["/login"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -18,19 +18,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return; // Wait until user status is determined
     }
 
-    const isProtectedRoute = protectedRoutes.includes(pathname);
     const isPublicRoute = publicRoutes.includes(pathname);
 
-    if (!user && isProtectedRoute) {
-      router.push("/login");
-    }
-
+    // If a logged-in user tries to access the login page, redirect them to the dashboard.
     if (user && isPublicRoute) {
       router.push("/");
     }
+    
+    // Unauthenticated users can now access any page, so no redirect logic is needed here.
+    // The DataProvider will handle serving local or remote data.
+
   }, [user, isUserLoading, router, pathname]);
 
-  if (isUserLoading) {
+  // The loading screen is still useful during the initial auth check.
+  if (isUserLoading && !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -41,18 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If user is not logged in and we are on a public page (like /login),
-  // we don't want to render the main AppShell, just the children.
-  if (!user && publicRoutes.includes(pathname)) {
-    return <>{children}</>;
-  }
-  
-  // If user is logged in, or we are on a protected route (which will soon redirect),
-  // render the children (which includes the AppShell).
-  if (user || protectedRoutes.includes(pathname)) {
-    return <>{children}</>;
-  }
-
-  // Fallback for any other case (shouldn't be reached often)
-  return null;
+  // The AppShell is now always rendered, and DataProvider decides what to show.
+  return <>{children}</>;
 }

@@ -7,7 +7,7 @@ export type UserProfile = {
 
 export type Lot = {
   id: string;
-  userId: string;
+  userId?: string;
   name: string;
   areaHectares: number;
   location: string;
@@ -16,7 +16,7 @@ export type Lot = {
 
 export type Staff = {
   id: string;
-  userId: string;
+  userId?: string;
   name: string;
   contact: string;
   employmentType: "Permanente" | "Temporal" | "Contratista";
@@ -25,7 +25,7 @@ export type Staff = {
 
 export type Task = {
   id: string;
-  userId: string;
+  userId?: string;
   lotId: string;
   category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
   type: string;
