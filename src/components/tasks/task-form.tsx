@@ -64,7 +64,17 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
         return;
     };
 
-    const plannedCost = values.plannedJournals * responsible.baseDailyRate;
+    let plannedCost: number;
+
+    // If we are editing and the core cost factors (journals, responsible) haven't changed,
+    // use the original plannedCost to avoid overwriting it with new staff rates.
+    // Otherwise, recalculate it.
+    if (task?.id && task.plannedJournals === values.plannedJournals && task.responsibleId === values.responsibleId && typeof task.plannedCost === 'number') {
+        plannedCost = task.plannedCost;
+    } else {
+        plannedCost = values.plannedJournals * responsible.baseDailyRate;
+    }
+
     const actualCost = plannedCost * (values.progress / 100);
 
     const fullTaskData: Omit<Task, 'id' | 'userId'> = {
