@@ -28,6 +28,9 @@ export default function LoginPage() {
     if (error.code === "auth/popup-closed-by-user") {
         title = "Inicio de sesión cancelado";
         description = "Has cancelado el proceso de inicio de sesión.";
+    } else if (error.code === 'auth/unauthorized-domain') {
+        title = "Dominio no autorizado";
+        description = "Asegúrate de añadir 'localhost' a los dominios autorizados en la configuración de Firebase Authentication.";
     } else {
         console.error(error);
     }
