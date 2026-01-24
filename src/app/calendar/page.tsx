@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
 import { InteractiveCalendar } from "@/components/calendar/interactive-calendar";
 import { TaskForm } from "@/components/tasks/task-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Task } from "@/lib/types";
-import { format } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
 import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
+import { Button } from "@/components/ui/button";
 
 const TASK_LIMIT = 20;
 
@@ -20,9 +20,15 @@ export default function CalendarPage() {
   const { tasks: allTasks, lots, staff, isLoading, addTask } = useAppData();
   const { toast } = useToast();
 
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+
+  const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  const goToToday = () => setCurrentMonth(new Date());
+
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -65,10 +71,32 @@ export default function CalendarPage() {
   }
 
   return (
-    <div>
-      <PageHeader title="Calendario" />
-      <div>
-        <InteractiveCalendar tasks={allTasks || []} onDateSelect={handleDateSelect} />
+    <div className="flex flex-col h-full">
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground capitalize flex-1">
+          {format(currentMonth, "MMMM yyyy", { locale: es })}
+        </h1>
+        <div className="flex items-center gap-2">
+           <Button variant="outline" size="sm" onClick={goToToday}>
+            Hoy
+          </Button>
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={goToPreviousMonth}>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="sr-only">Mes anterior</span>
+          </Button>
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={goToNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+            <span className="sr-only">Mes siguiente</span>
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex-1 min-h-0">
+        <InteractiveCalendar 
+            tasks={allTasks || []} 
+            onDateSelect={handleDateSelect}
+            currentMonth={currentMonth}
+        />
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
