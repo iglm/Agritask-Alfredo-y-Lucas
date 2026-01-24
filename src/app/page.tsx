@@ -40,21 +40,25 @@ export default function DashboardPage() {
           title="Lotes Totales"
           value={totalLots}
           icon={<Tractor className="h-6 w-6 text-primary" />}
+          href="/lots"
         />
         <KpiCard
           title="Costo Planificado"
           value={`$${totalPlannedCost.toLocaleString()}`}
           icon={<DollarSign className="h-6 w-6 text-primary" />}
+          href="/tasks"
         />
         <KpiCard
           title="Costo Real"
           value={`$${totalActualCost.toLocaleString()}`}
           icon={<CheckSquare className="h-6 w-6 text-primary" />}
+          href="/tasks"
         />
         <KpiCard
           title="Eficiencia Prom."
           value={`${overallEfficiency.toFixed(1)}%`}
           icon={<Percent className="h-6 w-6 text-primary" />}
+          href="/tasks"
         />
       </div>
 
