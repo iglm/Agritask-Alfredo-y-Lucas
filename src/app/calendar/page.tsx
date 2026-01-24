@@ -65,9 +65,9 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div>
       <PageHeader title="Calendario" />
-      <div className="flex-grow">
+      <div>
         <InteractiveCalendar tasks={allTasks || []} onDateSelect={handleDateSelect} />
       </div>
 
