@@ -11,6 +11,7 @@ import {
   SidebarInset,
   SidebarTrigger,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,13 +24,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-const navItems = [
-  { href: '/', label: 'Panel', icon: LayoutDashboard },
+const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
+const managementNavItems = [
   { href: '/lots', label: 'Lotes', icon: Tractor },
   { href: '/staff', label: 'Personal', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
 ];
+const allNavItems = [mainNavItem, ...managementNavItems];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -54,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const currentPage = navItems.find(item => item.href === pathname || (item.href !== '/' && pathname.startsWith(item.href)));
+  const currentPage = [...managementNavItems, mainNavItem].find(item => pathname.startsWith(item.href));
 
   return (
     <SidebarProvider>
@@ -72,11 +74,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/'}
+                    tooltip={{ children: mainNavItem.label }}
+                  >
+                    <Link href={mainNavItem.href}>
+                      <mainNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{mainNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+            <SidebarMenu>
+              {managementNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                    <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={{ children: item.label }}
                   >
                     <Link href={item.href}>
