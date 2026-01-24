@@ -39,7 +39,7 @@ export default function CalendarPage() {
       await addTask(values);
       toast({
         title: "¡Labor creada!",
-        description: "La nueva labor ha sido agregada a tu agenda.",
+        description: "La nueva labor ha sido agregada a tu calendario.",
       });
       setIsDialogOpen(false);
     } catch (error: any) {
@@ -65,9 +65,11 @@ export default function CalendarPage() {
   }
 
   return (
-    <div>
-      <PageHeader title="Agenda Operativa" />
-      <InteractiveCalendar tasks={allTasks || []} onDateSelect={handleDateSelect} />
+    <div className="flex flex-col h-full">
+      <PageHeader title="Calendario" />
+      <div className="flex-grow">
+        <InteractiveCalendar tasks={allTasks || []} onDateSelect={handleDateSelect} />
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">

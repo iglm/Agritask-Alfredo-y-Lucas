@@ -28,7 +28,7 @@ const navItems = [
   { href: '/lots', label: 'Lotes', icon: Tractor },
   { href: '/staff', label: 'Personal', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
-  { href: '/calendar', label: 'Agenda', icon: Calendar },
+  { href: '/calendar', label: 'Calendario', icon: Calendar },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -144,14 +144,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="bg-muted/40">
+        <SidebarInset className="bg-muted/40 flex flex-col">
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold md:text-xl">
               {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'AgriTask')}
             </h1>
           </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6 flex flex-col">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>
