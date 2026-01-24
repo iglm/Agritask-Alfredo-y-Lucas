@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import type { Task } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import type { DayContentProps } from "react-day-picker";
@@ -13,22 +14,37 @@ type InteractiveCalendarProps = {
   onDateSelect: (date: Date | undefined) => void;
 };
 
-// A custom Day component to render tasks
+// Custom Day component to render tasks in a style similar to Google Calendar
 const DayWithTasks = (props: DayContentProps & { tasks: Task[] }) => {
-  const { date } = props;
+  const { date, activeModifiers } = props;
   const tasksForDay = props.tasks.filter(task => isSameDay(parseISO(task.date), date));
+  const isOutside = !!activeModifiers.outside;
 
   return (
-    <div className="flex flex-col h-full p-1.5 overflow-hidden">
-      <span className="self-end text-sm">{date.getDate()}</span>
-      <div className="flex-grow mt-1 space-y-1 -mx-1.5 px-1.5 overflow-y-auto">
-        {tasksForDay.slice(0, 3).map(task => (
-          <div key={task.id} className="bg-primary text-primary-foreground text-xs rounded p-1 truncate" title={task.type}>
+    <div className="flex flex-col h-full p-1 overflow-hidden">
+      <span className={cn(
+          "self-end text-sm w-7 h-7 flex items-center justify-center rounded-full mb-1", 
+          activeModifiers.today && "bg-primary text-primary-foreground"
+        )}>
+        {date.getDate()}
+      </span>
+      <div className="flex-grow space-y-1">
+        {tasksForDay.slice(0, 2).map(task => (
+           <div 
+            key={task.id} 
+            className={cn(
+              "text-xs rounded-md px-2 py-0.5 mx-0.5 truncate",
+              isOutside 
+                ? "bg-secondary text-secondary-foreground/50" 
+                : "bg-primary text-primary-foreground"
+            )}
+            title={task.type}
+          >
             {task.type}
           </div>
         ))}
-        {tasksForDay.length > 3 && (
-          <div className="text-xs text-muted-foreground mt-1">+ {tasksForDay.length - 3} más</div>
+        {tasksForDay.length > 2 && (
+          <div className="text-xs text-muted-foreground mt-1 mx-1">+ {tasksForDay.length - 2} más</div>
         )}
       </div>
     </div>
@@ -54,10 +70,10 @@ export function InteractiveCalendar({ tasks, onDateSelect }: InteractiveCalendar
             head_cell: 'flex-1 text-muted-foreground font-normal text-xs uppercase p-2 text-center',
             row: 'flex w-full flex-1',
             cell: 'flex-1 relative text-sm text-left align-top p-0 border-b border-r last:border-r-0',
-            day: 'size-full p-0 hover:bg-accent/50 transition-colors',
+            day: 'size-full p-0 hover:bg-accent/50 focus:bg-accent/50 transition-colors',
             day_selected: '!bg-accent !text-accent-foreground',
-            day_today: 'bg-accent',
-            day_outside: 'text-muted-foreground/30',
+            day_today: '', // Remove default today styling to handle it in DayWithTasks
+            day_outside: 'text-muted-foreground/50',
             caption: 'flex items-center justify-between px-4 py-2 border-b',
             caption_label: 'text-lg font-medium',
             nav: 'flex items-center gap-1',
