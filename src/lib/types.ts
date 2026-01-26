@@ -37,5 +37,25 @@ export type Task = {
   actualCost: number;
 };
 
+export type ProductiveUnit = {
+  id: string;
+  userId?: string;
+  farmName?: string;
+  country?: string;
+  department?: string;
+  municipality?: string;
+  vereda?: string;
+  shareGps?: boolean;
+  crop?: string;
+  variety?: string;
+  altitudeRange?: string;
+  averageTemperature?: number;
+  projectStartDate?: string;
+  totalFarmArea?: number;
+  cultivatedArea?: number;
+  sowingDensity?: number;
+  totalTrees?: number;
+};
+
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];

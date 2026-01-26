@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Cloud, WifiOff } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Cloud, WifiOff, Home } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
+const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
 const managementNavItems = [
   { href: '/lots', label: 'Lotes', icon: Tractor },
@@ -31,7 +32,7 @@ const managementNavItems = [
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
 ];
-const allNavItems = [mainNavItem, ...managementNavItems];
+const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -56,7 +57,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const currentPage = [...managementNavItems, mainNavItem].find(item => pathname.startsWith(item.href));
+  const currentPage = allNavItems.find(item => {
+    if (item.href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(item.href);
+  });
+
 
   return (
     <SidebarProvider>
@@ -73,6 +80,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </SidebarHeader>
           <SidebarContent>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(productiveUnitNavItem.href)}
+                    tooltip={{ children: productiveUnitNavItem.label }}
+                  >
+                    <Link href={productiveUnitNavItem.href}>
+                      <productiveUnitNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{productiveUnitNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
             <SidebarMenu>
                 <SidebarMenuItem>
                    <SidebarMenuButton
