@@ -52,7 +52,7 @@ export function InteractiveCalendar({ tasks, onDateSelect, currentMonth }: Inter
     return tasks
       .filter(task => {
         // Handle timezone issues by treating date string as local
-        const taskDate = new Date(task.date);
+        const taskDate = new Date(task.startDate);
         const taskDateLocal = new Date(taskDate.valueOf() + taskDate.getTimezoneOffset() * 60 * 1000);
         return format(taskDateLocal, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
       })

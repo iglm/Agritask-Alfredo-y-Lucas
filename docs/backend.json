@@ -62,6 +62,19 @@
         "technicalNotes": {
           "type": "string",
           "description": "Technical notes about the lot."
+        },
+        "sowingDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Fecha de siembra del lote."
+        },
+        "sowingDensity": {
+          "type": "number",
+          "description": "Densidad de siembra del lote."
+        },
+        "totalTrees": {
+          "type": "number",
+          "description": "Número total de árboles en el lote."
         }
       },
       "required": [
@@ -139,10 +152,25 @@
           "type": "string",
           "description": "Reference to Staff. (Relationship: Staff 1:N Task)"
         },
-        "date": {
+        "startDate": {
           "type": "string",
-          "description": "Date of the task.",
+          "description": "Fecha de inicio de la labor.",
           "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Fecha de finalización de la labor.",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "description": "Estado de cumplimiento de la labor.",
+          "enum": [
+            "Por realizar",
+            "En Proceso",
+            "Pendiente",
+            "Finalizado"
+          ]
         },
         "plannedJournals": {
           "type": "number",
@@ -159,6 +187,14 @@
         "actualCost": {
           "type": "number",
           "description": "Calculated actual cost based on progress."
+        },
+        "downtimeMinutes": {
+          "type": "number",
+          "description": "Tiempo de inactividad de la labor en minutos."
+        },
+        "observations": {
+          "type": "string",
+          "description": "Observaciones adicionales sobre la labor."
         }
       },
       "required": [
@@ -166,9 +202,10 @@
         "lotId",
         "category",
         "responsibleId",
-        "date",
-        "plannedJournals",
+        "startDate",
+        "status",
         "progress",
+        "plannedJournals",
         "plannedCost",
         "actualCost"
       ]

@@ -12,6 +12,9 @@ export type Lot = {
   areaHectares: number;
   location: string;
   technicalNotes?: string;
+  sowingDate?: string;
+  sowingDensity?: number;
+  totalTrees?: number;
 };
 
 export type Staff = {
@@ -30,11 +33,15 @@ export type Task = {
   category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
   type: string;
   responsibleId: string;
-  date: string;
-  plannedJournals: number;
+  startDate: string;
+  endDate?: string;
+  status: 'Por realizar' | 'En Proceso' | 'Pendiente' | 'Finalizado';
   progress: number;
+  plannedJournals: number;
   plannedCost: number;
   actualCost: number;
+  downtimeMinutes?: number;
+  observations?: string;
 };
 
 export type ProductiveUnit = {
@@ -59,3 +66,4 @@ export type ProductiveUnit = {
 
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
+export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];

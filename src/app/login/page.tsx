@@ -66,12 +66,12 @@ export default function LoginPage() {
             <div className="p-2.5 rounded-lg bg-primary mb-4">
                 <Tractor className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl font-bold text-primary">AgriTask</h1>
+            <h1 className="text-3xl font-bold text-primary">Optimizador de Labores</h1>
         </div>
         
         <Card className="text-center">
             <CardHeader>
-                <CardTitle>Bienvenido a AgriTask</CardTitle>
+                <CardTitle>Bienvenido</CardTitle>
                 <CardDescription>Inicia sesión o continúa en modo local.</CardDescription>
             </CardHeader>
             <CardContent>

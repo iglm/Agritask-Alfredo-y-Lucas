@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, Trees } from "lucide-react";
 import { Lot } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -21,8 +21,9 @@ export function LotsTable({ lots, onEdit, onDelete, onAdd }: LotsTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead className="hidden sm:table-cell">Ubicación</TableHead>
-              <TableHead className="text-right">Área (Ha)</TableHead>
+              <TableHead className="hidden md:table-cell">Ubicación</TableHead>
+              <TableHead className="hidden sm:table-cell text-right">Área (Ha)</TableHead>
+              <TableHead className="text-right"># Árboles</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -31,8 +32,9 @@ export function LotsTable({ lots, onEdit, onDelete, onAdd }: LotsTableProps) {
               lots.map((lot) => (
                 <TableRow key={lot.id}>
                   <TableCell className="font-medium">{lot.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-muted-foreground">{lot.location}</TableCell>
-                  <TableCell className="text-right">{lot.areaHectares}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-right">{lot.areaHectares}</TableCell>
+                  <TableCell className="text-right">{lot.totalTrees || 0}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -57,7 +59,7 @@ export function LotsTable({ lots, onEdit, onDelete, onAdd }: LotsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="p-0 h-96">
+                <TableCell colSpan={5} className="p-0 h-96">
                   <EmptyState
                     icon={<Tractor className="h-10 w-10" />}
                     title="Crea tu primer lote"

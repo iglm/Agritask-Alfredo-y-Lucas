@@ -58,8 +58,8 @@ export default function CalendarPage() {
   };
 
   const taskForForm = selectedDate ? {
-    date: selectedDate,
-    progress: 0,
+    startDate: selectedDate.toISOString(),
+    status: 'Por realizar',
   } : undefined;
 
   if (isLoading) {

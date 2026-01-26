@@ -7,7 +7,7 @@ import { AuthProvider } from '@/components/auth/auth-provider';
 import { DataProvider } from '@/firebase/data-provider';
 
 export const metadata: Metadata = {
-  title: 'AgriTask',
+  title: 'Optimizador de Labores Agrícolas',
   description: 'Un ERP agrícola para optimizar la gestión de fincas.',
 };
 

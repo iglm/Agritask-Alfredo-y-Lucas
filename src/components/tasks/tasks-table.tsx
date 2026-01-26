@@ -1,12 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, CheckSquare, PlusCircle } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, CheckSquare, PlusCircle, CircleDashed, Hourglass, CheckCircle2, CircleX } from "lucide-react";
 import { Task, Lot, Staff } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
+import { cn } from "@/lib/utils";
 
 type TasksTableProps = {
   tasks: Task[];
@@ -15,6 +16,24 @@ type TasksTableProps = {
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
   onAdd: () => void;
+};
+
+const StatusBadge = ({ status }: { status: Task['status'] }) => {
+  const statusConfig = {
+    'Finalizado': { icon: <CheckCircle2 />, className: 'bg-green-100 text-green-800 border-green-200' },
+    'En Proceso': { icon: <Hourglass />, className: 'bg-blue-100 text-blue-800 border-blue-200' },
+    'Pendiente': { icon: <CircleDashed />, className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    'Por realizar': { icon: <CircleX />, className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  };
+
+  const config = statusConfig[status] || statusConfig['Por realizar'];
+
+  return (
+    <Badge variant="outline" className={cn("gap-1.5", config.className)}>
+      {React.cloneElement(config.icon, {className: 'h-3 w-3'})}
+      {status}
+    </Badge>
+  )
 };
 
 export function TasksTable({ tasks, lots, staff, onEdit, onDelete, onAdd }: TasksTableProps) {
@@ -30,8 +49,7 @@ export function TasksTable({ tasks, lots, staff, onEdit, onDelete, onAdd }: Task
               <TableHead>Labor</TableHead>
               <TableHead className="hidden lg:table-cell">Lote</TableHead>
               <TableHead className="hidden lg:table-cell">Responsable</TableHead>
-              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
-              <TableHead>Progreso</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead className="text-right hidden md:table-cell">Costo (Real/Plan.)</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
@@ -43,14 +61,8 @@ export function TasksTable({ tasks, lots, staff, onEdit, onDelete, onAdd }: Task
                   <TableCell className="font-medium">{task.type}</TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{getLotName(task.lotId)}</TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{getStaffName(task.responsibleId)}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="secondary">{task.category}</Badge>
-                  </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={task.progress} className="w-20" />
-                      <span className="text-xs text-muted-foreground">{task.progress}%</span>
-                    </div>
+                    <StatusBadge status={task.status} />
                   </TableCell>
                   <TableCell className="text-right hidden md:table-cell">
                     ${task.actualCost.toFixed(0)} / <span className="text-muted-foreground">${task.plannedCost.toFixed(0)}</span>
@@ -79,7 +91,7 @@ export function TasksTable({ tasks, lots, staff, onEdit, onDelete, onAdd }: Task
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-96 p-0">
+                <TableCell colSpan={6} className="h-96 p-0">
                    <EmptyState
                     icon={<CheckSquare className="h-10 w-10" />}
                     title="Programa tu primera labor"

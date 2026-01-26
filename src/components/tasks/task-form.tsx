@@ -4,13 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { taskCategories, type Task, type Lot, type Staff } from "@/lib/types"
+import { Textarea } from "@/components/ui/textarea"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
@@ -21,9 +21,12 @@ const taskFormSchema = z.object({
   lotId: z.string({ required_error: "Por favor selecciona un lote." }).min(1, "Por favor selecciona un lote."),
   responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }).min(1, "Por favor selecciona un responsable."),
   category: z.enum(taskCategories),
-  date: z.date({ required_error: "La fecha es obligatoria." }),
+  startDate: z.date({ required_error: "La fecha de inicio es obligatoria." }),
+  endDate: z.date().optional(),
+  status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
-  progress: z.number().min(0).max(100),
+  downtimeMinutes: z.coerce.number().optional(),
+  observations: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>
@@ -40,9 +43,12 @@ const defaultFormValues: TaskFormValues = {
     lotId: "",
     responsibleId: "",
     category: "Mantenimiento",
-    date: new Date(),
+    startDate: new Date(),
+    endDate: undefined,
+    status: 'Por realizar',
     plannedJournals: 0,
-    progress: 0,
+    downtimeMinutes: 0,
+    observations: "",
 };
 
 export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
@@ -51,11 +57,10 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
     defaultValues: {
       ...defaultFormValues,
       ...task,
-      date: task?.date ? new Date(task.date) : new Date(),
+      startDate: task?.startDate ? new Date(task.startDate) : new Date(),
+      endDate: task?.endDate ? new Date(task.endDate) : undefined,
     }
   });
-  
-  const progressValue = form.watch('progress');
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
@@ -64,22 +69,33 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
         return;
     };
 
+    let progress: number;
+    switch (values.status) {
+        case 'Finalizado':
+            progress = 100;
+            break;
+        case 'En Proceso':
+            progress = 50; // Default progress for "En Proceso"
+            break;
+        default:
+            progress = 0;
+            break;
+    }
+    
     let plannedCost: number;
-
-    // If we are editing and the core cost factors (journals, responsible) haven't changed,
-    // use the original plannedCost to avoid overwriting it with new staff rates.
-    // Otherwise, recalculate it.
     if (task?.id && task.plannedJournals === values.plannedJournals && task.responsibleId === values.responsibleId && typeof task.plannedCost === 'number') {
         plannedCost = task.plannedCost;
     } else {
         plannedCost = values.plannedJournals * responsible.baseDailyRate;
     }
 
-    const actualCost = plannedCost * (values.progress / 100);
+    const actualCost = plannedCost * (progress / 100);
 
     const fullTaskData: Omit<Task, 'id' | 'userId'> = {
       ...values,
-      date: format(values.date, 'yyyy-MM-dd'),
+      startDate: format(values.startDate, 'yyyy-MM-dd'),
+      endDate: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : undefined,
+      progress,
       plannedCost,
       actualCost,
     };
@@ -124,7 +140,7 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
             name="responsibleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Responsable</FormLabel>
+                <FormLabel>Responsable(s)</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una persona" /></SelectTrigger></FormControl>
                   <SelectContent><SelectContent>
@@ -151,12 +167,53 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
               </FormItem>
             )}
           />
-          <FormField
+           <FormField
             control={form.control}
-            name="date"
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cumplimiento</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un estado" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {taskStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <FormField
+            control={form.control}
+            name="startDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Fecha</FormLabel>
+                <FormLabel>Fecha Inicio</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Fecha Finalización</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -175,28 +232,44 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
             )}
           />
         </div>
-        <FormField
-            control={form.control}
-            name="plannedJournals"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Jornales Planificados</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        <FormField
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+              control={form.control}
+              name="plannedJournals"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Jornales Planificados</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="downtimeMinutes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tiempo Inactividad (minutos)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+         <FormField
           control={form.control}
-          name="progress"
+          name="observations"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Progreso - {progressValue}%</FormLabel>
+              <FormLabel>Observaciones</FormLabel>
               <FormControl>
-                <Slider defaultValue={[field.value]} min={0} max={100} step={5} onValueChange={(value) => field.onChange(value[0])} />
+                <Textarea placeholder="Ej: Llovió durante 2 horas, se retrasó la labor..." {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

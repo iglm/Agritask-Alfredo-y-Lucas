@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Tractor className="h-6 w-6 text-primary-foreground" />
               </div>
               <h1 className="text-xl font-headline font-semibold text-primary group-data-[collapsible=icon]:hidden">
-                AgriTask
+                Optimizador de Labores
               </h1>
             </Link>
           </SidebarHeader>
@@ -187,7 +187,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold md:text-xl">
-              {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'AgriTask')}
+              {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'Optimizador de Labores')}
             </h1>
           </header>
           <main className="flex-1 p-4 sm:p-6 flex flex-col">{children}</main>
