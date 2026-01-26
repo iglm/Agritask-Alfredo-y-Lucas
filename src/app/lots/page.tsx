@@ -19,7 +19,7 @@ const LOT_LIMIT = 1;
 
 export default function LotsPage() {
   const { profile } = useUser();
-  const { lots: allLots, isLoading, addLot, updateLot, deleteLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot } = useAppData();
   const { toast } = useToast();
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -150,7 +150,7 @@ export default function LotsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <LotsTable lots={filteredLots} onEdit={handleEditLot} onDelete={handleDeleteRequest} onAdd={handleAddLot} />
+        <LotsTable lots={filteredLots} tasks={allTasks || []} onEdit={handleEditLot} onDelete={handleDeleteRequest} onAdd={handleAddLot} />
       )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
