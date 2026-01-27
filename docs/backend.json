@@ -87,6 +87,53 @@
         "areaHectares"
       ]
     },
+    "SubLot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SubLot",
+      "type": "object",
+      "description": "Represents a sub-division of a lot with its own specific attributes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SubLot entity."
+        },
+        "lotId": {
+          "type": "string",
+          "description": "The ID of the parent Lot."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the sub-lot."
+        },
+        "sowingDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional sowing date for the sub-lot."
+        },
+        "sowingDensity": {
+          "type": "number",
+          "description": "Sowing density of the sub-lot (trees per hectare)."
+        },
+        "areaHectares": {
+          "type": "number",
+          "description": "Area of the sub-lot in hectares."
+        },
+        "totalTrees": {
+          "type": "number",
+          "description": "Total number of trees in the sub-lot."
+        },
+        "technicalNotes": {
+          "type": "string",
+          "description": "Technical notes about the sub-lot."
+        }
+      },
+      "required": [
+        "id",
+        "lotId",
+        "name",
+        "areaHectares"
+      ]
+    },
     "Staff": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Staff",
@@ -326,6 +373,26 @@
         }
       },
       {
+        "path": "/lots/{lotId}/sublots/{sublotId}",
+        "definition": {
+          "entityName": "SubLot",
+          "schema": {
+            "$ref": "#/backend/entities/SubLot"
+          },
+          "description": "Collection for storing SubLot entities within a specific Lot. Each document represents a sub-division of a lot.",
+          "params": [
+            {
+              "name": "lotId",
+              "description": "The parent lot's unique ID."
+            },
+            {
+              "name": "sublotId",
+              "description": "Unique identifier for the sub-lot."
+            }
+          ]
+        }
+      },
+      {
         "path": "/staff/{staffId}",
         "definition": {
           "entityName": "Staff",
@@ -377,3 +444,5 @@
     "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information and subscription status, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design directly supports the business requirement of a paid application on the Play Store by providing clear data ownership and the necessary hooks for subscription management."
   }
 }
+
+    
