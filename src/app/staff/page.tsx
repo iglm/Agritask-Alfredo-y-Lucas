@@ -84,6 +84,20 @@ export default function StaffPage() {
 
   const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
     try {
+      const isDuplicated = (allStaff || []).some(s => 
+        s.id !== editingStaff?.id &&
+        (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
+      );
+
+      if (isDuplicated) {
+        toast({
+          variant: "destructive",
+          title: "Personal duplicado",
+          description: "Ya existe un miembro del personal con este nombre o contacto.",
+        });
+        return;
+      }
+      
       if (editingStaff) {
         await updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
         toast({

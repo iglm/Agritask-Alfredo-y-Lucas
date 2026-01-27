@@ -70,7 +70,11 @@
         },
         "sowingDensity": {
           "type": "number",
-          "description": "Densidad de siembra del lote."
+          "description": "Densidad de siembra del lote (árboles por hectárea)."
+        },
+        "sowingDistance": {
+          "type": "number",
+          "description": "Distancia de siembra entre plantas en metros."
         },
         "totalTrees": {
           "type": "number",
@@ -80,8 +84,7 @@
       "required": [
         "id",
         "name",
-        "areaHectares",
-        "location"
+        "areaHectares"
       ]
     },
     "Staff": {
@@ -160,6 +163,11 @@
         "endDate": {
           "type": "string",
           "description": "Fecha de finalización de la labor.",
+          "format": "date"
+        },
+        "reentryDate": {
+          "type": "string",
+          "description": "Fecha de reingreso para la labor en el mismo lote.",
           "format": "date"
         },
         "status": {

@@ -10,10 +10,11 @@ export type Lot = {
   userId?: string;
   name: string;
   areaHectares: number;
-  location: string;
+  location?: string;
   technicalNotes?: string;
   sowingDate?: string;
   sowingDensity?: number;
+  sowingDistance?: number;
   totalTrees?: number;
 };
 
@@ -35,6 +36,7 @@ export type Task = {
   responsibleId: string;
   startDate: string;
   endDate?: string;
+  reentryDate?: string;
   status: 'Por realizar' | 'En Proceso' | 'Pendiente' | 'Finalizado';
   progress: number;
   plannedJournals: number;

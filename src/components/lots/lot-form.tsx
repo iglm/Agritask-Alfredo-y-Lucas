@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Lot } from "@/lib/types"
@@ -18,14 +18,23 @@ import { Calendar } from "../ui/calendar"
 const lotFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
-  location: z.string().min(2, { message: "La ubicación es obligatoria." }),
+  location: z.string().optional(),
   sowingDate: z.date().optional(),
   sowingDensity: z.coerce.number().optional(),
+  sowingDistance: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
+}).refine(data => {
+    if (data.totalTrees && data.areaHectares && data.sowingDensity) {
+        return data.totalTrees <= data.areaHectares * data.sowingDensity;
+    }
+    return true;
+}, {
+    message: "El número de árboles excede la capacidad del lote según la densidad de siembra.",
+    path: ["totalTrees"],
 });
 
-type LotFormValues = z.infer<typeof lotFormSchema> & {sowingDate?: string};
+type LotFormValues = z.infer<typeof lotFormSchema>;
 
 type LotFormProps = {
   lot?: Lot;
@@ -56,7 +65,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 max-h-[80vh] overflow-y-auto pr-4">
         <FormField
           control={form.control}
           name="name"
@@ -89,7 +98,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Ubicación</FormLabel>
+                <FormLabel>Ubicación (Opcional)</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Vereda El Placer" {...field} />
                 </FormControl>
@@ -127,7 +136,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
             name="sowingDensity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Densidad de Siembra</FormLabel>
+                <FormLabel>Densidad Siembra</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="árboles/Ha" {...field} />
                 </FormControl>
@@ -135,20 +144,34 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
               </FormItem>
             )}
           />
-           <FormField
+          <FormField
             control={form.control}
-            name="totalTrees"
+            name="sowingDistance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel># Árboles del Lote</FormLabel>
+                <FormLabel>Distancia Siembra (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input type="number" placeholder="e.g., 3" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="totalTrees"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel># Árboles del Lote</FormLabel>
+              <FormControl>
+                <Input type="number" {...field} />
+              </FormControl>
+              <FormDescription>Debe ser menor o igual que (Área * Densidad).</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="technicalNotes"

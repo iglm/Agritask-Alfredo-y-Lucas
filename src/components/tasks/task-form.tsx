@@ -23,6 +23,7 @@ const taskFormSchema = z.object({
   category: z.enum(taskCategories),
   startDate: z.date({ required_error: "La fecha de inicio es obligatoria." }),
   endDate: z.date().optional(),
+  reentryDate: z.date().optional(),
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
   downtimeMinutes: z.coerce.number().optional(),
@@ -38,13 +39,14 @@ type TaskFormProps = {
   staff: Staff[];
 };
 
-const defaultFormValues: TaskFormValues = {
+const defaultFormValues: Partial<TaskFormValues> = {
     type: "",
     lotId: "",
     responsibleId: "",
     category: "Mantenimiento",
     startDate: new Date(),
     endDate: undefined,
+    reentryDate: undefined,
     status: 'Por realizar',
     plannedJournals: 0,
     downtimeMinutes: 0,
@@ -59,6 +61,7 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
       ...task,
       startDate: task?.startDate ? new Date(task.startDate) : new Date(),
       endDate: task?.endDate ? new Date(task.endDate) : undefined,
+      reentryDate: task?.reentryDate ? new Date(task.reentryDate) : undefined,
     }
   });
 
@@ -95,6 +98,7 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
       ...values,
       startDate: format(values.startDate, 'yyyy-MM-dd'),
       endDate: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : undefined,
+      reentryDate: values.reentryDate ? format(values.reentryDate, 'yyyy-MM-dd') : undefined,
       progress,
       plannedCost,
       actualCost,
@@ -232,6 +236,29 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
             )}
           />
         </div>
+        <FormField
+            control={form.control}
+            name="reentryDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Fecha Reingreso (Opcional)</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
               control={form.control}

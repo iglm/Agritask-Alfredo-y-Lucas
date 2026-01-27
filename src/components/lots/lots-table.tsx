@@ -24,6 +24,7 @@ export function LotsTable({ lots, tasks, onEdit, onDelete, onAdd }: LotsTablePro
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead className="hidden md:table-cell">Ubicación</TableHead>
+              <TableHead className="hidden md:table-cell">Fecha siembra</TableHead>
               <TableHead>Progreso</TableHead>
               <TableHead className="hidden sm:table-cell text-right">Área (Ha)</TableHead>
               <TableHead className="text-right"># Árboles</TableHead>
@@ -41,7 +42,10 @@ export function LotsTable({ lots, tasks, onEdit, onDelete, onAdd }: LotsTablePro
                 return (
                   <TableRow key={lot.id}>
                     <TableCell className="font-medium">{lot.name}</TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
+                     <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {lot.sowingDate ? new Date(lot.sowingDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric'}) : 'N/A'}
+                    </TableCell>
                     <TableCell>
                         <div className="flex items-center gap-2">
                            <Progress value={averageProgress} className="h-2 flex-1 bg-secondary" />
@@ -75,7 +79,7 @@ export function LotsTable({ lots, tasks, onEdit, onDelete, onAdd }: LotsTablePro
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="p-0 h-96">
+                <TableCell colSpan={7} className="p-0 h-96">
                   <EmptyState
                     icon={<Tractor className="h-10 w-10" />}
                     title="Crea tu primer lote"

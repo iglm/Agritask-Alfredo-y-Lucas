@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { LotsTable } from "@/components/lots/lots-table";
 import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
@@ -14,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
+import { Input } from "@/components/ui/input";
 
 const LOT_LIMIT = 1;
 
@@ -28,22 +28,16 @@ export default function LotsPage() {
   const [lotToDelete, setLotToDelete] = useState<Lot | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
-
-  const locations = [...new Set((allLots || []).map((lot) => lot.location))];
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (allLots) {
-      setFilteredLots(allLots);
+      const filtered = (allLots || []).filter(lot => 
+        lot.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredLots(filtered);
     }
-  }, [allLots]);
-
-  const handleFilterByLocation = (location: string) => {
-    if (location === "all") {
-      setFilteredLots(allLots || []);
-    } else {
-      setFilteredLots((allLots || []).filter((lot) => lot.location === location));
-    }
-  };
+  }, [allLots, searchTerm]);
 
   const handleAddLot = () => {
     if (profile?.subscription === 'free' && allLots && allLots.length >= LOT_LIMIT) {
@@ -105,7 +99,7 @@ export default function LotsPage() {
       toast({
         variant: "destructive",
         title: "Uh oh! Algo salió mal.",
-        description: "No se pudo guardar el lote. Por favor, inténtalo de nuevo.",
+        description: error.message || "No se pudo guardar el lote. Por favor, inténtalo de nuevo.",
       });
     }
   };
@@ -125,17 +119,12 @@ export default function LotsPage() {
     <div>
       <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Nuevo Lote" onActionButtonClick={handleAddLot}>
         <div className="flex items-center gap-2">
-            <Select onValueChange={handleFilterByLocation} defaultValue="all">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por ubicación" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las ubicaciones</SelectItem>
-                {locations.map((location) => (
-                  <SelectItem key={location} value={location}>{location}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input 
+              placeholder="Buscar por nombre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[200px]"
+            />
             <Button variant="outline" size="sm" onClick={() => alert('La importación desde Google Sheets es una función planificada.')}>
               <Upload className="mr-2 h-4 w-4" /> Importar
             </Button>
