@@ -63,6 +63,7 @@ export type ProductiveUnit = {
   totalFarmArea?: number;
   cultivatedArea?: number;
   sowingDensity?: number;
+  sowingDistance?: number;
   totalTrees?: number;
 };
 

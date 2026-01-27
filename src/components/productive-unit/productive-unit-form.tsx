@@ -25,6 +25,7 @@ const formSchema = z.object({
   totalFarmArea: z.coerce.number().optional(),
   cultivatedArea: z.coerce.number().optional(),
   sowingDensity: z.coerce.number().optional(),
+  sowingDistance: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
 });
 
@@ -53,6 +54,7 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       totalFarmArea: productiveUnit?.totalFarmArea || undefined,
       cultivatedArea: productiveUnit?.cultivatedArea || undefined,
       sowingDensity: productiveUnit?.sowingDensity || undefined,
+      sowingDistance: productiveUnit?.sowingDistance || undefined,
       totalTrees: productiveUnit?.totalTrees || undefined,
     },
   });
@@ -125,12 +127,15 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
             )} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormField control={form.control} name="sowingDensity" render={({ field }) => (
-                <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Densidad siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+             <FormField control={form.control} name="sowingDistance" render={({ field }) => (
+                <FormItem><FormLabel>Distancia Siembra (m)</FormLabel><FormControl><Input type="number" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="totalTrees" render={({ field }) => (
-                <FormItem><FormLabel>Número total de árboles</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Total de árboles</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
         </div>
 
