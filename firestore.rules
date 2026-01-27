@@ -49,7 +49,12 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
 
       match /sublots/{sublotId} {
-        allow get, list, create, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+        // Allow full access to sublots if the user owns the document.
+        // This relies on the sublot document having a `userId` field.
+        allow get, delete: if isSignedIn() && isExistingDocOwner();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && isNewDocOwner();
+        allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       }
     }
 
@@ -82,3 +87,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

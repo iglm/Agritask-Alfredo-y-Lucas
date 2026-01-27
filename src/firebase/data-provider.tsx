@@ -2,8 +2,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, getDocs, limit, writeBatch } from 'firebase/firestore';
-import { Lot, Staff, Task, ProductiveUnit } from '@/lib/types';
-import { getLocalItems, addLocalItem, updateLocalItem, deleteLocalItem, clearLocalCollection } from '@/lib/offline-store';
+import { Lot, Staff, Task, ProductiveUnit, SubLot } from '@/lib/types';
+import { getLocalItems, addLocalItem, updateLocalItem, deleteLocalItem, clearLocalCollection, saveLocalItems } from '@/lib/offline-store';
 import { useToast } from '@/hooks/use-toast';
 import { User } from 'firebase/auth';
 
@@ -16,6 +16,9 @@ interface DataContextState {
   addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
   updateLot: (data: Lot) => Promise<void>;
   deleteLot: (id: string) => Promise<void>;
+  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => Promise<void>;
+  updateSubLot: (subLot: SubLot) => Promise<void>;
+  deleteSubLot: (lotId: string, subLotId: string) => Promise<void>;
   addStaff: (data: Omit<Staff, 'id' | 'userId'>) => Promise<void>;
   updateStaff: (data: Staff) => Promise<void>;
   deleteStaff: (id: string) => Promise<void>;
@@ -27,7 +30,7 @@ interface DataContextState {
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
 
-async function syncLocalDataToFirebase(user: User, firestore: Firestore): Promise<number> {
+async function syncLocalDataToFirebase(user: User, firestore: any): Promise<number> {
   if (!user || !firestore) return 0;
   
   const idMap = new Map<string, string>();
@@ -207,6 +210,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { addItem: addStaff, updateItem: updateStaff, deleteItem: deleteStaff } = createMutations<Staff>('staff', setLocalStaff);
   const { addItem: addTask, updateItem: updateTask, deleteItem: deleteTask } = createMutations<Task>('tasks', setLocalTasks);
 
+  const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+    if (user && firestore) {
+      const subLotRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
+      await setDoc(subLotRef, { ...data, id: subLotRef.id, userId: user.uid, lotId });
+    } else {
+      // Offline support for sub-lots is more complex and not implemented in this pass.
+      toast({ variant: 'destructive', title: 'Funcionalidad no disponible sin conexión' });
+    }
+  };
+
+  const updateSubLot = async (subLot: SubLot) => {
+    if (user && firestore) {
+      const subLotRef = doc(firestore, 'lots', subLot.lotId, 'sublots', subLot.id);
+      await setDoc(subLotRef, subLot, { merge: true });
+    } else {
+      toast({ variant: 'destructive', title: 'Funcionalidad no disponible sin conexión' });
+    }
+  };
+
+  const deleteSubLot = async (lotId: string, subLotId: string) => {
+    if (user && firestore) {
+      await deleteDoc(doc(firestore, 'lots', lotId, 'sublots', subLotId));
+    } else {
+      toast({ variant: 'destructive', title: 'Funcionalidad no disponible sin conexión' });
+    }
+  };
+
   const updateProductiveUnit = async (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => {
     if (user && firestore) {
       if (firestoreProductiveUnit) {
@@ -233,6 +263,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     productiveUnit: user ? firestoreProductiveUnit : localProductiveUnit,
     isLoading,
     addLot, updateLot, deleteLot,
+    addSubLot, updateSubLot, deleteSubLot,
     addStaff, updateStaff, deleteStaff,
     addTask, updateTask, deleteTask,
     updateProductiveUnit,
@@ -248,3 +279,5 @@ export const useAppData = () => {
   }
   return context;
 };
+
+    

@@ -18,6 +18,18 @@ export type Lot = {
   totalTrees?: number;
 };
 
+export type SubLot = {
+  id: string;
+  userId: string;
+  lotId: string;
+  name: string;
+  areaHectares: number;
+  sowingDate?: string;
+  sowingDensity?: number;
+  totalTrees?: number;
+  technicalNotes?: string;
+};
+
 export type Staff = {
   id: string;
   userId?: string;
@@ -70,3 +82,5 @@ export type ProductiveUnit = {
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
+
+    

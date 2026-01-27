@@ -16,7 +16,7 @@ export function getLocalItems<T>(collectionName: 'lots' | 'staff' | 'tasks' | 'p
   }
 }
 
-function saveLocalItems<T>(collectionName: 'lots' | 'staff' | 'tasks' | 'productiveUnit', items: T[]): void {
+export function saveLocalItems<T>(collectionName: 'lots' | 'staff' | 'tasks' | 'productiveUnit', items: T[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`agritask_${collectionName}`, JSON.stringify(items));

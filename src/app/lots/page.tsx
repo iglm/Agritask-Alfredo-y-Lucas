@@ -7,26 +7,36 @@ import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
-import { Lot } from "@/lib/types";
+import { Lot, SubLot } from "@/lib/types";
 import { useUser, useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 import { Input } from "@/components/ui/input";
+import { SubLotForm } from "@/components/lots/sub-lot-form";
 
 const LOT_LIMIT = 1;
 
 export default function LotsPage() {
   const { profile } = useUser();
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
   const { toast } = useToast();
   
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
+  const [isSubLotSheetOpen, setIsSubLotSheetOpen] = useState(false);
   const [filteredLots, setFilteredLots] = useState<Lot[]>([]);
+  
   const [editingLot, setEditingLot] = useState<Lot | undefined>(undefined);
+  const [editingSubLot, setEditingSubLot] = useState<SubLot | undefined>(undefined);
+  const [currentLot, setCurrentLot] = useState<Lot | undefined>(undefined); // To know which lot to add the sublot to
+
   const [lotToDelete, setLotToDelete] = useState<Lot | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [subLotToDelete, setSubLotToDelete] = useState<{lotId: string, subLotId: string, name: string} | null>(null);
+
+  const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
+  const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
+
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -39,26 +49,27 @@ export default function LotsPage() {
     }
   }, [allLots, searchTerm]);
 
+  // --- Lot Handlers ---
   const handleAddLot = () => {
     if (profile?.subscription === 'free' && allLots && allLots.length >= LOT_LIMIT) {
       setIsUpgradeDialogOpen(true);
     } else {
       setEditingLot(undefined);
-      setIsSheetOpen(true);
+      setIsLotSheetOpen(true);
     }
   };
   
   const handleEditLot = (lot: Lot) => {
     setEditingLot(lot);
-    setIsSheetOpen(true);
+    setIsLotSheetOpen(true);
   }
 
-  const handleDeleteRequest = (lot: Lot) => {
+  const handleDeleteLotRequest = (lot: Lot) => {
     setLotToDelete(lot);
-    setIsDeleteDialogOpen(true);
+    setIsLotDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDeleteLot = async () => {
     if (!lotToDelete) return;
     try {
       await deleteLot(lotToDelete.id);
@@ -73,12 +84,12 @@ export default function LotsPage() {
         description: "No se pudo eliminar el lote. Inténtalo de nuevo.",
       });
     } finally {
-      setIsDeleteDialogOpen(false);
+      setIsLotDeleteDialogOpen(false);
       setLotToDelete(null);
     }
   };
 
-  const handleFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
+  const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
     try {
       if (editingLot) {
         await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
@@ -93,7 +104,7 @@ export default function LotsPage() {
           description: "El nuevo lote ha sido agregado a tu lista.",
         });
       }
-      setIsSheetOpen(false);
+      setIsLotSheetOpen(false);
       setEditingLot(undefined);
     } catch (error: any) {
       toast({
@@ -103,6 +114,75 @@ export default function LotsPage() {
       });
     }
   };
+  
+  // --- SubLot Handlers ---
+
+  const handleAddSubLot = (lot: Lot) => {
+    setCurrentLot(lot);
+    setEditingSubLot(undefined);
+    setIsSubLotSheetOpen(true);
+  }
+
+  const handleEditSubLot = (subLot: SubLot) => {
+    const parentLot = allLots?.find(l => l.id === subLot.lotId);
+    setCurrentLot(parentLot);
+    setEditingSubLot(subLot);
+    setIsSubLotSheetOpen(true);
+  }
+
+  const handleDeleteSubLotRequest = (lotId: string, subLotId: string, name: string) => {
+    setSubLotToDelete({ lotId, subLotId, name });
+    setIsSubLotDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteSubLot = async () => {
+    if (!subLotToDelete) return;
+    try {
+      await deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
+      toast({
+        title: "Sub-lote eliminado",
+        description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el sub-lote. Inténtalo de nuevo.",
+      });
+    } finally {
+      setIsSubLotDeleteDialogOpen(false);
+      setSubLotToDelete(null);
+    }
+  };
+  
+  const handleSubLotFormSubmit = async (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+    if (!currentLot) return;
+    try {
+      if (editingSubLot) {
+        await updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+        toast({
+          title: "¡Sub-lote actualizado!",
+          description: "Los detalles del sub-lote han sido actualizados.",
+        });
+      } else {
+        await addSubLot(currentLot.id, values);
+        toast({
+          title: "¡Sub-lote creado!",
+          description: "El nuevo sub-lote ha sido agregado.",
+        });
+      }
+      setIsSubLotSheetOpen(false);
+      setEditingSubLot(undefined);
+      setCurrentLot(undefined);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Algo salió mal.",
+        description: error.message || "No se pudo guardar el sub-lote. Por favor, inténtalo de nuevo.",
+      });
+    }
+  };
+
 
   const handleExport = () => {
     if (filteredLots.length > 0) {
@@ -139,10 +219,19 @@ export default function LotsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <LotsTable lots={filteredLots} tasks={allTasks || []} onEdit={handleEditLot} onDelete={handleDeleteRequest} onAdd={handleAddLot} />
+        <LotsTable 
+          lots={filteredLots} 
+          tasks={allTasks || []} 
+          onEditLot={handleEditLot} 
+          onDeleteLot={handleDeleteLotRequest}
+          onAddLot={handleAddLot}
+          onAddSubLot={handleAddSubLot}
+          onEditSubLot={handleEditSubLot}
+          onDeleteSubLot={handleDeleteSubLotRequest}
+        />
       )}
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <Sheet open={isLotSheetOpen} onOpenChange={setIsLotSheetOpen}>
         <SheetContent>
           <SheetHeader>
             <SheetTitle>{editingLot ? 'Editar Lote' : 'Crear un Nuevo Lote'}</SheetTitle>
@@ -150,23 +239,54 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleFormSubmit} />
+          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} />
+        </SheetContent>
+      </Sheet>
+      
+      <Sheet open={isSubLotSheetOpen} onOpenChange={(isOpen) => { setIsSubLotSheetOpen(isOpen); if (!isOpen) { setEditingSubLot(undefined); setCurrentLot(undefined); }}}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{editingSubLot ? 'Editar Sub-lote' : 'Crear un Nuevo Sub-lote'}</SheetTitle>
+            <SheetDescription>
+              Añadiendo un sub-lote a <span className="font-semibold">{currentLot?.name}</span>.
+            </SheetDescription>
+          </SheetHeader>
+          <SubLotForm subLot={editingSubLot} onSubmit={handleSubLotFormSubmit} />
         </SheetContent>
       </Sheet>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={isLotDeleteDialogOpen} onOpenChange={setIsLotDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Esto eliminará permanentemente el lote
               <span className="font-bold"> {lotToDelete?.name} </span>
-              y todos los datos asociados.
+              y todos sus sub-lotes y labores asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={confirmDeleteLot} className="bg-destructive hover:bg-destructive/90">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+       <AlertDialog open={isSubLotDeleteDialogOpen} onOpenChange={setIsSubLotDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el sub-lote
+              <span className="font-bold"> {subLotToDelete?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSubLot} className="bg-destructive hover:bg-destructive/90">
               <Trash2 className="mr-2 h-4 w-4" />
               Sí, eliminar
             </AlertDialogAction>
@@ -183,3 +303,5 @@ export default function LotsPage() {
     </div>
   );
 }
+
+    
