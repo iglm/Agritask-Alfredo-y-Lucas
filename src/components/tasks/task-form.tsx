@@ -39,29 +39,21 @@ type TaskFormProps = {
   staff: Staff[];
 };
 
-const defaultFormValues: Partial<TaskFormValues> = {
-    type: "",
-    lotId: "",
-    responsibleId: "",
-    category: "Mantenimiento",
-    startDate: new Date(),
-    endDate: undefined,
-    reentryDate: undefined,
-    status: 'Por realizar',
-    plannedJournals: 0,
-    downtimeMinutes: 0,
-    observations: "",
-};
-
 export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      ...defaultFormValues,
-      ...task,
+      type: task?.type ?? "",
+      lotId: task?.lotId ?? "",
+      responsibleId: task?.responsibleId ?? "",
+      category: task?.category ?? "Mantenimiento",
       startDate: task?.startDate ? new Date(task.startDate) : new Date(),
       endDate: task?.endDate ? new Date(task.endDate) : undefined,
       reentryDate: task?.reentryDate ? new Date(task.reentryDate) : undefined,
+      status: task?.status ?? 'Por realizar',
+      plannedJournals: task?.plannedJournals ?? 0,
+      downtimeMinutes: task?.downtimeMinutes ?? '',
+      observations: task?.observations ?? "",
     }
   });
 

@@ -45,13 +45,14 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: {
-      ...lot,
+      name: lot?.name ?? "",
+      areaHectares: lot?.areaHectares ?? 0,
+      location: lot?.location ?? "",
       sowingDate: lot?.sowingDate ? new Date(lot.sowingDate) : undefined,
-    } || {
-      name: "",
-      areaHectares: 0,
-      location: "",
-      technicalNotes: "",
+      sowingDensity: lot?.sowingDensity ?? '',
+      sowingDistance: lot?.sowingDistance ?? '',
+      totalTrees: lot?.totalTrees ?? '',
+      technicalNotes: lot?.technicalNotes ?? "",
     },
   });
 

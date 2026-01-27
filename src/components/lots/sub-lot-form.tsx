@@ -35,12 +35,12 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
   const form = useForm<SubLotFormValues>({
     resolver: zodResolver(subLotFormSchema),
     defaultValues: {
-      ...subLot,
+      name: subLot?.name ?? "",
+      areaHectares: subLot?.areaHectares ?? 0,
       sowingDate: subLot?.sowingDate ? new Date(subLot.sowingDate) : undefined,
-    } || {
-      name: "",
-      areaHectares: 0,
-      technicalNotes: "",
+      sowingDensity: subLot?.sowingDensity ?? '',
+      totalTrees: subLot?.totalTrees ?? '',
+      technicalNotes: subLot?.technicalNotes ?? "",
     },
   });
 
@@ -152,5 +152,3 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
     </Form>
   )
 }
-
-    
