@@ -172,6 +172,50 @@
         "baseDailyRate"
       ]
     },
+    "StaffAttendance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Staff Attendance",
+      "type": "object",
+      "description": "Represents a daily attendance record for a staff member.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attendance record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this attendance data."
+        },
+        "staffId": {
+          "type": "string",
+          "description": "Reference to the Staff member."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date of the attendance record."
+        },
+        "status": {
+          "type": "string",
+          "description": "The attendance status.",
+          "enum": [
+            "Presente",
+            "Ausente"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason for absence, if applicable."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "staffId",
+        "date",
+        "status"
+      ]
+    },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
@@ -409,6 +453,22 @@
         }
       },
       {
+        "path": "/staffAttendance/{attendanceId}",
+        "definition": {
+          "entityName": "StaffAttendance",
+          "schema": {
+            "$ref": "#/backend/entities/StaffAttendance"
+          },
+          "description": "Collection for storing daily staff attendance records. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
+          "params": [
+            {
+              "name": "attendanceId",
+              "description": "Unique identifier for the attendance record."
+            }
+          ]
+        }
+      },
+      {
         "path": "/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
@@ -444,5 +504,3 @@
     "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information and subscription status, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design directly supports the business requirement of a paid application on the Play Store by providing clear data ownership and the necessary hooks for subscription management."
   }
 }
-
-    

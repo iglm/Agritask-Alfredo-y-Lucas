@@ -47,9 +47,20 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNewDocOwner();
       // Allow update if the user owns the document and isn't changing the owner.
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+
+      match /sublots/{sublotId} {
+        allow get, list, create, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      }
     }
 
     match /staff/{staffId} {
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+    }
+    
+    match /staffAttendance/{attendanceId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
       allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
