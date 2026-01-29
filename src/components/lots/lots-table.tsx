@@ -187,5 +187,3 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
     </Card>
   );
 }
-
-    

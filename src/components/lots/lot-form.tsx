@@ -49,9 +49,9 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       areaHectares: lot?.areaHectares ?? 0,
       location: lot?.location ?? "",
       sowingDate: lot?.sowingDate ? new Date(lot.sowingDate) : undefined,
-      sowingDensity: lot?.sowingDensity ?? '',
-      sowingDistance: lot?.sowingDistance ?? '',
-      totalTrees: lot?.totalTrees ?? '',
+      sowingDensity: lot?.sowingDensity ?? 0,
+      sowingDistance: lot?.sowingDistance ?? 0,
+      totalTrees: lot?.totalTrees ?? 0,
       technicalNotes: lot?.technicalNotes ?? "",
     },
   });
