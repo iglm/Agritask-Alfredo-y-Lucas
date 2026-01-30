@@ -9,16 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
-import { useUser, useAppData } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
-
-const STAFF_LIMIT = 3;
 
 export default function StaffPage() {
-  const { profile } = useUser();
   const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
   const { toast } = useToast();
 
@@ -27,7 +23,6 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>(undefined);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   
   useEffect(() => {
     if (allStaff) {
@@ -44,12 +39,8 @@ export default function StaffPage() {
   };
   
   const handleAddStaff = () => {
-    if (profile?.subscription === 'free' && allStaff && allStaff.length >= STAFF_LIMIT) {
-      setIsUpgradeDialogOpen(true);
-    } else {
-      setEditingStaff(undefined);
-      setIsSheetOpen(true);
-    }
+    setEditingStaff(undefined);
+    setIsSheetOpen(true);
   };
   
   const handleEditStaff = (staffMember: Staff) => {
@@ -194,13 +185,6 @@ export default function StaffPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <UpgradeDialog
-        open={isUpgradeDialogOpen}
-        onOpenChange={setIsUpgradeDialogOpen}
-        featureName="personal"
-        limit={STAFF_LIMIT}
-      />
     </div>
   );
 }

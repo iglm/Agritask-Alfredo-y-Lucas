@@ -19,7 +19,6 @@ export async function createUserProfile(user: User, options?: SetOptions) {
     uid: user.uid,
     email: user.email || "",
     name: user.displayName || user.email?.split('@')[0] || 'Usuario',
-    subscription: "free",
   };
 
   return setDoc(userRef, userProfile, options || {});

@@ -54,7 +54,3 @@ Su objetivo principal es centralizar la información de la finca, facilitar la p
     - **Inicio de Sesión y Perfil:** Permite el acceso con cuenta de Google y la gestión de un perfil de usuario.
     - **Modo Offline:** La aplicación es completamente funcional sin conexión. Los datos se guardan en el almacenamiento local del dispositivo.
     - **Sincronización Automática:** Al iniciar sesión, la aplicación detecta los datos locales y los sincroniza automáticamente con la cuenta del usuario en la nube (Firestore).
-
-### Sistema de Suscripciones
-- **Función:** Implementa un modelo de negocio "freemium".
-- **Detalle de Funcionalidades:** El plan "Gratuito" tiene límites en la cantidad de lotes, personal y labores. Al alcanzar un límite, el sistema sugiere al usuario actualizar a un plan "Premium" para obtener funcionalidades ilimitadas.

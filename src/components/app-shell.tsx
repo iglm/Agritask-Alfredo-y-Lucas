@@ -152,7 +152,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </Avatar>
                       <div className="text-left group-data-[collapsible=icon]:hidden">
                           <p className="text-sm font-medium leading-none truncate">{profile?.name || user?.email}</p>
-                          <p className="text-xs text-muted-foreground leading-none mt-0.5">Suscripción: {profile?.subscription === 'premium' ? 'Premium' : 'Gratuita'}</p>
                       </div>
                   </Button>
                 </DropdownMenuTrigger>

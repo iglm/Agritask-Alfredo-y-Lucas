@@ -11,9 +11,8 @@ import { Button } from '@/components/ui/button';
 import { useFirebase, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
-import { Loader2, Star } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
@@ -65,8 +64,7 @@ export default function ProfilePage() {
   return (
     <div>
       <PageHeader title="Mi Perfil" />
-      <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-2">
+      <div className="max-w-2xl">
           <Card>
             <CardHeader>
               <CardTitle>Información Personal</CardTitle>
@@ -102,40 +100,6 @@ export default function ProfilePage() {
               </form>
             </Form>
           </Card>
-        </div>
-        <div>
-          <Card className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">
-            <CardHeader>
-              <CardTitle>Estado de Suscripción</CardTitle>
-              <CardDescription className="text-primary-foreground/80">Tu plan de AgriTask actual.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl font-bold">
-                  {profile?.subscription === 'premium' ? 'Premium' : 'Gratuito'}
-                </span>
-                <Badge variant={profile?.subscription === 'premium' ? 'default' : 'secondary'}>
-                  {profile?.subscription === 'premium' ? 'Activo' : 'Limitado'}
-                </Badge>
-              </div>
-              <ul className="text-sm space-y-2 mb-6 text-primary-foreground/90">
-                  <li className="flex items-start"><span className="mr-2 mt-1">✔️</span> <span>Acceso a todas las páginas</span></li>
-                  <li className="flex items-start"><span className="mr-2 mt-1">✔️</span> <span>Datos guardados en la nube</span></li>
-                  <li className="flex items-start"><span className="mr-2 mt-1">✔️</span> <span>{profile?.subscription === 'premium' ? 'Lotes, personal y labores ilimitados' : '1 lote, 3 de personal, 20 labores'}</span></li>
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="secondary" 
-                className="w-full"
-                onClick={() => toast({ title: 'Función futura', description: 'La compra de suscripciones estará disponible pronto.'})}
-              >
-                <Star className="mr-2 h-4 w-4" />
-                Mejorar a Premium
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
       </div>
     </div>
   );

@@ -4,26 +4,21 @@ import { useState } from "react";
 import { InteractiveCalendar } from "@/components/calendar/interactive-calendar";
 import { TaskForm } from "@/components/tasks/task-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useUser, useAppData } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Task } from "@/lib/types";
 import { format, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 import { Button } from "@/components/ui/button";
 
-const TASK_LIMIT = 20;
-
 export default function CalendarPage() {
-  const { profile } = useUser();
   const { tasks: allTasks, lots, staff, isLoading, addTask } = useAppData();
   const { toast } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
 
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -32,12 +27,8 @@ export default function CalendarPage() {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
-    if (profile?.subscription === 'free' && allTasks && allTasks.length >= TASK_LIMIT) {
-      setIsUpgradeDialogOpen(true);
-    } else {
-      setSelectedDate(date);
-      setIsDialogOpen(true);
-    }
+    setSelectedDate(date);
+    setIsDialogOpen(true);
   };
   
   const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
@@ -115,12 +106,6 @@ export default function CalendarPage() {
           />
         </DialogContent>
       </Dialog>
-      <UpgradeDialog
-        open={isUpgradeDialogOpen}
-        onOpenChange={setIsUpgradeDialogOpen}
-        featureName="labores"
-        limit={TASK_LIMIT}
-      />
     </div>
   );
 }

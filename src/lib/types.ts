@@ -2,7 +2,6 @@ export type UserProfile = {
   uid: string;
   email: string;
   name?: string;
-  subscription: 'free' | 'premium';
 };
 
 export type Lot = {
@@ -82,5 +81,3 @@ export type ProductiveUnit = {
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
-
-    

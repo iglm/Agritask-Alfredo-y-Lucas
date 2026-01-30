@@ -7,18 +7,14 @@ import { PageHeader } from "@/components/page-header";
 import { taskCategories, type Task, type Staff, type Lot } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useUser, useAppData } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { exportToCsv } from "@/lib/csv";
-import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
-
-const TASK_LIMIT = 20;
 
 export default function TasksPage() {
-  const { profile } = useUser();
   const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask, deleteTask } = useAppData();
   const { toast } = useToast();
 
@@ -27,7 +23,6 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (allTasks) {
@@ -44,12 +39,8 @@ export default function TasksPage() {
   };
 
   const handleAddTask = () => {
-    if (profile?.subscription === 'free' && allTasks && allTasks.length >= TASK_LIMIT) {
-      setIsUpgradeDialogOpen(true);
-    } else {
-      setEditingTask(undefined);
-      setIsSheetOpen(true);
-    }
+    setEditingTask(undefined);
+    setIsSheetOpen(true);
   };
   
   const handleEditTask = (task: Task) => {
@@ -183,13 +174,6 @@ export default function TasksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <UpgradeDialog
-        open={isUpgradeDialogOpen}
-        onOpenChange={setIsUpgradeDialogOpen}
-        featureName="labores"
-        limit={TASK_LIMIT}
-      />
     </div>
   );
 }

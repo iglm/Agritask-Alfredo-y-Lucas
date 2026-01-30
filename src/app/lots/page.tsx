@@ -8,18 +8,14 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
-import { useUser, useAppData } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { UpgradeDialog } from "@/components/subscriptions/upgrade-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 
-const LOT_LIMIT = 1;
-
 export default function LotsPage() {
-  const { profile } = useUser();
   const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
   const { toast } = useToast();
   
@@ -37,7 +33,6 @@ export default function LotsPage() {
   const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
 
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -51,12 +46,8 @@ export default function LotsPage() {
 
   // --- Lot Handlers ---
   const handleAddLot = () => {
-    if (profile?.subscription === 'free' && allLots && allLots.length >= LOT_LIMIT) {
-      setIsUpgradeDialogOpen(true);
-    } else {
-      setEditingLot(undefined);
-      setIsLotSheetOpen(true);
-    }
+    setEditingLot(undefined);
+    setIsLotSheetOpen(true);
   };
   
   const handleEditLot = (lot: Lot) => {
@@ -293,13 +284,6 @@ export default function LotsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <UpgradeDialog
-        open={isUpgradeDialogOpen}
-        onOpenChange={setIsUpgradeDialogOpen}
-        featureName="lotes"
-        limit={LOT_LIMIT}
-      />
     </div>
   );
 }
