@@ -63,6 +63,36 @@ export default function CalendarPage() {
       });
     }
   };
+
+  const handleTaskDrop = async (taskId: string, newDate: Date) => {
+    const taskToMove = allTasks?.find(t => t.id === taskId);
+    if (!taskToMove) return;
+
+    const dependency = allTasks?.find(t => t.id === taskToMove.dependsOn);
+    if (dependency && dependency.status !== 'Finalizado') {
+        toast({
+            variant: "destructive",
+            title: "Labor Bloqueada",
+            description: `No se puede mover. Esta labor depende de "${dependency.type}", que aún no ha finalizado.`,
+        });
+        return;
+    }
+
+    try {
+        await updateTask({ ...taskToMove, startDate: format(newDate, 'yyyy-MM-dd') });
+        toast({
+            title: "¡Labor reprogramada!",
+            description: `${taskToMove.type} se ha movido al ${format(newDate, "PPP", { locale: es })}.`,
+        });
+    } catch (error) {
+        console.error("Error updating task date:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al reprogramar",
+            description: "No se pudo mover la labor. Inténtalo de nuevo.",
+        });
+    }
+  };
   
   const taskForForm = editingTask || (selectedDate ? {
     startDate: selectedDate.toISOString(),
@@ -103,6 +133,7 @@ export default function CalendarPage() {
             tasks={allTasks || []} 
             onDateSelect={handleDateSelect}
             onTaskSelect={handleTaskSelect}
+            onTaskDrop={handleTaskDrop}
             currentMonth={currentMonth}
         />
       </div>

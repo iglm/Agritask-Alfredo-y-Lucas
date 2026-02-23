@@ -19,6 +19,7 @@ type InteractiveCalendarProps = {
   tasks: Task[];
   onDateSelect: (date: Date | undefined) => void;
   onTaskSelect: (task: Task) => void;
+  onTaskDrop: (taskId: string, newDate: Date) => void;
   currentMonth: Date;
 };
 
@@ -41,7 +42,7 @@ const getCategoryColor = (category: Task['category']) => {
 
 const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, currentMonth }: InteractiveCalendarProps) {
+export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, onTaskDrop, currentMonth }: InteractiveCalendarProps) {
   const firstDayOfMonth = startOfMonth(currentMonth);
   const lastDayOfMonth = endOfMonth(currentMonth);
 
@@ -53,7 +54,6 @@ export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, current
   const getTasksForDay = (day: Date) => {
     return tasks
       .filter(task => {
-        // Handle timezone issues by treating date string as local
         const taskDate = new Date(task.startDate);
         const taskDateLocal = new Date(taskDate.valueOf() + taskDate.getTimezoneOffset() * 60 * 1000);
         return format(taskDateLocal, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
@@ -61,6 +61,18 @@ export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, current
       .sort((a, b) => a.type.localeCompare(b.type));
   };
   
+  const handleDrop = (e: React.DragEvent, day: Date) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    if (taskId) {
+        onTaskDrop(taskId, day);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   const MAX_VISIBLE_TASKS = 2;
 
   return (
@@ -84,8 +96,10 @@ export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, current
             <div
               key={index}
               onClick={() => onDateSelect(day)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, day)}
               className={cn(
-                'relative p-1.5 border-r border-t cursor-pointer transition-colors hover:bg-muted/50 overflow-y-auto',
+                'relative p-1.5 border-r border-t cursor-pointer transition-colors hover:bg-muted/50 overflow-y-auto group',
                 !isSameMonth(day, currentMonth) && 'bg-muted/30',
                 (index + 1) % 7 === 0 && 'border-r-0'
               )}
@@ -107,13 +121,16 @@ export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, current
                    return (
                     <div 
                       key={task.id}
+                      draggable={!isBlocked}
+                      onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
                       onClick={(e) => {
                           e.stopPropagation();
                           onTaskSelect(task);
                       }}
                       className={cn(
                         "flex items-center gap-1 text-white text-xs font-semibold rounded px-1.5 py-0.5 truncate transition-transform hover:scale-105",
-                        getCategoryColor(task.category)
+                        getCategoryColor(task.category),
+                        isBlocked ? 'cursor-not-allowed opacity-75' : 'cursor-move'
                       )}
                     >
                       {isBlocked && <Lock className="h-3 w-3 shrink-0" />}
