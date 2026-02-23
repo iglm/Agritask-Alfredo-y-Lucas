@@ -7,6 +7,7 @@ import { TasksDistributionChart } from "@/components/dashboard/tasks-distributio
 import { useAppData } from "@/firebase";
 import { DollarSign, Tractor, Percent, CheckSquare, Loader2 } from "lucide-react";
 import { useMemo } from "react";
+import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 
 export default function DashboardPage() {
   const { lots, tasks, isLoading } = useAppData();
@@ -71,8 +72,9 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnomalyDetector tasks={tasks || []} />
+        <UpcomingTasks tasks={tasks || []} lots={lots || []} />
       </div>
     </div>
   );
