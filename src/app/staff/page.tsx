@@ -13,6 +13,7 @@ import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 export default function StaffPage() {
   const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
@@ -23,19 +24,27 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>(undefined);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [filterType, setFilterType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    if (allStaff) {
-      setFilteredStaff(allStaff);
+    let staffToFilter = allStaff || [];
+    
+    if (filterType !== 'all') {
+        staffToFilter = staffToFilter.filter(s => s.employmentType === filterType);
     }
-  }, [allStaff]);
+
+    if (searchTerm) {
+        staffToFilter = staffToFilter.filter(s => 
+            s.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+
+    setFilteredStaff(staffToFilter);
+  }, [allStaff, filterType, searchTerm]);
 
   const handleFilterByType = (type: string) => {
-    if (type === "all") {
-      setFilteredStaff(allStaff || []);
-    } else {
-      setFilteredStaff((allStaff || []).filter((s) => s.employmentType === type));
-    }
+    setFilterType(type);
   };
   
   const handleAddStaff = () => {
@@ -128,6 +137,12 @@ export default function StaffPage() {
     <div>
       <PageHeader title="Manejo de Personal" actionButtonText="Agregar Personal" onActionButtonClick={handleAddStaff}>
         <div className="flex items-center gap-2">
+            <Input 
+              placeholder="Buscar por nombre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[200px]"
+            />
             <Select onValueChange={handleFilterByType} defaultValue="all">
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filtrar por tipo" />

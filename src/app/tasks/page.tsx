@@ -13,6 +13,7 @@ import { Loader2, Trash2, Download } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { exportToCsv } from "@/lib/csv";
+import { Input } from "@/components/ui/input";
 
 export default function TasksPage() {
   const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask, deleteTask } = useAppData();
@@ -23,19 +24,27 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (allTasks) {
-      setFilteredTasks(allTasks);
+    let tasksToFilter = allTasks || [];
+
+    if (filterCategory !== 'all') {
+        tasksToFilter = tasksToFilter.filter(task => task.category === filterCategory);
     }
-  }, [allTasks]);
+
+    if (searchTerm) {
+        tasksToFilter = tasksToFilter.filter(task => 
+            task.type.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+
+    setFilteredTasks(tasksToFilter);
+  }, [allTasks, filterCategory, searchTerm]);
 
   const handleFilterByCategory = (category: string) => {
-    if (category === "all") {
-      setFilteredTasks(allTasks || []);
-    } else {
-      setFilteredTasks((allTasks || []).filter((task) => task.category === category));
-    }
+    setFilterCategory(category);
   };
 
   const handleAddTask = () => {
@@ -119,6 +128,12 @@ export default function TasksPage() {
     <div>
       <PageHeader title="Gestión de Labores" actionButtonText="Agregar Nueva Labor" onActionButtonClick={handleAddTask}>
         <div className="flex items-center gap-2">
+          <Input 
+              placeholder="Buscar por tipo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[200px]"
+            />
           <Select onValueChange={handleFilterByCategory} defaultValue="all">
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por categoría" />

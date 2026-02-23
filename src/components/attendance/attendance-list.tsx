@@ -115,6 +115,12 @@ export function AttendanceList({ staff, selectedDate }: AttendanceListProps) {
         setIsSaving(false);
     }
   };
+
+  const handleMarkAllPresent = () => {
+    setAttendanceRecords(prev =>
+      prev.map(rec => ({ ...rec, status: 'Presente', reason: '' }))
+    );
+  };
   
   if (staff.length === 0) {
     return (
@@ -133,6 +139,11 @@ export function AttendanceList({ staff, selectedDate }: AttendanceListProps) {
   return (
     <Card>
       <CardContent className="p-4 md:p-6 space-y-6">
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={handleMarkAllPresent}>
+            Marcar Todos Como Presente
+          </Button>
+        </div>
         <div className="space-y-4">
             {attendanceRecords.map(record => (
             <div key={record.staffId} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg">

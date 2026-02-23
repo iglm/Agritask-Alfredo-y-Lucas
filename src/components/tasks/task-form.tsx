@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { Slider } from "../ui/slider"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
@@ -25,6 +26,7 @@ const taskFormSchema = z.object({
   endDate: z.date().optional(),
   reentryDate: z.date().optional(),
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
+  progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
   downtimeMinutes: z.coerce.number().optional(),
   observations: z.string().optional(),
@@ -51,8 +53,9 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
       endDate: task?.endDate ? new Date(task.endDate) : undefined,
       reentryDate: task?.reentryDate ? new Date(task.reentryDate) : undefined,
       status: task?.status ?? 'Por realizar',
+      progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
-      downtimeMinutes: task?.downtimeMinutes ?? '',
+      downtimeMinutes: task?.downtimeMinutes ?? 0,
       observations: task?.observations ?? "",
     }
   });
@@ -64,18 +67,7 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
         return;
     };
 
-    let progress: number;
-    switch (values.status) {
-        case 'Finalizado':
-            progress = 100;
-            break;
-        case 'En Proceso':
-            progress = 50; // Default progress for "En Proceso"
-            break;
-        default:
-            progress = 0;
-            break;
-    }
+    const progress = values.progress;
     
     let plannedCost: number;
     if (task?.id && task.plannedJournals === values.plannedJournals && task.responsibleId === values.responsibleId && typeof task.plannedCost === 'number') {
@@ -228,6 +220,26 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="progress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Progreso de la Labor ({field.value}%)</FormLabel>
+              <FormControl>
+                <Slider
+                  defaultValue={[field.value]}
+                  onValueChange={(value) => field.onChange(value[0])}
+                  max={100}
+                  step={1}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <FormField
             control={form.control}
             name="reentryDate"
