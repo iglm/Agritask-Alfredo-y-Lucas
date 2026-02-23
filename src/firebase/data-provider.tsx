@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, getDocs, limit, writeBatch } from 'firebase/firestore';
-import { Lot, Staff, Task, ProductiveUnit, SubLot } from '@/lib/types';
+import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply } from '@/lib/types';
 import { getLocalItems, addLocalItem, updateLocalItem, deleteLocalItem, clearLocalCollection, saveLocalItems } from '@/lib/offline-store';
 import { useToast } from '@/hooks/use-toast';
 import { User } from 'firebase/auth';
@@ -11,6 +11,7 @@ interface DataContextState {
   lots: Lot[] | null;
   staff: Staff[] | null;
   tasks: Task[] | null;
+  supplies: Supply[] | null;
   productiveUnit: ProductiveUnit | null;
   isLoading: boolean;
   addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
@@ -25,6 +26,9 @@ interface DataContextState {
   addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<void>;
   updateTask: (data: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
+  updateSupply: (data: Supply) => Promise<void>;
+  deleteSupply: (id: string) => Promise<void>;
   updateProductiveUnit: (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => Promise<void>;
 }
 
@@ -81,6 +85,20 @@ async function syncLocalDataToFirebase(user: User, firestore: any): Promise<numb
       totalSynced += localStaff.length;
     }
 
+    const localSupplies = getLocalItems<Supply>('supplies');
+    if (localSupplies.length > 0) {
+      const suppliesBatch = writeBatch(firestore);
+      const suppliesCol = collection(firestore, 'supplies');
+      localSupplies.forEach(supply => {
+        const docRef = doc(suppliesCol);
+        const { id, ...data } = supply;
+        suppliesBatch.set(docRef, { ...data, id: docRef.id, userId: user.uid });
+      });
+      await suppliesBatch.commit();
+      clearLocalCollection('supplies');
+      totalSynced += localSupplies.length;
+    }
+
     const localTasks = getLocalItems<Task>('tasks');
     if (localTasks.length > 0) {
       const tasksBatch = writeBatch(firestore);
@@ -122,17 +140,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [localLots, setLocalLots] = useState<Lot[]>([]);
   const [localStaff, setLocalStaff] = useState<Staff[]>([]);
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  const [localSupplies, setLocalSupplies] = useState<Supply[]>([]);
   const [localProductiveUnit, setLocalProductiveUnit] = useState<ProductiveUnit | null>(null);
   const [isOfflineLoading, setOfflineLoading] = useState(true);
 
   const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const productiveUnitQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid), limit(1)) : null, [firestore, user]);
 
   const { data: firestoreLots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
   const { data: firestoreStaff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
   const { data: firestoreTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+  const { data: firestoreSupplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
   const { data: firestoreProductiveUnitCollection, isLoading: productiveUnitLoading } = useCollection<ProductiveUnit>(productiveUnitQuery);
 
   const firestoreProductiveUnit = useMemo(() => (firestoreProductiveUnitCollection?.[0]) || null, [firestoreProductiveUnitCollection]);
@@ -164,13 +185,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLocalLots(getLocalItems<Lot>('lots'));
       setLocalStaff(getLocalItems<Staff>('staff'));
       setLocalTasks(getLocalItems<Task>('tasks'));
+      setLocalSupplies(getLocalItems<Supply>('supplies'));
       setLocalProductiveUnit(getLocalItems<ProductiveUnit>('productiveUnit')[0] || null);
       setOfflineLoading(false);
     }
   }, [user, firestore, isUserLoading, toast]);
 
   const createMutations = <T extends { id: string, userId?: string }>(
-    collectionName: 'staff' | 'tasks',
+    collectionName: 'staff' | 'tasks' | 'supplies',
     localSetter: React.Dispatch<React.SetStateAction<T[]>>
   ) => {
     const addItem = async (data: Omit<T, 'id' | 'userId'>) => {
@@ -257,6 +279,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const { addItem: addStaff, updateItem: updateStaff, deleteItem: deleteStaff } = createMutations<Staff>('staff', setLocalStaff);
   const { addItem: addTask, updateItem: updateTask, deleteItem: deleteTask } = createMutations<Task>('tasks', setLocalTasks);
+  const { addItem: addSupply, updateItem: updateSupply, deleteItem: deleteSupply } = createMutations<Supply>('supplies', setLocalSupplies);
 
   const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (user && firestore) {
@@ -302,18 +325,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isLoading = isUserLoading || isSyncing || (user ? (lotsLoading || staffLoading || tasksLoading || productiveUnitLoading) : isOfflineLoading);
+  const isLoading = isUserLoading || isSyncing || (user ? (lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitLoading) : isOfflineLoading);
 
   const value: DataContextState = {
     lots: user ? firestoreLots : localLots,
     staff: user ? firestoreStaff : localStaff,
     tasks: user ? firestoreTasks : localTasks,
+    supplies: user ? firestoreSupplies : localSupplies,
     productiveUnit: user ? firestoreProductiveUnit : localProductiveUnit,
     isLoading,
     addLot, updateLot, deleteLot,
     addSubLot, updateSubLot, deleteSubLot,
     addStaff, updateStaff, deleteStaff,
     addTask, updateTask, deleteTask,
+    addSupply, updateSupply, deleteSupply,
     updateProductiveUnit,
   };
 
@@ -327,5 +352,3 @@ export const useAppData = () => {
   }
   return context;
 };
-
-    
