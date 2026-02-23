@@ -365,9 +365,6 @@
         "sowingDistance": {
           "type": "number",
           "description": "Distancia de siembra entre plantas en metros."
-        },
-        "totalTrees": {
-          "type": "number"
         }
       },
       "required": [
@@ -504,3 +501,5 @@
     "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design provides clear data ownership."
   }
 }
+
+    

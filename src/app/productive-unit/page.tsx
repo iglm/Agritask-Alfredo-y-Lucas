@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useAppData } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { ProductiveUnitForm } from '@/components/productive-unit/productive-unit-form';
@@ -38,7 +39,10 @@ export default function ProductiveUnitPage() {
   }
 
   const totalLots = lots?.length || 0;
-  const totalTrees = productiveUnit?.totalTrees || 0;
+  const totalTrees = useMemo(() => {
+    if (!lots) return 0;
+    return lots.reduce((sum, lot) => sum + (lot.totalTrees || 0), 0);
+  }, [lots]);
 
   return (
     <div>
@@ -77,3 +81,5 @@ export default function ProductiveUnitPage() {
     </div>
   );
 }
+
+    

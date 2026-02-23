@@ -76,7 +76,6 @@ export type ProductiveUnit = {
   cultivatedArea?: number;
   sowingDensity?: number;
   sowingDistance?: number;
-  totalTrees?: number;
 };
 
 export type StaffAttendance = {
@@ -92,3 +91,5 @@ export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "M
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
+
+    
