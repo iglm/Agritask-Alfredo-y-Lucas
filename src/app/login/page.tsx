@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { useAuth } from "@/firebase";
 import { FirebaseError } from "firebase/app";
 import { Loader2, Tractor } from "lucide-react";
 import { createUserProfile } from "@/lib/user";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -60,35 +62,50 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center justify-center mb-6">
-            <div className="p-2.5 rounded-lg bg-primary mb-4">
-                <Tractor className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <h1 className="text-3xl font-bold text-primary">Optimizador de Labores</h1>
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+       <div className="hidden lg:block relative">
+          <Image
+              src={PlaceHolderImages[0].imageUrl}
+              alt={PlaceHolderImages[0].description}
+              fill
+              className="object-cover dark:brightness-[0.4]"
+              data-ai-hint={PlaceHolderImages[0].imageHint}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+      </div>
+      <div className="flex items-center justify-center p-6 sm:p-12">
+        <div className="w-full max-w-sm">
+          <div className="flex flex-col items-center justify-center mb-6 text-center">
+              <div className="p-2.5 rounded-lg bg-primary mb-4">
+                  <Tractor className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-3xl font-bold text-primary">Optimizador de Labores</h1>
+              <p className="text-balance text-muted-foreground mt-2">
+                Tu asistente inteligente para la gestión agrícola
+              </p>
+          </div>
+          
+          <Card className="text-center border-0 shadow-none bg-transparent">
+              <CardHeader>
+                  <CardTitle>Bienvenido</CardTitle>
+                  <CardDescription>Inicia sesión o continúa en modo local.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+                      {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.62-4.88 1.62-4.48 0-8.12-3.64-8.12-8.12s3.64-8.12 8.12-8.12c2.48 0 4.3.92 5.24 1.88l2.52-2.52C18.44 2.12 15.48 1 12.48 1 5.8 1 1 5.8 1 12.48s4.8 11.48 11.48 11.48c6.68 0 11.48-4.8 11.48-11.48 0-.72-.08-1.44-.2-2.12H12.48z"></path></svg>}
+                      Iniciar sesión con Google
+                  </Button>
+              </CardContent>
+              <CardFooter className="flex-col gap-4">
+                  <Button variant="link" className="text-muted-foreground p-0 h-auto" onClick={handleSkipLogin}>
+                      Omitir y trabajar sin conexión
+                  </Button>
+                  <p className="text-xs text-muted-foreground px-4">
+                      Tus datos se guardarán de forma segura en este dispositivo.
+                  </p>
+              </CardFooter>
+          </Card>
         </div>
-        
-        <Card className="text-center">
-            <CardHeader>
-                <CardTitle>Bienvenido</CardTitle>
-                <CardDescription>Inicia sesión o continúa en modo local.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
-                    {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.6 1.62-4.88 1.62-4.48 0-8.12-3.64-8.12-8.12s3.64-8.12 8.12-8.12c2.48 0 4.3.92 5.24 1.88l2.52-2.52C18.44 2.12 15.48 1 12.48 1 5.8 1 1 5.8 1 12.48s4.8 11.48 11.48 11.48c6.68 0 11.48-4.8 11.48-11.48 0-.72-.08-1.44-.2-2.12H12.48z"></path></svg>}
-                    Iniciar sesión con Google
-                </Button>
-            </CardContent>
-            <CardFooter className="flex-col gap-4">
-                 <Button variant="link" className="text-muted-foreground p-0 h-auto" onClick={handleSkipLogin}>
-                    Omitir y trabajar sin conexión
-                </Button>
-                <p className="text-xs text-muted-foreground px-4">
-                    Tus datos se guardarán de forma segura en este dispositivo y podrás sincronizarlos con una cuenta más tarde.
-                </p>
-            </CardFooter>
-        </Card>
       </div>
     </div>
   );
