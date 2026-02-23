@@ -78,6 +78,16 @@ export type ProductiveUnit = {
   totalTrees?: number;
 };
 
+export type StaffAttendance = {
+  id: string;
+  userId?: string;
+  staffId: string;
+  date: string; // YYYY-MM-DD
+  status: 'Presente' | 'Ausente';
+  reason?: string;
+};
+
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
+export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];

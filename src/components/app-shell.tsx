@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Cloud, WifiOff, Home } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Cloud, WifiOff, Home, CalendarCheck } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ const managementNavItems = [
   { href: '/staff', label: 'Personal', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
+  { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
 ];
 const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems];
 
