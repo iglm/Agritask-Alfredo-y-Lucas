@@ -52,7 +52,7 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
               <TableHead className="hidden lg:table-cell">Lote</TableHead>
               <TableHead className="hidden lg:table-cell">Responsable</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="text-right hidden md:table-cell">Costo (Real/Plan.)</TableHead>
+              <TableHead className="text-right hidden md:table-cell">Costos (Actual vs Plan.)</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -61,6 +61,7 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
               tasks.map((task) => {
                 const dependency = task.dependsOn ? allTasks.find(t => t.id === task.dependsOn) : null;
                 const isBlocked = dependency && dependency.status !== 'Finalizado';
+                const totalPlannedCost = (task.plannedCost || 0) + (task.supplyCost || 0);
 
                 return (
                   <TableRow key={task.id}>
@@ -87,7 +88,7 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
                       <StatusBadge status={task.status} />
                     </TableCell>
                     <TableCell className="text-right hidden md:table-cell">
-                      ${task.actualCost.toFixed(0)} / <span className="text-muted-foreground">${task.plannedCost.toFixed(0)}</span>
+                      ${task.actualCost.toFixed(0)} / <span className="text-muted-foreground">${totalPlannedCost.toFixed(0)}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

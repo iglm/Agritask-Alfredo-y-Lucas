@@ -29,6 +29,7 @@ const taskFormSchema = z.object({
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
+  supplyCost: z.coerce.number().min(0).optional(),
   downtimeMinutes: z.coerce.number().optional(),
   observations: z.string().optional(),
 });
@@ -58,6 +59,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
+      supplyCost: task?.supplyCost ?? 0,
       downtimeMinutes: task?.downtimeMinutes ?? 0,
       observations: task?.observations ?? "",
     }
@@ -76,12 +78,15 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
     const progress = values.progress;
     
     let plannedCost: number;
+    // This cost is only for labor
     if (task?.id && task.plannedJournals === values.plannedJournals && task.responsibleId === values.responsibleId && typeof task.plannedCost === 'number') {
         plannedCost = task.plannedCost;
     } else {
         plannedCost = values.plannedJournals * responsible.baseDailyRate;
     }
 
+    // The actual cost in-app is an estimation based on labor progress.
+    // The engineer will do the detailed analysis with the exported data.
     const actualCost = plannedCost * (progress / 100);
 
     const { dependsOn, ...restOfValues } = values;
@@ -94,6 +99,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
       reentryDate: values.reentryDate ? format(values.reentryDate, 'yyyy-MM-dd') : undefined,
       progress,
       plannedCost,
+      supplyCost: values.supplyCost || 0,
       actualCost,
     };
     onSubmit(fullTaskData);
@@ -312,7 +318,21 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
+              control={form.control}
+              name="supplyCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Costo Insumos (Plan.)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Costo total de insumos" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+         <FormField
               control={form.control}
               name="downtimeMinutes"
               render={({ field }) => (
@@ -325,7 +345,6 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
                 </FormItem>
               )}
             />
-        </div>
          <FormField
           control={form.control}
           name="observations"
