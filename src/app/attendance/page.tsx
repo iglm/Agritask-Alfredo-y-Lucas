@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { AttendanceList } from "@/components/attendance/attendance-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AttendanceReportGenerator } from "@/components/attendance/attendance-report-generator";
 
 export default function AttendancePage() {
   const { staff, isLoading: isAppLoading } = useAppData();
@@ -27,36 +29,48 @@ export default function AttendancePage() {
 
   return (
     <div>
-      <PageHeader title="Control de Asistencia">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[280px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP", { locale: es }) : <span>Elige una fecha</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(newDate) => setDate(newDate || new Date())}
-              initialFocus
-              locale={es}
-            />
-          </PopoverContent>
-        </Popover>
-      </PageHeader>
+      <PageHeader title="Control de Asistencia" />
       
-      <AttendanceList 
-        staff={staff || []}
-        selectedDate={date}
-      />
+      <Tabs defaultValue="daily-log" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="daily-log">Registro Diario</TabsTrigger>
+          <TabsTrigger value="reports">Reportes</TabsTrigger>
+        </TabsList>
+        <TabsContent value="daily-log" className="mt-6">
+            <div className="flex justify-end mb-4">
+                <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    variant={"outline"}
+                    className={cn(
+                        "w-full max-w-xs justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                    )}
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(newDate) => setDate(newDate || new Date())}
+                    initialFocus
+                    locale={es}
+                    />
+                </PopoverContent>
+                </Popover>
+            </div>
+            <AttendanceList 
+                staff={staff || []}
+                selectedDate={date}
+            />
+        </TabsContent>
+        <TabsContent value="reports" className="mt-6">
+            <AttendanceReportGenerator staff={staff || []} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
