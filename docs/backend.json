@@ -283,9 +283,13 @@
           "type": "number",
           "description": "Calculated planned cost for the task."
         },
+        "supplyCost": {
+          "type": "number",
+          "description": "Calculated cost of supplies used for the task."
+        },
         "actualCost": {
           "type": "number",
-          "description": "Calculated actual cost based on progress."
+          "description": "Calculated actual cost based on progress and supply usage."
         },
         "downtimeMinutes": {
           "type": "number",
@@ -306,6 +310,7 @@
         "progress",
         "plannedJournals",
         "plannedCost",
+        "supplyCost",
         "actualCost"
       ]
     },
@@ -370,6 +375,89 @@
       "required": [
         "id",
         "userId"
+      ]
+    },
+    "Supply": {
+      "title": "Supply",
+      "type": "object",
+      "description": "Represents a supply item in the inventory.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "enum": [
+            "Kg",
+            "Lt",
+            "Unidad",
+            "Bulto",
+            "Galón",
+            "Caja"
+          ]
+        },
+        "costPerUnit": {
+          "type": "number"
+        },
+        "initialStock": {
+          "type": "number"
+        },
+        "currentStock": {
+          "type": "number"
+        },
+        "supplier": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "unitOfMeasure",
+        "costPerUnit",
+        "currentStock"
+      ]
+    },
+    "SupplyUsage": {
+      "title": "Supply Usage",
+      "type": "object",
+      "description": "Represents an instance of a supply being used in a task.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "supplyId": {
+          "type": "string"
+        },
+        "supplyName": {
+          "type": "string"
+        },
+        "quantityUsed": {
+          "type": "number"
+        },
+        "costAtTimeOfUse": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "taskId",
+        "supplyId",
+        "quantityUsed",
+        "costAtTimeOfUse"
       ]
     }
   },
@@ -482,6 +570,26 @@
         }
       },
       {
+        "path": "/tasks/{taskId}/supplyUsages/{usageId}",
+        "definition": {
+          "entityName": "SupplyUsage",
+          "schema": {
+            "$ref": "#/backend/entities/SupplyUsage"
+          },
+          "description": "Sub-collection for tracking supplies used in a specific task.",
+          "params": [
+            {
+              "name": "taskId",
+              "description": "The parent task's unique ID."
+            },
+            {
+              "name": "usageId",
+              "description": "Unique identifier for the supply usage record."
+            }
+          ]
+        }
+      },
+      {
         "path": "/productiveUnits/{unitId}",
         "definition": {
           "entityName": "ProductiveUnit",
@@ -496,10 +604,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/supplies/{supplyId}",
+        "definition": {
+          "entityName": "Supply",
+          "schema": {
+            "$ref": "#/backend/entities/Supply"
+          },
+          "description": "Collection for storing inventory supplies. Each document is owned by a single user.",
+          "params": [
+            {
+              "name": "supplyId",
+              "description": "Unique identifier for the supply."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design provides clear data ownership."
   }
 }
-
-    

@@ -53,6 +53,7 @@ export type Task = {
   progress: number;
   plannedJournals: number;
   plannedCost: number;
+  supplyCost: number;
   actualCost: number;
   downtimeMinutes?: number;
   observations?: string;
@@ -87,9 +88,29 @@ export type StaffAttendance = {
   reason?: string;
 };
 
+export type Supply = {
+  id: string;
+  userId?: string;
+  name: string;
+  unitOfMeasure: 'Kg' | 'Lt' | 'Unidad' | 'Bulto' | 'Galón' | 'Caja';
+  costPerUnit: number;
+  initialStock: number;
+  currentStock: number;
+  supplier?: string;
+};
+
+export type SupplyUsage = {
+  id: string;
+  userId?: string;
+  taskId: string;
+  supplyId: string;
+  supplyName: string;
+  quantityUsed: number;
+  costAtTimeOfUse: number; // Snapshot of costPerUnit * quantityUsed
+};
+
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
-
-    
+export const supplyUnits: Supply['unitOfMeasure'][] = ['Kg', 'Lt', 'Unidad', 'Bulto', 'Galón', 'Caja'];

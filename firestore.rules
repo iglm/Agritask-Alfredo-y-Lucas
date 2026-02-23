@@ -77,6 +77,13 @@ service cloud.firestore {
       allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      
+      match /supplyUsages/{usageId} {
+        allow get, delete: if isSignedIn() && isExistingDocOwner();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && isNewDocOwner();
+        allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      }
     }
 
     match /productiveUnits/{unitId} {
@@ -85,7 +92,12 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
+
+    match /supplies/{supplyId} {
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+    }
   }
 }
-
-    
