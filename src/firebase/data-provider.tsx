@@ -170,7 +170,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [user, firestore, isUserLoading, toast]);
 
   const createMutations = <T extends { id: string, userId?: string }>(
-    collectionName: 'lots' | 'staff' | 'tasks',
+    collectionName: 'staff' | 'tasks',
     localSetter: React.Dispatch<React.SetStateAction<T[]>>
   ) => {
     const addItem = async (data: Omit<T, 'id' | 'userId'>) => {
@@ -206,7 +206,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return { addItem, updateItem, deleteItem };
   };
 
-  const { addItem: addLot, updateItem: updateLot, deleteItem: deleteLot } = createMutations<Lot>('lots', setLocalLots);
+  const addLot = async (data: Omit<Lot, 'id' | 'userId'>) => {
+    if (user && firestore) {
+        const newDocRef = doc(collection(firestore, 'lots'));
+        await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+    } else {
+        const newItem = addLocalItem<Lot>('lots', data);
+        setLocalLots(prev => [...prev, newItem]);
+    }
+  };
+
+  const updateLot = async (data: Lot) => {
+      if (user && firestore) {
+          if (!data.userId) data.userId = user.uid;
+          const docRef = doc(firestore, 'lots', data.id);
+          await setDoc(docRef, data, { merge: true });
+      } else {
+          updateLocalItem<Lot>('lots', data);
+          setLocalLots(prev => prev.map(item => item.id === data.id ? data : item));
+      }
+  };
+
+  const deleteLot = async (id: string) => {
+      if (user && firestore) {
+          const lotRef = doc(firestore, 'lots', id);
+          const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
+          const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
+          
+          const batch = writeBatch(firestore);
+          
+          const sublotsSnapshot = await getDocs(sublotsQuery);
+          sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+          
+          const tasksSnapshot = await getDocs(tasksQuery);
+          tasksSnapshot.forEach(doc => batch.delete(doc.ref));
+          
+          batch.delete(lotRef);
+          
+          await batch.commit();
+      } else {
+          deleteLocalItem<Lot>('lots', id);
+          setLocalLots(prev => prev.filter(item => item.id !== id));
+          
+          const currentTasks = getLocalItems<Task>('tasks');
+          const newTasks = currentTasks.filter(task => task.lotId !== id);
+          saveLocalItems('tasks', newTasks);
+          setLocalTasks(newTasks);
+      }
+  };
+
   const { addItem: addStaff, updateItem: updateStaff, deleteItem: deleteStaff } = createMutations<Staff>('staff', setLocalStaff);
   const { addItem: addTask, updateItem: updateTask, deleteItem: deleteTask } = createMutations<Task>('tasks', setLocalTasks);
 
