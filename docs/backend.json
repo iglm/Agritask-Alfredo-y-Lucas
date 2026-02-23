@@ -242,6 +242,10 @@
           "type": "string",
           "description": "Reference to Staff. (Relationship: Staff 1:N Task)"
         },
+        "dependsOn": {
+          "type": "string",
+          "description": "ID of another Task that this task depends on."
+        },
         "startDate": {
           "type": "string",
           "description": "Fecha de inicio de la labor.",

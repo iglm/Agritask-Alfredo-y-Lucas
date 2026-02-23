@@ -156,7 +156,7 @@ export default function TasksPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <TasksTable tasks={filteredTasks} lots={lots || []} staff={staff || []} onEdit={handleEditTask} onDelete={handleDeleteRequest} onAdd={handleAddTask} />
+        <TasksTable tasks={filteredTasks} allTasks={allTasks || []} lots={lots || []} staff={staff || []} onEdit={handleEditTask} onDelete={handleDeleteRequest} onAdd={handleAddTask} />
       )}
 
 
@@ -168,7 +168,7 @@ export default function TasksPage() {
               {editingTask ? 'Actualiza los detalles de esta labor.' : 'Completa los detalles para la nueva labor.'}
             </SheetDescription>
           </SheetHeader>
-          <TaskForm task={editingTask} onSubmit={handleFormSubmit} lots={lots || []} staff={staff || []} />
+          <TaskForm task={editingTask} onSubmit={handleFormSubmit} lots={lots || []} staff={staff || []} tasks={allTasks || []} />
         </SheetContent>
       </Sheet>
 

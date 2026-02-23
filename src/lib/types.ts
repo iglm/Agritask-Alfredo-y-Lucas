@@ -45,6 +45,7 @@ export type Task = {
   category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
   type: string;
   responsibleId: string;
+  dependsOn?: string;
   startDate: string;
   endDate?: string;
   reentryDate?: string;

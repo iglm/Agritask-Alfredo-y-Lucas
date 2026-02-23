@@ -13,32 +13,48 @@ import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
 export default function CalendarPage() {
-  const { tasks: allTasks, lots, staff, isLoading, addTask } = useAppData();
+  const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask } = useAppData();
   const { toast } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [editingTask, setEditingTask] = useState<Task | undefined>();
 
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const goToToday = () => setCurrentMonth(new Date());
 
-
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
+    setEditingTask(undefined);
     setSelectedDate(date);
+    setIsDialogOpen(true);
+  };
+
+  const handleTaskSelect = (task: Task) => {
+    setSelectedDate(undefined); // Clear date selection
+    setEditingTask(task);
     setIsDialogOpen(true);
   };
   
   const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
     try {
-      await addTask(values);
-      toast({
-        title: "¡Labor creada!",
-        description: "La nueva labor ha sido agregada a tu calendario.",
-      });
+      if (editingTask) {
+        await updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
+        toast({
+          title: "¡Labor actualizada!",
+          description: "La labor ha sido actualizada en tu calendario.",
+        });
+      } else {
+        await addTask(values);
+        toast({
+          title: "¡Labor creada!",
+          description: "La nueva labor ha sido agregada a tu calendario.",
+        });
+      }
       setIsDialogOpen(false);
+      setEditingTask(undefined);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -47,11 +63,11 @@ export default function CalendarPage() {
       });
     }
   };
-
-  const taskForForm = selectedDate ? {
+  
+  const taskForForm = editingTask || (selectedDate ? {
     startDate: selectedDate.toISOString(),
     status: 'Por realizar',
-  } : undefined;
+  } : undefined);
 
   if (isLoading) {
     return (
@@ -86,16 +102,20 @@ export default function CalendarPage() {
         <InteractiveCalendar 
             tasks={allTasks || []} 
             onDateSelect={handleDateSelect}
+            onTaskSelect={handleTaskSelect}
             currentMonth={currentMonth}
         />
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => { setIsDialogOpen(isOpen); if (!isOpen) setEditingTask(undefined); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Programar Nueva Labor</DialogTitle>
+            <DialogTitle>{editingTask ? 'Editar Labor' : 'Programar Nueva Labor'}</DialogTitle>
             <DialogDescription>
-              Crea una nueva labor para {selectedDate ? format(selectedDate, "PPP", { locale: es }) : ""}. Haz clic en guardar cuando termines.
+              {editingTask 
+                ? `Editando la labor: ${editingTask.type}`
+                : `Crea una nueva labor para ${selectedDate ? format(selectedDate, "PPP", { locale: es }) : ""}. Haz clic en guardar cuando termines.`
+              }
             </DialogDescription>
           </DialogHeader>
           <TaskForm 
@@ -103,6 +123,7 @@ export default function CalendarPage() {
             onSubmit={handleFormSubmit}
             lots={lots || []}
             staff={staff || []}
+            tasks={allTasks || []}
           />
         </DialogContent>
       </Dialog>

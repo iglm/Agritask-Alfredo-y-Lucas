@@ -21,6 +21,7 @@ const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
   lotId: z.string({ required_error: "Por favor selecciona un lote." }).min(1, "Por favor selecciona un lote."),
   responsibleId: z.string({ required_error: "Por favor selecciona un responsable." }).min(1, "Por favor selecciona un responsable."),
+  dependsOn: z.string().optional(),
   category: z.enum(taskCategories),
   startDate: z.date({ required_error: "La fecha de inicio es obligatoria." }),
   endDate: z.date().optional(),
@@ -39,19 +40,21 @@ type TaskFormProps = {
   onSubmit: (values: Omit<Task, 'id' | 'userId'>) => void;
   lots: Lot[];
   staff: Staff[];
+  tasks: Task[];
 };
 
-export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       type: task?.type ?? "",
       lotId: task?.lotId ?? "",
       responsibleId: task?.responsibleId ?? "",
+      dependsOn: task?.dependsOn ?? "",
       category: task?.category ?? "Mantenimiento",
-      startDate: task?.startDate ? new Date(task.startDate) : new Date(),
-      endDate: task?.endDate ? new Date(task.endDate) : undefined,
-      reentryDate: task?.reentryDate ? new Date(task.reentryDate) : undefined,
+      startDate: task?.startDate ? new Date(task.startDate.replace(/-/g, '\/')) : new Date(),
+      endDate: task?.endDate ? new Date(task.endDate.replace(/-/g, '\/')) : undefined,
+      reentryDate: task?.reentryDate ? new Date(task.reentryDate.replace(/-/g, '\/')) : undefined,
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
@@ -59,6 +62,9 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
       observations: task?.observations ?? "",
     }
   });
+
+  const availableDependencies = tasks.filter(t => t.id !== task?.id);
+  const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'Lote no encontrado';
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
@@ -78,8 +84,11 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
 
     const actualCost = plannedCost * (progress / 100);
 
+    const { dependsOn, ...restOfValues } = values;
+
     const fullTaskData: Omit<Task, 'id' | 'userId'> = {
-      ...values,
+      ...restOfValues,
+      dependsOn: dependsOn === 'none' ? undefined : dependsOn,
       startDate: format(values.startDate, 'yyyy-MM-dd'),
       endDate: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : undefined,
       reentryDate: values.reentryDate ? format(values.reentryDate, 'yyyy-MM-dd') : undefined,
@@ -139,6 +148,32 @@ export function TaskForm({ task, onSubmit, lots, staff }: TaskFormProps) {
               </FormItem>
             )}
           />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="dependsOn"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Depende de (Opcional)</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una labor previa" /></SelectTrigger></FormControl>
+                <SelectContent>
+                  <SelectItem value="none">Ninguna</SelectItem>
+                  {availableDependencies.map(dep => (
+                    <SelectItem key={dep.id} value={dep.id}>
+                      {dep.type} ({getLotName(dep.lotId)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>La labor no podrá iniciarse hasta que la labor seleccionada esté finalizada.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="category"

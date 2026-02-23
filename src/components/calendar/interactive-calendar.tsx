@@ -13,10 +13,12 @@ import {
   startOfWeek 
 } from 'date-fns';
 import { es } from "date-fns/locale";
+import { Lock } from "lucide-react";
 
 type InteractiveCalendarProps = {
   tasks: Task[];
   onDateSelect: (date: Date | undefined) => void;
+  onTaskSelect: (task: Task) => void;
   currentMonth: Date;
 };
 
@@ -39,7 +41,7 @@ const getCategoryColor = (category: Task['category']) => {
 
 const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export function InteractiveCalendar({ tasks, onDateSelect, currentMonth }: InteractiveCalendarProps) {
+export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, currentMonth }: InteractiveCalendarProps) {
   const firstDayOfMonth = startOfMonth(currentMonth);
   const lastDayOfMonth = endOfMonth(currentMonth);
 
@@ -99,17 +101,26 @@ export function InteractiveCalendar({ tasks, onDateSelect, currentMonth }: Inter
                 {format(day, 'd')}
               </time>
               <div className="mt-1 space-y-1">
-                {tasksForDay.slice(0, MAX_VISIBLE_TASKS).map(task => (
-                   <div 
-                     key={task.id}
-                     className={cn(
-                       "text-white text-xs font-semibold rounded px-1.5 py-0.5 truncate",
-                       getCategoryColor(task.category)
-                     )}
-                   >
-                     {task.type}
-                   </div>
-                ))}
+                {tasksForDay.slice(0, MAX_VISIBLE_TASKS).map(task => {
+                   const dependency = tasks.find(t => t.id === task.dependsOn);
+                   const isBlocked = dependency && dependency.status !== 'Finalizado';
+                   return (
+                    <div 
+                      key={task.id}
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          onTaskSelect(task);
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 text-white text-xs font-semibold rounded px-1.5 py-0.5 truncate transition-transform hover:scale-105",
+                        getCategoryColor(task.category)
+                      )}
+                    >
+                      {isBlocked && <Lock className="h-3 w-3 shrink-0" />}
+                      <span className="truncate">{task.type}</span>
+                    </div>
+                   )
+                })}
                 {hiddenTasksCount > 0 && (
                   <div className="text-xs text-muted-foreground font-semibold mt-0.5">
                     +{hiddenTasksCount} más
