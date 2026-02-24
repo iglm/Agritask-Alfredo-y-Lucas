@@ -8,15 +8,17 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
-import { useAppData } from "@/firebase";
+import { useAppData, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
+import { collectionGroup, getDocs, query, where } from "firebase/firestore";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
+  const { user } = useUser();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -142,6 +144,14 @@ export default function LotsPage() {
   };
 
   const handleExport = async () => {
+    if (!user || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Error de autenticación",
+        description: "Inicia sesión para poder exportar los datos.",
+      });
+      return;
+    }
     if (filteredLots.length === 0) {
       toast({
         title: "No hay datos para exportar",
@@ -151,34 +161,63 @@ export default function LotsPage() {
     }
     
     setIsExporting(true);
-    toast({ title: "Preparando exportación...", description: "Esto puede tardar un momento." });
+    toast({ title: "Preparando exportación completa...", description: "Esto puede tardar un momento." });
 
-    // Use a brief timeout to allow the UI to update
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        // NOTE: This is not ideal as it doesn't export sub-lots.
-        // The previous implementation was more complete but relied on the now-removed collection group query.
-        // For now, we export only parent lots to maintain stability.
-        const dataToExport = filteredLots.map(lot => ({
-          id: lot.id,
-          nombre: lot.name,
-          tipo: 'Lote',
-          lote_padre: '',
-          area_hectareas: lot.areaHectares,
-          ubicacion: lot.location || 'N/A',
-          fecha_siembra: lot.sowingDate ? lot.sowingDate : 'N/A',
-          densidad_siembra: lot.sowingDensity || 'N/A',
-          distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
-          distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
-          arboles_totales: lot.totalTrees || 0,
-          notas_tecnicas: lot.technicalNotes || '',
-        }));
+        const subLotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
+        const subLotsSnapshot = await getDocs(subLotsQuery);
+        const allSubLots = subLotsSnapshot.docs.map(doc => doc.data() as SubLot);
+
+        const dataToExport: any[] = [];
+
+        for (const lot of filteredLots) {
+            // Add parent lot
+            dataToExport.push({
+              id: lot.id,
+              nombre: lot.name,
+              tipo: 'Lote',
+              lote_padre: '',
+              area_hectareas: lot.areaHectares,
+              ubicacion: lot.location || 'N/A',
+              fecha_siembra: lot.sowingDate ? lot.sowingDate : 'N/A',
+              densidad_siembra: lot.sowingDensity || 'N/A',
+              distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
+              distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
+              arboles_totales: lot.totalTrees || 0,
+              notas_tecnicas: lot.technicalNotes || '',
+            });
+
+            // Find and add its sub-lots
+            const subLotsOfThisLot = allSubLots.filter(sl => sl.lotId === lot.id);
+            for (const subLot of subLotsOfThisLot) {
+                 dataToExport.push({
+                    id: subLot.id,
+                    nombre: subLot.name,
+                    tipo: 'Sub-Lote',
+                    lote_padre: lot.name,
+                    area_hectareas: subLot.areaHectares,
+                    ubicacion: 'N/A', // Sublots don't have location
+                    fecha_siembra: subLot.sowingDate ? subLot.sowingDate : 'N/A',
+                    densidad_siembra: subLot.sowingDensity || 'N/A',
+                    distancia_entre_plantas_m: subLot.distanceBetweenPlants || 'N/A',
+                    distancia_entre_surcos_m: subLot.distanceBetweenRows || 'N/A',
+                    arboles_totales: subLot.totalTrees || 0,
+                    notas_tecnicas: subLot.technicalNotes || '',
+                 });
+            }
+        }
         
-        exportToCsv(`lotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
+        exportToCsv(`lotes-y-sublotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
     } catch (error) {
         console.error("Export error:", error);
-        toast({ variant: 'destructive', title: 'Error al exportar', description: 'No se pudieron generar los datos. Inténtalo de nuevo.' });
+        toast({ 
+            variant: 'destructive', 
+            title: 'Error al exportar', 
+            description: 'No se pudieron generar los datos. Es posible que necesites crear un índice en Firestore. Revisa la consola del navegador para ver el enlace.',
+            duration: 9000,
+        });
     } finally {
         setIsExporting(false);
     }
