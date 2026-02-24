@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -10,9 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies } from "@/lib/types"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies, PlannedSupply } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Slider } from "../ui/slider"
@@ -30,6 +30,12 @@ const taskFormSchema = z.object({
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
+  plannedSupplies: z.array(
+    z.object({
+      supplyId: z.string().min(1, "Debes seleccionar un insumo."),
+      quantity: z.coerce.number().positive("La cantidad debe ser positiva."),
+    })
+  ).optional(),
   downtimeMinutes: z.coerce.number().optional(),
   harvestedQuantity: z.coerce.number().optional(),
   observations: z.string().optional(),
@@ -92,6 +98,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
+      plannedSupplies: task?.plannedSupplies ?? [],
       downtimeMinutes: task?.downtimeMinutes ?? 0,
       harvestedQuantity: task?.harvestedQuantity ?? undefined,
       observations: task?.observations ?? "",
@@ -99,6 +106,11 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       recurrenceInterval: task?.recurrenceInterval ?? undefined,
       recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
     }
+  });
+  
+  const { fields: plannedSuppliesFields, append: appendPlannedSupply, remove: removePlannedSupply } = useFieldArray({
+    control: form.control,
+    name: "plannedSupplies",
   });
 
   const availableDependencies = tasks.filter(t => t.id !== task?.id);
@@ -138,6 +150,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       supplyCost: task?.supplyCost || 0, // This is now managed by SupplyUsageManager
       actualCost,
       harvestedQuantity: values.harvestedQuantity,
+      plannedSupplies: values.plannedSupplies,
     };
     onSubmit(fullTaskData);
   }
@@ -451,6 +464,55 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     </FormItem>
                   )}
                 />
+        </div>
+
+        <div className="space-y-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+                <h3 className="font-medium">Planificación de Insumos</h3>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendPlannedSupply({ supplyId: '', quantity: 0 })}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Añadir Insumo
+                </Button>
+            </div>
+            <div className="space-y-2">
+                {plannedSuppliesFields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-2 p-2 rounded-md bg-muted/50">
+                        <FormField
+                            control={form.control}
+                            name={`plannedSupplies.${index}.supplyId`}
+                            render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    <FormLabel className={cn(index !== 0 && "sr-only")}>Insumo</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {supplies.map(supply => (
+                                                <SelectItem key={supply.id} value={supply.id}>{supply.name} ({supply.unitOfMeasure})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name={`plannedSupplies.${index}.quantity`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className={cn(index !== 0 && "sr-only")}>Cantidad</FormLabel>
+                                    <FormControl><Input type="number" step="any" placeholder="Cant." {...field} className="w-28" /></FormControl>
+                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => removePlannedSupply(index)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                {plannedSuppliesFields.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">No se han planificado insumos para esta labor.</p>}
+            </div>
         </div>
         
         {task?.id && (

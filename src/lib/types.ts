@@ -47,6 +47,11 @@ export type Staff = {
   certifications?: string;
 };
 
+export type PlannedSupply = {
+  supplyId: string;
+  quantity: number;
+};
+
 export type Task = {
   id: string;
   userId?: string;
@@ -69,6 +74,7 @@ export type Task = {
   downtimeMinutes?: number;
   harvestedQuantity?: number;
   observations?: string;
+  plannedSupplies?: PlannedSupply[];
 };
 
 export type ProductiveUnit = {

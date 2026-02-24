@@ -352,6 +352,27 @@
         "observations": {
           "type": "string",
           "description": "Observaciones adicionales sobre la labor."
+        },
+        "plannedSupplies": {
+          "type": "array",
+          "description": "A list of supplies planned for this task.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "supplyId": {
+                "type": "string",
+                "description": "Reference to the Supply entity."
+              },
+              "quantity": {
+                "type": "number",
+                "description": "The planned quantity of the supply to be used."
+              }
+            },
+            "required": [
+              "supplyId",
+              "quantity"
+            ]
+          }
         }
       },
       "required": [
