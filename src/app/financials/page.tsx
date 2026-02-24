@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -73,7 +74,11 @@ export default function FinancialsPage() {
 
   const handleExport = () => {
     if (allTransactions && allTransactions.length > 0) {
-      exportToCsv(`transacciones-${new Date().toISOString()}.csv`, allTransactions);
+      const dataToExport = allTransactions.map(transaction => ({
+        ...transaction,
+        lotName: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
+      }));
+      exportToCsv(`transacciones-${new Date().toISOString()}.csv`, dataToExport);
     } else {
       toast({
         title: "No hay datos para exportar",
