@@ -27,6 +27,25 @@ export default function CalendarPage() {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
+
+    if (!lots || lots.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Primero crea un lote",
+            description: "Necesitas registrar al menos un lote antes de poder programar una labor.",
+        });
+        return;
+    }
+
+    if (!staff || staff.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Primero crea personal",
+            description: "Necesitas registrar al menos un miembro del personal para poder asignar una labor.",
+        });
+        return;
+    }
+
     setEditingTask(undefined);
     setSelectedDate(date);
     setIsDialogOpen(true);

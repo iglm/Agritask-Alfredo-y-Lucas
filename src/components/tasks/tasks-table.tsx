@@ -1,7 +1,8 @@
 import React from 'react';
+import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, CheckSquare, PlusCircle, CircleDashed, Hourglass, CheckCircle2, CircleX, Lock } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, CheckSquare, PlusCircle, CircleDashed, Hourglass, CheckCircle2, CircleX, Lock, Tractor, Users } from "lucide-react";
 import { Task, Lot, Staff } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "../ui/card";
@@ -119,17 +120,47 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="h-96 p-0">
-                   <EmptyState
-                    icon={<CheckSquare className="h-10 w-10" />}
-                    title="Programa tu primera labor"
-                    description="Asigna tareas a tu personal y lotes para llevar un control detallado de las actividades de tu finca."
-                    action={
-                      <Button onClick={onAdd}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Agregar Nueva Labor
-                      </Button>
-                    }
-                  />
+                   {lots.length === 0 ? (
+                      <EmptyState
+                        icon={<Tractor className="h-10 w-10" />}
+                        title="Primero necesitas un lote"
+                        description="Para poder programar una labor, primero debes registrar al menos un lote en tu finca."
+                        action={
+                          <Button asChild>
+                            <Link href="/lotes">
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Crear Lote
+                            </Link>
+                          </Button>
+                        }
+                      />
+                   ) : staff.length === 0 ? (
+                      <EmptyState
+                        icon={<Users className="h-10 w-10" />}
+                        title="Primero necesitas personal"
+                        description="Para poder asignar una labor, primero debes registrar al menos un miembro del personal."
+                        action={
+                          <Button asChild>
+                            <Link href="/staff">
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Agregar Personal
+                            </Link>
+                          </Button>
+                        }
+                      />
+                   ) : (
+                      <EmptyState
+                        icon={<CheckSquare className="h-10 w-10" />}
+                        title="Programa tu primera labor"
+                        description="Asigna tareas a tu personal y lotes para llevar un control detallado de las actividades de tu finca."
+                        action={
+                          <Button onClick={onAdd}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Agregar Nueva Labor
+                          </Button>
+                        }
+                      />
+                   )}
                 </TableCell>
               </TableRow>
             )}
