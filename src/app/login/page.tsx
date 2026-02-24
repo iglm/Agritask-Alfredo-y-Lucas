@@ -95,10 +95,17 @@ export default function LoginPage() {
                       Iniciar sesión con Google
                   </Button>
               </CardContent>
-              <CardFooter className="flex-col gap-4">
-                  <p className="text-xs text-muted-foreground px-4 text-center">
-                      Debes iniciar sesión con tu cuenta de Google para acceder a la plataforma.
-                  </p>
+              <CardFooter className="flex-col gap-4 text-center">
+                <p className="text-xs text-muted-foreground px-4">
+                    Al iniciar sesión, aceptas nuestra política de tratamiento de datos (Habeas Data) y confías en que guardamos tu información de forma segura.
+                </p>
+                <div className="text-xs text-muted-foreground mt-4">
+                    <p>
+                        Una aplicación desarrollada por <span className="font-semibold">Lucas Mateo Tabares</span> y <span className="font-semibold">Alfredo García Llano</span>.
+                    </p>
+                    <p>Ofrecemos asesoría especializada para optimizar tu gestión agrícola.</p>
+                    <p className="mt-2">&copy; {new Date().getFullYear()} Todos los derechos reservados.</p>
+                </div>
               </CardFooter>
           </Card>
         </div>
