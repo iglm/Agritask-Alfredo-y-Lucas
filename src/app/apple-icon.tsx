@@ -16,7 +16,7 @@ export default function AppleIcon() {
     (
       <div
         style={{
-          background: 'hsl(217, 91%, 60%)', // --primary
+          background: 'hsl(var(--primary))',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -30,7 +30,7 @@ export default function AppleIcon() {
             height="120" 
             viewBox="0 0 24 24" 
             fill="none" 
-            stroke="hsl(210 40% 98%)" // --primary-foreground
+            stroke="hsl(var(--primary-foreground))"
             strokeWidth="2" 
             strokeLinecap="round" 
             strokeLinejoin="round"
