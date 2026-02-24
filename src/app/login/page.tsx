@@ -18,6 +18,8 @@ export default function LoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
+  const loginImage = PlaceHolderImages.find(img => img.id === 'farm-landscape') || PlaceHolderImages[0];
 
   const handleAuthError = (error: FirebaseError) => {
     let title = "Error de autenticación";
@@ -61,11 +63,10 @@ export default function LoginPage() {
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
        <div className="hidden lg:block relative">
           <Image
-              src={PlaceHolderImages[0].imageUrl}
-              alt={PlaceHolderImages[0].description}
+              src={loginImage.imageUrl}
+              alt={loginImage.description}
               fill
               className="object-cover dark:brightness-[0.4]"
-              data-ai-hint={PlaceHolderImages[0].imageHint}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
       </div>

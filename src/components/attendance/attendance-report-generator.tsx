@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { Staff, StaffAttendance } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Loader2, CalendarIcon, FileText, Download } from 'lucide-react';
+import { Loader2, CalendarIcon, FileText, Download, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '../ui/empty-state';
 import { useToast } from '@/hooks/use-toast';
@@ -97,6 +97,27 @@ export function AttendanceReportGenerator({ staff }: Props) {
   const presentDays = reportData?.filter(r => r.status === 'Presente').length || 0;
   const absentDays = reportData?.filter(r => r.status === 'Ausente').length || 0;
   const selectedStaffName = staff.find(s => s.id === selectedStaffId)?.name;
+
+  if (staff.length === 0) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Generador de Reportes</CardTitle>
+                <CardDescription>
+                Selecciona un empleado y un rango de fechas para ver su historial de asistencia.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title="Añade personal primero"
+                    description="Necesitas registrar miembros del personal para poder generar reportes de asistencia."
+                    className='py-10'
+                />
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card>

@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 
 export default function StaffPage() {
-  const { staff: allStaff, tasks: allTasks, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
+  const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
   const { toast } = useToast();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -62,30 +62,26 @@ export default function StaffPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!staffToDelete) return;
     
-    // Data Integrity Check: Prevent deleting staff with assigned tasks
-    const assignedTasks = (allTasks || []).filter(task => task.responsibleId === staffToDelete.id && task.status !== 'Finalizado');
-    if (assignedTasks.length > 0) {
+    try {
+      await deleteStaff(staffToDelete.id);
+      toast({
+        title: "Personal eliminado",
+        description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'No se puede eliminar al personal',
-        description: `"${staffToDelete.name}" está asignado a ${assignedTasks.length} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`,
+        description: error.message || 'Ocurrió un error al intentar eliminar al miembro del personal.',
         duration: 6000,
       });
+    } finally {
       setIsDeleteDialogOpen(false);
       setStaffToDelete(null);
-      return;
     }
-
-    deleteStaff(staffToDelete.id);
-    toast({
-      title: "Personal eliminado",
-      description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
-    });
-    setIsDeleteDialogOpen(false);
-    setStaffToDelete(null);
   };
 
   const handleFormSubmit = (values: Omit<Staff, 'id' | 'userId'>) => {
