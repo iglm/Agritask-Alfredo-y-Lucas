@@ -6,7 +6,7 @@ import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { Download, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -199,9 +199,6 @@ export default function LotsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={() => alert('La importación desde Google Sheets es una función planificada.')}>
-              <Upload className="mr-2 h-4 w-4" /> Importar
-            </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
