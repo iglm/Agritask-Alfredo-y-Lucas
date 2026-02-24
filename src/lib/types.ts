@@ -75,6 +75,8 @@ export type ProductiveUnit = {
   municipality?: string;
   vereda?: string;
   shareGps?: boolean;
+  latitude?: number;
+  longitude?: number;
   crop?: string;
   variety?: string;
   altitudeRange?: string;
@@ -148,3 +150,5 @@ export const expenseCategories = [
   "Gastos Administrativos",
   "Otro Egreso"
 ];
+
+    

@@ -11,6 +11,7 @@ import type { ProductiveUnit } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   farmName: z.string().optional(),
@@ -19,6 +20,8 @@ const formSchema = z.object({
   municipality: z.string().optional(),
   vereda: z.string().optional(),
   shareGps: z.boolean().default(false).optional(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
   crop: z.string().optional(),
   variety: z.string().optional(),
   altitudeRange: z.string().optional(),
@@ -36,6 +39,7 @@ type ProductiveUnitFormProps = {
 };
 
 export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitFormProps) {
+  const { toast } = useToast();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,6 +49,8 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       municipality: productiveUnit?.municipality ?? "",
       vereda: productiveUnit?.vereda ?? "",
       shareGps: productiveUnit?.shareGps ?? false,
+      latitude: productiveUnit?.latitude ?? undefined,
+      longitude: productiveUnit?.longitude ?? undefined,
       crop: productiveUnit?.crop ?? "",
       variety: productiveUnit?.variety ?? "",
       altitudeRange: productiveUnit?.altitudeRange ?? "",
@@ -55,7 +61,50 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     },
   });
 
-  const { isSubmitting } = form.formState;
+  const { isSubmitting, watch, setValue } = form;
+  const shareGps = watch("shareGps");
+
+  useEffect(() => {
+    if (shareGps) {
+      if (!navigator.geolocation) {
+        toast({
+          variant: "destructive",
+          title: "Geolocalización no soportada",
+          description: "Tu navegador no soporta la obtención de la ubicación GPS.",
+        });
+        setValue("shareGps", false);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setValue("latitude", position.coords.latitude);
+          setValue("longitude", position.coords.longitude);
+          toast({
+            title: "Ubicación obtenida",
+            description: "Las coordenadas GPS se han guardado correctamente.",
+          });
+        },
+        (error) => {
+          let title = "Error al obtener la ubicación";
+          let description = "No se pudo obtener tu ubicación. Inténtalo de nuevo.";
+          if (error.code === error.PERMISSION_DENIED) {
+            title = "Permiso denegado";
+            description = "Debes permitir el acceso a tu ubicación en la configuración de tu navegador.";
+          }
+          toast({ variant: "destructive", title, description });
+          setValue("shareGps", false);
+        }
+      );
+    } else {
+      // Clear coordinates if checkbox is unchecked
+      if (form.getValues("latitude") || form.getValues("longitude")) {
+        setValue("latitude", undefined);
+        setValue("longitude", undefined);
+      }
+    }
+  }, [shareGps, setValue, toast, form]);
+
 
   return (
     <Form {...form}>
@@ -95,6 +144,16 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             </div>
                         </FormItem>
                     )} />
+                    {shareGps && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="latitude" render={({ field }) => (
+                                <FormItem><FormLabel>Latitud</FormLabel><FormControl><Input disabled {...field} value={field.value ?? 'Obteniendo...'} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="longitude" render={({ field }) => (
+                                <FormItem><FormLabel>Longitud</FormLabel><FormControl><Input disabled {...field} value={field.value ?? 'Obteniendo...'} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </div>
+                    )}
                 </AccordionContent>
             </AccordionItem>
 
@@ -147,3 +206,5 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     </Form>
   );
 }
+
+    
