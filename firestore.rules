@@ -35,6 +35,17 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
+    // Collection Group Rules
+    // ----------------------------------------------------------------------
+    match /{path=**}/sublots/{sublotId} {
+      // Rules for collection group queries on 'sublots'.
+      // The 'get' rule is checked for every document returned by a 'list' query.
+      allow get: if isSignedIn() && isExistingDocOwner();
+      // 'list' allows the query to run, but 'get' secures the data access.
+      allow list: if isSignedIn();
+    }
+
+    // ----------------------------------------------------------------------
     // Data Collection Rules (Lots, Staff, Tasks, ProductiveUnit)
     // ----------------------------------------------------------------------
     
