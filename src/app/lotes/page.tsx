@@ -91,15 +91,19 @@ export default function LotsPage() {
   };
 
   const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
+    const dataToSubmit = {
+        ...values,
+        sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+    };
     try {
       if (editingLot) {
-        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
+        await updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
         toast({
           title: "¡Lote actualizado!",
           description: "Los detalles del lote han sido actualizados.",
         });
       } else {
-        await addLot(values);
+        await addLot(dataToSubmit);
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",
@@ -340,3 +344,5 @@ export default function LotsPage() {
     </div>
   );
 }
+
+    
