@@ -48,15 +48,18 @@ async function syncLocalDataToFirebase(user: User, firestore: any): Promise<numb
   let totalSynced = 0;
 
   try {
-    const productiveUnit = getLocalItems<ProductiveUnit>('productiveUnit')[0];
-    if(productiveUnit) {
+    const localProductiveUnit = getLocalItems<ProductiveUnit>('productiveUnit')[0];
+    if (localProductiveUnit) {
       const puQuery = query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid), limit(1));
       const existingPuSnap = await getDocs(puQuery);
+      const { id: localId, ...unitData } = localProductiveUnit;
+
       if (existingPuSnap.empty) {
         const newDocRef = doc(collection(firestore, 'productiveUnits'));
-        await setDoc(newDocRef, { ...productiveUnit, id: newDocRef.id, userId: user.uid });
+        await setDoc(newDocRef, { ...unitData, id: newDocRef.id, userId: user.uid });
       } else {
-        await setDoc(existingPuSnap.docs[0].ref, productiveUnit, { merge: true });
+        const docRef = existingPuSnap.docs[0].ref;
+        await setDoc(docRef, { ...unitData, userId: user.uid }, { merge: true });
       }
       clearLocalCollection('productiveUnit');
       totalSynced++;
@@ -290,10 +293,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           deleteLocalItem<Lot>('lots', id);
           setLocalLots(prev => prev.filter(item => item.id !== id));
           
-          const currentTasks = getLocalItems<Task>('tasks');
-          const newTasks = currentTasks.filter(task => task.lotId !== id);
-          saveLocalItems('tasks', newTasks);
-          setLocalTasks(newTasks);
+          const tasksToKeep = localTasks.filter(task => task.lotId !== id);
+          saveLocalItems('tasks', tasksToKeep);
+          setLocalTasks(tasksToKeep);
       }
   };
 
