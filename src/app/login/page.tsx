@@ -19,7 +19,8 @@ export default function LoginPage() {
   const auth = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
-  const loginImage = PlaceHolderImages.find(img => img.id === 'farm-landscape') || PlaceHolderImages[0];
+  const loginImage = PlaceHolderImages.find(img => img.id === 'farm-landscape') || 
+                     (PlaceHolderImages.length > 0 ? PlaceHolderImages[0] : null);
 
   const handleAuthError = (error: FirebaseError) => {
     let title = "Error de autenticación";
@@ -63,10 +64,11 @@ export default function LoginPage() {
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
        <div className="hidden lg:block relative">
           <Image
-              src={loginImage.imageUrl}
-              alt={loginImage.description}
+              src={loginImage?.imageUrl || 'https://placehold.co/1200/600/388E3C/FFFFFF/png?text=Optimizador+de+Labores'}
+              alt={loginImage?.description || 'Optimizador de Labores Agrícolas'}
               fill
               className="object-cover dark:brightness-[0.4]"
+              priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
       </div>

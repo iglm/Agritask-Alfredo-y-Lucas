@@ -35,6 +35,7 @@ export function AttendanceReportGenerator({ staff }: Props) {
   
   const [shouldFetch, setShouldFetch] = useState(false);
   const [reportData, setReportData] = useState<StaffAttendance[] | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const reportQuery = useMemoFirebase(() => {
     if (!shouldFetch || !firestore || !user || !selectedStaffId || !dateRange?.from || !dateRange?.to) {
@@ -83,14 +84,22 @@ export function AttendanceReportGenerator({ staff }: Props) {
       return;
     }
 
-    const dataToExport = reportData.map(record => ({
-      fecha: format(new Date(record.date.replace(/-/g, '\/')), 'yyyy-MM-dd'),
-      nombre_empleado: selectedStaffName,
-      estado: record.status,
-      motivo_ausencia: record.reason || 'N/A',
-    }));
-    
-    exportToCsv(`reporte-asistencia-${selectedStaffName}-${format(dateRange!.from!, 'yyyy-MM-dd')}-a-${format(dateRange!.to!, 'yyyy-MM-dd')}.csv`, dataToExport);
+    setIsExporting(true);
+    try {
+        const dataToExport = reportData.map(record => ({
+          fecha: record.date, // Export as YYYY-MM-DD string directly
+          nombre_empleado: selectedStaffName,
+          estado: record.status,
+          motivo_ausencia: record.reason || 'N/A',
+        }));
+        
+        exportToCsv(`reporte-asistencia-${selectedStaffName}-${format(dateRange!.from!, 'yyyy-MM-dd')}-a-${format(dateRange!.to!, 'yyyy-MM-dd')}.csv`, dataToExport);
+    } catch(e) {
+        console.error("Export error", e);
+        toast({ variant: 'destructive', title: 'Error al exportar', description: 'No se pudo generar el archivo CSV.'});
+    } finally {
+        setIsExporting(false);
+    }
   }
 
   const totalDays = dateRange?.from && dateRange?.to ? differenceInDays(dateRange.to, dateRange.from) + 1 : 0;
@@ -201,8 +210,9 @@ export function AttendanceReportGenerator({ staff }: Props) {
                     </CardDescription>
                   </div>
                   {reportData.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={handleExportReport}>
-                      <Download className="mr-2 h-4 w-4" /> Exportar
+                    <Button variant="outline" size="sm" onClick={handleExportReport} disabled={isExporting}>
+                      {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Exportar
                     </Button>
                   )}
                 </div>

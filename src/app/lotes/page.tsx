@@ -15,8 +15,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 import { collection, getDocs } from "firebase/firestore";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
@@ -37,6 +35,7 @@ export default function LotsPage() {
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (allLots) {
@@ -155,48 +154,57 @@ export default function LotsPage() {
       });
       return;
     }
-
+    
+    setIsExporting(true);
     toast({ title: "Preparando exportación...", description: "Esto puede tardar un momento si hay muchos sub-lotes." });
 
-    const dataToExport = [];
+    try {
+        const dataToExport = [];
 
-    for (const lot of filteredLots) {
-      dataToExport.push({
-        id: lot.id,
-        nombre: lot.name,
-        tipo: 'Lote',
-        lote_padre: '',
-        area_hectareas: lot.areaHectares,
-        ubicacion: lot.location || 'N/A',
-        fecha_siembra: lot.sowingDate ? format(new Date(lot.sowingDate.replace(/-/g, '\/')), 'P', { locale: es }) : 'N/A',
-        densidad_siembra: lot.sowingDensity || 'N/A',
-        distancia_siembra: lot.sowingDistance || 'N/A',
-        arboles_totales: lot.totalTrees || 0,
-        notas_tecnicas: lot.technicalNotes || '',
-      });
+        for (const lot of filteredLots) {
+          dataToExport.push({
+            id: lot.id,
+            nombre: lot.name,
+            tipo: 'Lote',
+            lote_padre: '',
+            area_hectareas: lot.areaHectares,
+            ubicacion: lot.location || 'N/A',
+            fecha_siembra: lot.sowingDate || 'N/A',
+            densidad_siembra: lot.sowingDensity || 'N/A',
+            distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
+            distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
+            arboles_totales: lot.totalTrees || 0,
+            notas_tecnicas: lot.technicalNotes || '',
+          });
 
-      const subLotsCollection = collection(firestore, 'lots', lot.id, 'sublots');
-      const subLotsSnapshot = await getDocs(subLotsCollection);
-      
-      subLotsSnapshot.forEach(doc => {
-        const subLot = doc.data() as SubLot;
-        dataToExport.push({
-          id: subLot.id,
-          nombre: subLot.name,
-          tipo: 'Sub-Lote',
-          lote_padre: lot.name,
-          area_hectareas: subLot.areaHectares,
-          ubicacion: lot.location || 'N/A',
-          fecha_siembra: subLot.sowingDate ? format(new Date(subLot.sowingDate.replace(/-/g, '\/')), 'P', { locale: es }) : 'N/A',
-          densidad_siembra: subLot.sowingDensity || 'N/A',
-          distancia_siembra: 'N/A',
-          arboles_totales: subLot.totalTrees || 0,
-          notas_tecnicas: subLot.technicalNotes || '',
-        });
-      });
+          const subLotsCollection = collection(firestore, 'lots', lot.id, 'sublots');
+          const subLotsSnapshot = await getDocs(subLotsCollection);
+          
+          subLotsSnapshot.forEach(doc => {
+            const subLot = doc.data() as SubLot;
+            dataToExport.push({
+              id: subLot.id,
+              nombre: subLot.name,
+              tipo: 'Sub-Lote',
+              lote_padre: lot.name,
+              area_hectareas: subLot.areaHectares,
+              ubicacion: lot.location || 'N/A', // Sublots inherit location from parent
+              fecha_siembra: subLot.sowingDate || 'N/A',
+              densidad_siembra: subLot.sowingDensity || 'N/A',
+              distancia_entre_plantas_m: subLot.distanceBetweenPlants || 'N/A',
+              distancia_entre_surcos_m: subLot.distanceBetweenRows || 'N/A',
+              arboles_totales: subLot.totalTrees || 0,
+              notas_tecnicas: subLot.technicalNotes || '',
+            });
+          });
+        }
+        exportToCsv(`lotes-y-sublotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
+    } catch (error) {
+        console.error("Export error:", error);
+        toast({ variant: 'destructive', title: 'Error al exportar', description: 'No se pudieron generar los datos. Inténtalo de nuevo.' });
+    } finally {
+        setIsExporting(false);
     }
-
-    exportToCsv(`lotes-y-sublotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
   };
 
   return (
@@ -209,8 +217,9 @@ export default function LotsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Exportar
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Exportar
             </Button>
         </div>
       </PageHeader>
