@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -27,10 +27,11 @@ import { ThemeToggle } from './theme-toggle';
 const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
 const managementNavItems = [
-  { href: '/lots', label: 'Lotes', icon: Tractor },
+  { href: '/lotes', label: 'Lotes', icon: Tractor },
   { href: '/staff', label: 'Personal', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
   { href: '/supplies', label: 'Insumos', icon: SprayCan },
+  { href: '/financials', label: 'Finanzas', icon: Banknote },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
 ];

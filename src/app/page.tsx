@@ -4,28 +4,45 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { InvestmentChart } from "@/components/dashboard/investment-chart";
 import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { useAppData } from "@/firebase";
-import { DollarSign, Tractor, Percent, CheckSquare } from "lucide-react";
+import { Tractor, Percent, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import { useMemo } from "react";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnomalyDetector } from "@/components/dashboard/anomaly-detector";
 
 export default function DashboardPage() {
-  const { lots, tasks, isLoading } = useAppData();
+  const { lots, tasks, transactions, isLoading } = useAppData();
   
-  const { totalLots, totalPlannedCost, totalActualCost, overallEfficiency } = useMemo(() => {
-    if (!lots || !tasks) {
-      return { totalLots: 0, totalPlannedCost: 0, totalActualCost: 0, overallEfficiency: 0 };
+  const { 
+    totalLots, 
+    overallEfficiency, 
+    totalIncome, 
+    totalExpenses, 
+    netBalance 
+  } = useMemo(() => {
+    if (isLoading || !lots || !tasks || !transactions) {
+      return { totalLots: 0, overallEfficiency: 0, totalIncome: 0, totalExpenses: 0, netBalance: 0 };
     }
     
     const totalLots = lots.length;
-    const totalPlannedCost = tasks.reduce((sum, task) => sum + task.plannedCost + (task.supplyCost || 0), 0);
-    const totalActualCost = tasks.reduce((sum, task) => sum + task.actualCost, 0);
+    
     const totalProgress = tasks.reduce((sum, task) => sum + task.progress, 0);
     const overallEfficiency = tasks.length > 0 ? totalProgress / tasks.length : 0;
 
-    return { totalLots, totalPlannedCost, totalActualCost, overallEfficiency };
-  }, [lots, tasks]);
+    const totalIncome = transactions
+      .filter(t => t.type === 'Ingreso')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalTaskCost = tasks.reduce((sum, task) => sum + task.actualCost, 0);
+    const totalExplicitExpenses = transactions
+      .filter(t => t.type === 'Egreso')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalExpenses = totalTaskCost + totalExplicitExpenses;
+    const netBalance = totalIncome - totalExpenses;
+
+    return { totalLots, overallEfficiency, totalIncome, totalExpenses, netBalance };
+  }, [lots, tasks, transactions, isLoading]);
   
   if (isLoading) {
     return (
@@ -58,22 +75,22 @@ export default function DashboardPage() {
           href="/lotes"
         />
         <KpiCard
-          title="Costo Planificado"
-          value={`$${totalPlannedCost.toLocaleString()}`}
-          icon={<DollarSign className="h-6 w-6 text-primary" />}
-          href="/tasks"
+          title="Ingresos Totales"
+          value={`$${totalIncome.toLocaleString()}`}
+          icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+          href="/financials"
         />
         <KpiCard
-          title="Costo Real"
-          value={`$${totalActualCost.toLocaleString()}`}
-          icon={<CheckSquare className="h-6 w-6 text-primary" />}
-          href="/tasks"
+          title="Egresos Totales"
+          value={`$${totalExpenses.toLocaleString()}`}
+          icon={<TrendingDown className="h-6 w-6 text-red-600" />}
+          href="/financials"
         />
         <KpiCard
-          title="Eficiencia Prom."
-          value={`${overallEfficiency.toFixed(1)}%`}
-          icon={<Percent className="h-6 w-6 text-primary" />}
-          href="/tasks"
+          title="Balance Neto"
+          value={`$${netBalance.toLocaleString()}`}
+          icon={<Scale className="h-6 w-6 text-primary" />}
+          href="/financials"
         />
       </div>
 

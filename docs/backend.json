@@ -491,6 +491,51 @@
         "quantityUsed",
         "costAtTimeOfUse"
       ]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a financial transaction, either an income or an expense.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Ingreso",
+            "Egreso"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string"
+        },
+        "lotId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "date",
+        "description",
+        "amount",
+        "category"
+      ]
     }
   },
   "auth": {
@@ -649,6 +694,22 @@
             {
               "name": "supplyId",
               "description": "Unique identifier for the supply."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Collection for storing financial transactions (income/expense). Each document is owned by a single user.",
+          "params": [
+            {
+              "name": "transactionId",
+              "description": "Unique identifier for the transaction."
             }
           ]
         }

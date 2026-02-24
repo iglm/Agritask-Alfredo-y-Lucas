@@ -116,9 +116,37 @@ export type SupplyUsage = {
   costAtTimeOfUse: number; // Snapshot of costPerUnit * quantityUsed
 };
 
+export type Transaction = {
+  id: string;
+  userId?: string;
+  type: 'Ingreso' | 'Egreso';
+  date: string; // YYYY-MM-DD
+  description: string;
+  amount: number;
+  category: string;
+  lotId?: string;
+};
+
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
 export const supplyUnits: Supply['unitOfMeasure'][] = ['Kg', 'Lt', 'Unidad', 'Bulto', 'Galón', 'Caja'];
 export const recurrenceFrequencies: NonNullable<Task['recurrenceFrequency']>[] = ['días', 'semanas', 'meses'];
+export const transactionTypes: Transaction['type'][] = ['Ingreso', 'Egreso'];
+export const incomeCategories = [
+  "Venta de Cosecha",
+  "Venta de Subproductos",
+  "Servicios a Terceros",
+  "Subsidios/Apoyos",
+  "Otro Ingreso"
+];
+export const expenseCategories = [
+  "Arrendamiento",
+  "Servicios Públicos",
+  "Transporte",
+  "Impuestos y Licencias",
+  "Reparaciones",
+  "Gastos Administrativos",
+  "Otro Egreso"
+];

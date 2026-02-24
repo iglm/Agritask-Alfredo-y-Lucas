@@ -98,5 +98,12 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
+
+    match /transactions/{transactionId} {
+      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+    }
   }
 }
