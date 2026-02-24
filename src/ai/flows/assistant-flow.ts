@@ -49,7 +49,7 @@ const UpdateTaskStatusPayloadSchema = z.object({
 
 const UpdateStaffRatePayloadSchema = z.object({
     staffId: z.string().describe("The ID of the staff member to update."),
-    newRate: z.number().positive().describe("The new daily rate for the staff member."),
+    newRate: z.number().describe("The new, positive daily rate for the staff member. It must be greater than zero."),
 });
 
 const AnswerPayloadSchema = z.object({
