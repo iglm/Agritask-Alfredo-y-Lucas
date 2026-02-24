@@ -2,7 +2,6 @@
 
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { InvestmentChart } from "@/components/dashboard/investment-chart";
-import { AnomalyDetector } from "@/components/dashboard/anomaly-detector";
 import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { useAppData } from "@/firebase";
 import { DollarSign, Tractor, Percent, CheckSquare } from "lucide-react";
@@ -40,8 +39,7 @@ export default function DashboardPage() {
           <Skeleton className="lg:col-span-3 h-[380px]" />
           <Skeleton className="lg:col-span-2 h-[380px]" />
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <Skeleton className="h-[300px]" />
+        <div className="grid grid-cols-1 gap-6">
           <Skeleton className="h-[300px]" />
         </div>
       </div>
@@ -86,8 +84,7 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <AnomalyDetector tasks={tasks || []} />
+      <div className="grid grid-cols-1 gap-6">
         <UpcomingTasks tasks={tasks || []} lots={lots || []} />
       </div>
     </div>

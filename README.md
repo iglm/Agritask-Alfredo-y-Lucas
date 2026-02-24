@@ -16,7 +16,6 @@ Su objetivo principal es centralizar la información de la finca, facilitar la p
     - **Indicadores Clave de Rendimiento (KPIs):** Presenta cuatro tarjetas interactivas con datos vitales que se actualizan en tiempo real: `Lotes Totales`, `Costo Planificado`, `Costo Real` y `Eficiencia Promedio`.
     - **Gráfico de Inversión por Lote:** Un gráfico de barras que compara visualmente los costos planificados contra los costos reales para cada lote registrado, permitiendo identificar rápidamente desviaciones del presupuesto.
     - **Gráfico de Distribución de Labores:** Un gráfico de pastel que desglosa el número total de labores por categoría (Preparación, Siembra, Mantenimiento, Cosecha, Post-Cosecha).
-    - **Detección de Anomalías con IA:** Una herramienta que utiliza IA (Gemini de Google) para analizar los datos de las labores en busca de sobrecostos, retrasos o ineficiencias, clasificando cada anomalía por severidad (Alta, Media, Baja).
 
 ### Unidad Productiva
 - **Función:** Permite al usuario registrar y mantener un perfil detallado de su finca.
