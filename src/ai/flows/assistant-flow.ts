@@ -52,6 +52,14 @@ const UpdateStaffRatePayloadSchema = z.object({
     newRate: z.number().describe("The new, positive daily rate for the staff member. It must be greater than zero."),
 });
 
+const DeleteTaskPayloadSchema = z.object({
+  taskId: z.string().describe("The ID of the task to delete."),
+});
+
+const DeleteStaffPayloadSchema = z.object({
+  staffId: z.string().describe("The ID of the staff member to delete."),
+});
+
 const AnswerPayloadSchema = z.object({
   text: z.string().describe("The direct, concise answer to the user's question."),
 });
@@ -69,6 +77,8 @@ const AssistantActionSchema = z.union([
   z.object({ action: z.enum(['addStaff']), payload: AddStaffPayloadSchema }),
   z.object({ action: z.enum(['updateTaskStatus']), payload: UpdateTaskStatusPayloadSchema }),
   z.object({ action: z.enum(['updateStaffRate']), payload: UpdateStaffRatePayloadSchema }),
+  z.object({ action: z.enum(['deleteTask']), payload: DeleteTaskPayloadSchema }),
+  z.object({ action: z.enum(['deleteStaff']), payload: DeleteStaffPayloadSchema }),
   z.object({ action: z.enum(['answer']), payload: AnswerPayloadSchema }),
   z.object({ action: z.enum(['error']), payload: ErrorPayloadSchema }),
 ]);
@@ -107,20 +117,20 @@ const assistantPrompt = ai.definePrompt({
     You are an intelligent assistant AI for a farm management app. Your primary jobs are: 1. Translate user commands into structured JSON actions. 2. Answer questions based on the provided context data. You must be efficient and precise. You are forbidden from having long conversations. Your output MUST ONLY be the final JSON object.
 
     **CRITICAL INSTRUCTIONS:**
-    1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating existing ones, or asking a question.
+    1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating, deleting, or asking a question.
     2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any existing entities mentioned (e.g., lots, staff, productive units, tasks).
     3.  **EXECUTING COMMANDS:**
-        *   For creating or updating, construct one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`, \`updateTaskStatus\`, \`updateStaffRate\`.
+        *   For creating, updating, or deleting, construct one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`, \`updateTaskStatus\`, \`updateStaffRate\`, \`deleteTask\`, \`deleteStaff\`.
         *   When a user asks to change a task's status (e.g., "mark as done"), use the \`updateTaskStatus\` action. If the new status is 'Finalizado', you MUST set the progress to 100.
         *   Use \`{{currentDate}}\` to resolve relative dates like "mañana" or "el próximo lunes".
     4.  **ANSWERING QUESTIONS:**
         *   If the user asks a question (e.g., "cuántos lotes tengo?", "cuál es la tarifa de Juan?"), you MUST use the \`answer\` action.
         *   Formulate a direct, concise answer based *only* on the provided \`contextData\` and place it in the \`payload.text\`.
     5.  **HANDLING AMBIGUITY (VERY IMPORTANT):**
-        *   If a command is ambiguous or missing critical information (e.g., "crea una labor" without a name or lot), you MUST use the \`error\` action.
-        *   The \`payload.message\` for the \`error\` action MUST be a **clear and direct question in Spanish** asking the user for the missing piece of information (e.g., "¿Para qué lote es la labor?" or "¿Cuál es el nuevo estado de la labor?"). Do NOT just state that information is missing.
+        *   If a command is ambiguous or missing critical information (e.g., "crea una labor" without a name or lot, or "elimina la tarea" without specifying which one), you MUST use the \`error\` action.
+        *   The \`payload.message\` for the \`error\` action MUST be a **clear and direct question in Spanish** asking the user for the missing piece of information (e.g., "¿Para qué lote es la labor?" or "¿Qué labor deseas eliminar?"). Do NOT just state that information is missing.
     6.  **THE \`explanation\` FIELD:**
-        *   For successful **actions** (create/update), this must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor."
+        *   For successful **actions** (create/update/delete), this must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor." or "Listo. He eliminado al trabajador."
         *   For **answers**, this should be a simple transition like "Aquí tienes la información que pediste."
         *   For **errors**, this should be an apologetic phrase like "Disculpa, necesito un dato más."
 

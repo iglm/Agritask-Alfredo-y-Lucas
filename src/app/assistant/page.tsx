@@ -33,6 +33,8 @@ export default function AssistantPage() {
     addStaff,
     updateTask,
     updateStaff,
+    deleteTask,
+    deleteStaff,
     isLoading: isDataLoading,
   } = useAppData();
 
@@ -135,6 +137,26 @@ export default function AssistantPage() {
                 await updateStaff({ ...staffToUpdate, baseDailyRate: newRate });
             } else {
                 responseMessage.content = "Error: No pude encontrar al trabajador para actualizar.";
+            }
+            break;
+          }
+          case 'deleteTask': {
+            const { taskId } = result.action.payload;
+            const taskToDelete = tasks?.find(t => t.id === taskId);
+            if (taskToDelete) {
+                await deleteTask(taskId);
+            } else {
+                responseMessage.content = "Error: No pude encontrar la labor para eliminar.";
+            }
+            break;
+          }
+          case 'deleteStaff': {
+            const { staffId } = result.action.payload;
+            const staffToDelete = staff?.find(s => s.id === staffId);
+            if (staffToDelete) {
+                await deleteStaff(staffId);
+            } else {
+                responseMessage.content = "Error: No pude encontrar al trabajador para eliminar.";
             }
             break;
           }
