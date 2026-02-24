@@ -213,13 +213,13 @@ export default function DashboardPage() {
         <KpiCard
           title="Ingresos Totales"
           value={`$${totalIncome.toLocaleString()}`}
-          icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+          icon={<TrendingUp className="h-6 w-6 text-success" />}
           href="/financials"
         />
         <KpiCard
           title="Egresos Totales"
           value={`$${totalExpenses.toLocaleString()}`}
-          icon={<TrendingDown className="h-6 w-6 text-red-600" />}
+          icon={<TrendingDown className="h-6 w-6 text-destructive" />}
           href="/financials"
         />
         <KpiCard
