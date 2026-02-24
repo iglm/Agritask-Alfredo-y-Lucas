@@ -84,19 +84,14 @@ export default function LotsPage() {
 
   const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
     try {
-      const dataToSubmit = {
-        ...values,
-        sowingDate: values.sowingDate ? format(new Date(values.sowingDate), 'yyyy-MM-dd') : undefined,
-      };
-
       if (editingLot) {
-        await updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
+        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
         toast({
           title: "¡Lote actualizado!",
           description: "Los detalles del lote han sido actualizados.",
         });
       } else {
-        await addLot(dataToSubmit);
+        await addLot(values);
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",
@@ -156,18 +151,14 @@ export default function LotsPage() {
   const handleSubLotFormSubmit = async (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (!currentLot) return;
     try {
-       const dataToSubmit = {
-        ...values,
-        sowingDate: values.sowingDate ? format(new Date(values.sowingDate), 'yyyy-MM-dd') : undefined,
-      };
       if (editingSubLot) {
-        await updateSubLot({ ...dataToSubmit, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+        await updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
         toast({
           title: "¡Sub-lote actualizado!",
           description: "Los detalles del sub-lote han sido actualizados.",
         });
       } else {
-        await addSubLot(currentLot.id, dataToSubmit);
+        await addSubLot(currentLot.id, values);
         toast({
           title: "¡Sub-lote creado!",
           description: "El nuevo sub-lote ha sido agregado.",

@@ -100,15 +100,8 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
 
   const onSubmit = (values: LotFormValues) => {
     const dataToSubmit = {
-      name: values.name,
-      areaHectares: values.areaHectares,
-      location: values.location,
-      sowingDate: values.sowingDate,
-      sowingDensity: values.sowingDensity,
-      distanceBetweenPlants: values.distanceBetweenPlants,
-      distanceBetweenRows: values.distanceBetweenRows,
-      totalTrees: values.totalTrees,
-      technicalNotes: values.technicalNotes,
+      ...values,
+      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
     };
     handleOnSubmit(dataToSubmit);
   }

@@ -81,9 +81,6 @@ export type ProductiveUnit = {
   projectStartDate?: string;
   totalFarmArea?: number;
   cultivatedArea?: number;
-  sowingDensity?: number;
-  distanceBetweenPlants?: number;
-  distanceBetweenRows?: number;
 };
 
 export type StaffAttendance = {

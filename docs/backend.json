@@ -391,17 +391,6 @@
         },
         "cultivatedArea": {
           "type": "number"
-        },
-        "sowingDensity": {
-          "type": "number"
-        },
-        "distanceBetweenPlants": {
-          "type": "number",
-          "description": "Distancia de siembra entre plantas en una misma fila (metros)."
-        },
-        "distanceBetweenRows": {
-          "type": "number",
-          "description": "Distancia de siembra entre filas o surcos (metros)."
         }
       },
       "required": [

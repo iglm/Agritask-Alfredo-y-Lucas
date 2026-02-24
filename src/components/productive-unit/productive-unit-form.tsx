@@ -26,9 +26,6 @@ const formSchema = z.object({
   projectStartDate: z.string().optional(),
   totalFarmArea: z.coerce.number().optional(),
   cultivatedArea: z.coerce.number().optional(),
-  sowingDensity: z.coerce.number().optional(),
-  distanceBetweenPlants: z.coerce.number().optional(),
-  distanceBetweenRows: z.coerce.number().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,30 +52,16 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       projectStartDate: productiveUnit?.projectStartDate ?? "",
       totalFarmArea: productiveUnit?.totalFarmArea ?? undefined,
       cultivatedArea: productiveUnit?.cultivatedArea ?? undefined,
-      sowingDensity: productiveUnit?.sowingDensity ?? undefined,
-      distanceBetweenPlants: productiveUnit?.distanceBetweenPlants ?? undefined,
-      distanceBetweenRows: productiveUnit?.distanceBetweenRows ?? undefined,
     },
   });
 
   const { isSubmitting } = form.formState;
-  const { watch, setValue } = form;
-  const distanceBetweenPlants = watch('distanceBetweenPlants');
-  const distanceBetweenRows = watch('distanceBetweenRows');
-
-  useEffect(() => {
-    if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
-      const density = 10000 / (distanceBetweenPlants * distanceBetweenRows);
-      setValue('sowingDensity', parseFloat(density.toFixed(2)));
-    }
-  }, [distanceBetweenPlants, distanceBetweenRows, setValue]);
-
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
+        <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3']} className="w-full">
             <AccordionItem value="item-1">
                 <AccordionTrigger>1. Información de Ubicación</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
@@ -130,7 +113,7 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
             </AccordionItem>
 
             <AccordionItem value="item-3">
-                <AccordionTrigger>3. Parámetros de la Finca</AccordionTrigger>
+                <AccordionTrigger>3. Parámetros Generales</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField control={form.control} name="altitudeRange" render={({ field }) => (
@@ -152,17 +135,6 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             <FormItem><FormLabel>Área en cultivo (Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="distanceBetweenPlants" render={({ field }) => (
-                            <FormItem><FormLabel>Distancia entre Plantas (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 2.5" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="distanceBetweenRows" render={({ field }) => (
-                            <FormItem><FormLabel>Distancia entre Surcos (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                    </div>
-                     <FormField control={form.control} name="sowingDensity" render={({ field }) => (
-                        <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} placeholder="Calculada..." readOnly /></FormControl><FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription><FormMessage /></FormItem>
-                    )} />
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
