@@ -364,7 +364,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                       <FormItem>
                           <FormLabel>Repetir cada</FormLabel>
                           <FormControl>
-                          <Input type="number" placeholder="Ej: 30" {...field} />
+                          <Input type="number" placeholder="Ej: 30" {...field} value={field.value ?? ''} />
                           </FormControl>
                           <FormMessage />
                       </FormItem>
@@ -421,7 +421,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     <FormItem>
                       <FormLabel>Tiempo Inactividad (minutos)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -455,5 +455,3 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
     </Form>
   )
 }
-
-    
