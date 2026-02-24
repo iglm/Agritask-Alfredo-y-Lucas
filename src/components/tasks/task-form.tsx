@@ -173,7 +173,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>La labor no podrá iniciarse hasta que la labor seleccionada esté finalizada.</FormDescription>
+              <FormDescription>Primero debes guardar la labor previa para que aparezca en esta lista. La labor actual no podrá iniciarse hasta que su dependencia esté finalizada.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
