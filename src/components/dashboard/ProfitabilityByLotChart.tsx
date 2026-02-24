@@ -11,19 +11,6 @@ type ProfitabilityByLotChartProps = {
   transactions: Transaction[];
 };
 
-const CustomBar = (props: any) => {
-    const { x, y, width, height, value } = props;
-    const isNegative = value < 0;
-    const color = isNegative ? 'hsl(var(--chart-4))' : 'hsl(var(--chart-1))';
-    
-    // For negative values, the y position needs to be the original y, and height is positive
-    // For positive values, y needs to be shifted up by the height
-    const rectY = isNegative ? y : y - height;
-    const rectHeight = Math.abs(height);
-
-    return <rect x={x} y={y} width={width} height={height} fill={color} />;
-};
-
 export function ProfitabilityByLotChart({ lots, tasks, transactions }: ProfitabilityByLotChartProps) {
   const chartData = useMemo(() => {
     const dataByLot: { [key: string]: { name: string, profit: number } } = {};
@@ -74,10 +61,10 @@ export function ProfitabilityByLotChart({ lots, tasks, transactions }: Profitabi
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData}>
+          <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} allowDecimals={false} />
             <Tooltip
               cursor={{ fill: 'hsl(var(--muted))' }}
               contentStyle={{
@@ -85,9 +72,21 @@ export function ProfitabilityByLotChart({ lots, tasks, transactions }: Profitabi
                 borderRadius: 'var(--radius)',
                 border: '1px solid hsl(var(--border))'
               }}
-              formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, "Rentabilidad"]}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, "Rentabilidad"]}
             />
-            <Bar dataKey="profit" name="Rentabilidad" shape={<CustomBar />} />
+            {chartData.map((entry, index) => (
+              <Bar 
+                key={`bar-${index}`} 
+                dataKey="profit" 
+                name="Rentabilidad" 
+                fill={entry.profit >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-4))'} 
+                radius={[4, 4, 0, 0]}
+              >
+                  {index === 0 && chartData.map((cellEntry, cellIndex) => (
+                      <cell key={`cell-${cellIndex}`} fill={cellEntry.profit >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-4))'} />
+                  ))}
+              </Bar>
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

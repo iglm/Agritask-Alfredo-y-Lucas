@@ -13,7 +13,7 @@ import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
 export default function CalendarPage() {
-  const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask } = useAppData();
+  const { tasks: allTasks, lots, staff, supplies, isLoading, addTask, updateTask } = useAppData();
   const { toast } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -174,6 +174,7 @@ export default function CalendarPage() {
             lots={lots || []}
             staff={staff || []}
             tasks={allTasks || []}
+            supplies={supplies || []}
           />
         </DialogContent>
       </Dialog>

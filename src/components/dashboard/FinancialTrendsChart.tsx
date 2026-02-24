@@ -78,6 +78,7 @@ export function FinancialTrendsChart({ transactions, tasks }: FinancialTrendsCha
                 borderRadius: 'var(--radius)',
                 border: '1px solid hsl(var(--border))'
               }}
+               formatter={(value: number) => `$${value.toLocaleString()}`}
             />
             <Legend wrapperStyle={{fontSize: "14px"}}/>
             <Line type="monotone" dataKey="ingresos" stroke="hsl(var(--chart-1))" name="Ingresos" strokeWidth={2} />

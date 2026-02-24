@@ -46,6 +46,7 @@ export default function DashboardPage() {
       .filter(t => t.type === 'Egreso')
       .reduce((sum, t) => sum + t.amount, 0);
     
+    // El costo total es la suma de los costos de las labores (que ya incluyen insumos) y los egresos explícitos.
     const totalExpenses = totalTaskCost + totalExplicitExpenses;
     const netBalance = totalIncome - totalExpenses;
 

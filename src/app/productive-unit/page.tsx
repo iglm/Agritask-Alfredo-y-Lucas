@@ -40,6 +40,10 @@ export default function ProductiveUnitsPage() {
     if (!unitToDelete) return;
     try {
       await deleteProductiveUnit(unitToDelete.id);
+       toast({
+        title: "Unidad Productiva eliminada",
+        description: "La unidad ha sido eliminada permanentemente.",
+      });
     } catch (error) {
         // Error toast is handled by the provider, no need to show another one.
         console.error("Failed to delete productive unit:", error);

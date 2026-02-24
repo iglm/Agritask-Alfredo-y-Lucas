@@ -101,9 +101,9 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
                     </TableCell>
                     <TableCell className="text-right hidden md:table-cell">
                       <span className={cn(task.actualCost > totalPlannedCost && totalPlannedCost > 0 ? "text-destructive font-semibold" : "")}>
-                        ${task.actualCost.toFixed(0)}
+                        ${task.actualCost.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                       </span>
-                      {' '}/ <span className="text-muted-foreground">${totalPlannedCost.toFixed(0)}</span>
+                      {' '}/ <span className="text-muted-foreground">${totalPlannedCost.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
