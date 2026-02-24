@@ -545,176 +545,65 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Collection for storing user profile information. Each document is owned by a single user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The user's unique ID."
-            }
-          ]
-        }
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
       },
-      {
-        "path": "/lots/{lotId}",
-        "definition": {
-          "entityName": "Lot",
-          "schema": {
-            "$ref": "#/backend/entities/Lot"
-          },
-          "description": "Collection for storing Lot entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
-          "params": [
-            {
-              "name": "lotId",
-              "description": "Unique identifier for the lot."
-            }
-          ]
-        }
+      "description": "Collection for storing user profile information. Each document is owned by a single user."
+    },
+    "/lots/{lotId}": {
+      "schema": {
+        "$ref": "#/entities/Lot"
       },
-      {
-        "path": "/lots/{lotId}/sublots/{sublotId}",
-        "definition": {
-          "entityName": "SubLot",
-          "schema": {
-            "$ref": "#/backend/entities/SubLot"
-          },
-          "description": "Collection for storing SubLot entities within a specific Lot. Each document represents a sub-division of a lot.",
-          "params": [
-            {
-              "name": "lotId",
-              "description": "The parent lot's unique ID."
-            },
-            {
-              "name": "sublotId",
-              "description": "Unique identifier for the sub-lot."
-            }
-          ]
-        }
+      "description": "Collection for storing Lot entities. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+    },
+    "/lots/{lotId}/sublots/{sublotId}": {
+      "schema": {
+        "$ref": "#/entities/SubLot"
       },
-      {
-        "path": "/staff/{staffId}",
-        "definition": {
-          "entityName": "Staff",
-          "schema": {
-            "$ref": "#/backend/entities/Staff"
-          },
-          "description": "Collection for storing Staff entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
-          "params": [
-            {
-              "name": "staffId",
-              "description": "Unique identifier for the staff member."
-            }
-          ]
-        }
+      "description": "Collection for storing SubLot entities within a specific Lot. Each document represents a sub-division of a lot."
+    },
+    "/staff/{staffId}": {
+      "schema": {
+        "$ref": "#/entities/Staff"
       },
-      {
-        "path": "/staffAttendance/{attendanceId}",
-        "definition": {
-          "entityName": "StaffAttendance",
-          "schema": {
-            "$ref": "#/backend/entities/StaffAttendance"
-          },
-          "description": "Collection for storing daily staff attendance records. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
-          "params": [
-            {
-              "name": "attendanceId",
-              "description": "Unique identifier for the attendance record."
-            }
-          ]
-        }
+      "description": "Collection for storing Staff entities. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+    },
+    "/staffAttendance/{attendanceId}": {
+      "schema": {
+        "$ref": "#/entities/StaffAttendance"
       },
-      {
-        "path": "/tasks/{taskId}",
-        "definition": {
-          "entityName": "Task",
-          "schema": {
-            "$ref": "#/backend/entities/Task"
-          },
-          "description": "Collection for storing Task entities. Each document is owned by a single user, enforced by security rules on the 'userId' field.",
-          "params": [
-            {
-              "name": "taskId",
-              "description": "Unique identifier for the task."
-            }
-          ]
-        }
+      "description": "Collection for storing daily staff attendance records. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+    },
+    "/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/Task"
       },
-      {
-        "path": "/tasks/{taskId}/supplyUsages/{usageId}",
-        "definition": {
-          "entityName": "SupplyUsage",
-          "schema": {
-            "$ref": "#/backend/entities/SupplyUsage"
-          },
-          "description": "Sub-collection for tracking supplies used in a specific task.",
-          "params": [
-            {
-              "name": "taskId",
-              "description": "The parent task's unique ID."
-            },
-            {
-              "name": "usageId",
-              "description": "Unique identifier for the supply usage record."
-            }
-          ]
-        }
+      "description": "Collection for storing Task entities. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+    },
+    "/tasks/{taskId}/supplyUsages/{usageId}": {
+      "schema": {
+        "$ref": "#/entities/SupplyUsage"
       },
-      {
-        "path": "/productiveUnits/{unitId}",
-        "definition": {
-          "entityName": "ProductiveUnit",
-          "schema": {
-            "$ref": "#/backend/entities/ProductiveUnit"
-          },
-          "description": "Collection for storing the user's productive units. Each document is a single productive unit owned by a user.",
-          "params": [
-            {
-              "name": "unitId",
-              "description": "Unique identifier for the productive unit."
-            }
-          ]
-        }
+      "description": "Sub-collection for tracking supplies used in a specific task."
+    },
+    "/productiveUnits/{unitId}": {
+      "schema": {
+        "$ref": "#/entities/ProductiveUnit"
       },
-      {
-        "path": "/supplies/{supplyId}",
-        "definition": {
-          "entityName": "Supply",
-          "schema": {
-            "$ref": "#/backend/entities/Supply"
-          },
-          "description": "Collection for storing inventory supplies. Each document is owned by a single user.",
-          "params": [
-            {
-              "name": "supplyId",
-              "description": "Unique identifier for the supply."
-            }
-          ]
-        }
+      "description": "Collection for storing the user's productive units. Each document is a single productive unit owned by a user."
+    },
+    "/supplies/{supplyId}": {
+      "schema": {
+        "$ref": "#/entities/Supply"
       },
-      {
-        "path": "/transactions/{transactionId}",
-        "definition": {
-          "entityName": "Transaction",
-          "schema": {
-            "$ref": "#/backend/entities/Transaction"
-          },
-          "description": "Collection for storing financial transactions (income/expense). Each document is owned by a single user.",
-          "params": [
-            {
-              "name": "transactionId",
-              "description": "Unique identifier for the transaction."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed for a multi-tenant SaaS application where each user's data must be securely isolated. This is achieved by including a 'userId' field in every top-level data document (lots, staff, tasks) and enforcing ownership via Firestore Security Rules. A separate 'users' collection stores public profile information, which is readable by the user but only writable by them upon creation. This flat, user-centric data model ensures that queries are efficient and security rules are simple and performant, as they do not require complex joins or sub-collection lookups. This design provides clear data ownership."
+      "description": "Collection for storing inventory supplies. Each document is owned by a single user."
+    },
+    "/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Collection for storing financial transactions (income/expense). Each document is owned by a single user."
+    }
   }
 }

@@ -15,7 +15,6 @@ import { es } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { useEffect } from "react"
-import { useAppData } from "@/firebase"
 
 const lotFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -68,20 +67,17 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 
 
 export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
-  const { productiveUnits } = useAppData();
-  const defaultUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : null;
-
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: {
       name: lot?.name ?? "",
-      areaHectares: lot?.areaHectares ?? 0,
+      areaHectares: lot?.areaHectares ?? undefined,
       location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
-      sowingDensity: lot?.sowingDensity ?? defaultUnit?.sowingDensity ?? undefined,
-      distanceBetweenPlants: lot?.distanceBetweenPlants ?? defaultUnit?.distanceBetweenPlants ?? undefined,
-      distanceBetweenRows: lot?.distanceBetweenRows ?? defaultUnit?.distanceBetweenRows ?? undefined,
-      totalTrees: lot?.totalTrees ?? 0,
+      sowingDensity: lot?.sowingDensity ?? undefined,
+      distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
+      totalTrees: lot?.totalTrees ?? undefined,
       technicalNotes: lot?.technicalNotes ?? "",
     },
   });

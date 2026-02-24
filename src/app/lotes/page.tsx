@@ -35,7 +35,6 @@ export default function LotsPage() {
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (allLots) {
@@ -47,8 +46,9 @@ export default function LotsPage() {
   }, [allLots, searchTerm]);
 
   // --- Lot Handlers ---
-  const handleAddLot = () => {
+  const handleAddLot = async () => {
     setEditingLot(undefined);
+    // The limit check is now in addLot, so we just open the sheet
     setIsLotSheetOpen(true);
   };
   
@@ -62,45 +62,55 @@ export default function LotsPage() {
     setIsLotDeleteDialogOpen(true);
   };
 
-  const confirmDeleteLot = () => {
+  const confirmDeleteLot = async () => {
     if (!lotToDelete) return;
-    deleteLot(lotToDelete.id);
-    toast({
-      title: "Lote eliminado",
-      description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
-    });
-    setIsLotDeleteDialogOpen(false);
-    setLotToDelete(null);
+    try {
+      await deleteLot(lotToDelete.id);
+      toast({
+        title: "Lote eliminado",
+        description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el lote. Inténtalo de nuevo.",
+      });
+    } finally {
+      setIsLotDeleteDialogOpen(false);
+      setLotToDelete(null);
+    }
   };
 
-  const handleLotFormSubmit = (values: Omit<Lot, 'id' | 'userId'>) => {
-    const dataToSubmit = {
-      name: values.name,
-      areaHectares: values.areaHectares,
-      location: values.location,
-      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
-      sowingDensity: values.sowingDensity,
-      distanceBetweenPlants: values.distanceBetweenPlants,
-      distanceBetweenRows: values.distanceBetweenRows,
-      totalTrees: values.totalTrees,
-      technicalNotes: values.technicalNotes,
-    };
+  const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
+    try {
+      const dataToSubmit = {
+        ...values,
+        sowingDate: values.sowingDate ? format(new Date(values.sowingDate), 'yyyy-MM-dd') : undefined,
+      };
 
-    if (editingLot) {
-      updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
+      if (editingLot) {
+        await updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
+        toast({
+          title: "¡Lote actualizado!",
+          description: "Los detalles del lote han sido actualizados.",
+        });
+      } else {
+        await addLot(dataToSubmit);
+        toast({
+          title: "¡Lote creado!",
+          description: "El nuevo lote ha sido agregado a tu lista.",
+        });
+      }
+      setIsLotSheetOpen(false);
+      setEditingLot(undefined);
+    } catch (error: any) {
       toast({
-        title: "¡Lote actualizado!",
-        description: "Los detalles del lote han sido actualizados.",
-      });
-    } else {
-      addLot(dataToSubmit);
-      toast({
-        title: "¡Lote creado!",
-        description: "El nuevo lote ha sido agregado a tu lista.",
+        variant: "destructive",
+        title: "Uh oh! Algo salió mal.",
+        description: error.message || "No se pudo guardar el lote. Por favor, inténtalo de nuevo.",
       });
     }
-    setIsLotSheetOpen(false);
-    setEditingLot(undefined);
   };
   
   // --- SubLot Handlers ---
@@ -123,60 +133,94 @@ export default function LotsPage() {
     setIsSubLotDeleteDialogOpen(true);
   };
 
-  const confirmDeleteSubLot = () => {
+  const confirmDeleteSubLot = async () => {
     if (!subLotToDelete) return;
-    deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
-    toast({
-      title: "Sub-lote eliminado",
-      description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
-    });
-    setIsSubLotDeleteDialogOpen(false);
-    setSubLotToDelete(null);
+    try {
+      await deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
+      toast({
+        title: "Sub-lote eliminado",
+        description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el sub-lote. Inténtalo de nuevo.",
+      });
+    } finally {
+      setIsSubLotDeleteDialogOpen(false);
+      setSubLotToDelete(null);
+    }
   };
   
-  const handleSubLotFormSubmit = (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+  const handleSubLotFormSubmit = async (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (!currentLot) return;
-    
-    const dataToSubmit = {
-      name: values.name,
-      areaHectares: values.areaHectares,
-      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
-      sowingDensity: values.sowingDensity,
-      distanceBetweenPlants: values.distanceBetweenPlants,
-      distanceBetweenRows: values.distanceBetweenRows,
-      totalTrees: values.totalTrees,
-      technicalNotes: values.technicalNotes,
-    };
-
-    if (editingSubLot) {
-      updateSubLot({ ...dataToSubmit, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+    try {
+       const dataToSubmit = {
+        ...values,
+        sowingDate: values.sowingDate ? format(new Date(values.sowingDate), 'yyyy-MM-dd') : undefined,
+      };
+      if (editingSubLot) {
+        await updateSubLot({ ...dataToSubmit, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+        toast({
+          title: "¡Sub-lote actualizado!",
+          description: "Los detalles del sub-lote han sido actualizados.",
+        });
+      } else {
+        await addSubLot(currentLot.id, dataToSubmit);
+        toast({
+          title: "¡Sub-lote creado!",
+          description: "El nuevo sub-lote ha sido agregado.",
+        });
+      }
+      setIsSubLotSheetOpen(false);
+      setEditingSubLot(undefined);
+      setCurrentLot(undefined);
+    } catch (error: any) {
       toast({
-        title: "¡Sub-lote actualizado!",
-        description: "Los detalles del sub-lote han sido actualizados.",
-      });
-    } else {
-      addSubLot(currentLot.id, dataToSubmit);
-      toast({
-        title: "¡Sub-lote creado!",
-        description: "El nuevo sub-lote ha sido agregado.",
+        variant: "destructive",
+        title: "Uh oh! Algo salió mal.",
+        description: error.message || "No se pudo guardar el sub-lote. Por favor, inténtalo de nuevo.",
       });
     }
-    setIsSubLotSheetOpen(false);
-    setEditingSubLot(undefined);
-    setCurrentLot(undefined);
   };
+
 
   const handleExport = () => {
-    if (filteredLots.length > 0) {
-      exportToCsv(`lotes-${new Date().toISOString()}.csv`, filteredLots);
+    if (allLots && allLots.length > 0) {
+      const dataToExport = allLots.flatMap(lot => {
+          const lotData = {
+              id: lot.id,
+              nombre: lot.name,
+              area_hectareas: lot.areaHectares,
+              ubicacion: lot.location,
+              fecha_siembra: lot.sowingDate,
+              densidad_siembra: lot.sowingDensity,
+              arboles_totales: lot.totalTrees,
+              tipo: 'Lote Principal',
+              lote_padre: ''
+          };
+          const subLotsData = (lot.subLots || []).map(subLot => ({
+              id: subLot.id,
+              nombre: subLot.name,
+              area_hectareas: subLot.areaHectares,
+              ubicacion: lot.location, // Inherits from parent
+              fecha_siembra: subLot.sowingDate,
+              densidad_siembra: subLot.sowingDensity,
+              arboles_totales: subLot.totalTrees,
+              tipo: 'Sub-Lote',
+              lote_padre: lot.name
+          }));
+          return [lotData, ...subLotsData];
+      });
+      exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
     } else {
-      toast({
-        title: "No hay datos para exportar",
-        description: "Filtra los datos que deseas exportar.",
-      })
+        toast({
+            title: "No hay datos para exportar",
+            description: "No hay lotes para exportar.",
+        });
     }
   };
-
 
   return (
     <div>
@@ -188,9 +232,8 @@ export default function LotsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
-              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              Exportar
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
         </div>
       </PageHeader>
@@ -201,7 +244,7 @@ export default function LotsPage() {
         </div>
       ) : (
         <LotsTable 
-          lots={filteredLots}
+          lots={filteredLots} 
           tasks={allTasks || []} 
           onEditLot={handleEditLot} 
           onDeleteLot={handleDeleteLotRequest}
