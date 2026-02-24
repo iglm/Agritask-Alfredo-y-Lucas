@@ -17,6 +17,8 @@ export type Lot = {
   distanceBetweenPlants?: number;
   distanceBetweenRows?: number;
   totalTrees?: number;
+  soilType?: string;
+  phAverage?: number;
 };
 
 export type SubLot = {
@@ -41,6 +43,7 @@ export type Staff = {
   employmentType: "Permanente" | "Temporal" | "Contratista";
   baseDailyRate: number;
   eps?: string;
+  certifications?: string;
 };
 
 export type Task = {
@@ -151,7 +154,3 @@ export const expenseCategories = [
   "Gastos Administrativos",
   "Otro Egreso"
 ];
-
-    
-
-    

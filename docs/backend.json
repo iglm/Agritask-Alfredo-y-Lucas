@@ -78,6 +78,14 @@
         "totalTrees": {
           "type": "number",
           "description": "Número total de árboles en el lote."
+        },
+        "soilType": {
+          "type": "string",
+          "description": "Tipo de suelo del lote."
+        },
+        "phAverage": {
+          "type": "number",
+          "description": "Nivel de pH promedio del suelo."
         }
       },
       "required": [
@@ -180,6 +188,10 @@
         "baseDailyRate": {
           "type": "number",
           "description": "Base daily rate for the staff member."
+        },
+        "certifications": {
+          "type": "string",
+          "description": "Certificaciones obtenidas por el trabajador, separadas por comas."
         }
       },
       "required": [
@@ -623,5 +635,3 @@
     }
   }
 }
-
-    

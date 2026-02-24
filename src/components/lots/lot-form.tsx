@@ -22,6 +22,8 @@ const lotFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   location: z.string().optional(),
+  soilType: z.string().optional(),
+  phAverage: z.coerce.number().optional(),
   sowingDate: z.date().optional(),
   sowingDensity: z.coerce.number().optional(),
   distanceBetweenPlants: z.coerce.number().optional(),
@@ -83,6 +85,8 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
       distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
       totalTrees: lot?.totalTrees ?? undefined,
       technicalNotes: lot?.technicalNotes ?? "",
+      soilType: lot?.soilType ?? "",
+      phAverage: lot?.phAverage ?? undefined,
     },
   });
 
@@ -104,16 +108,12 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
 
   const onSubmit = (values: LotFormValues) => {
     const dataToSubmit = {
+      ...values,
       productiveUnitId: values.productiveUnitId,
       name: values.name,
       areaHectares: values.areaHectares,
       location: values.location,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
-      sowingDensity: values.sowingDensity,
-      distanceBetweenPlants: values.distanceBetweenPlants,
-      distanceBetweenRows: values.distanceBetweenRows,
-      totalTrees: values.totalTrees,
-      technicalNotes: values.technicalNotes,
     };
     handleOnSubmit(dataToSubmit);
   }
@@ -184,6 +184,34 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             )}
           />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="soilType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Franco-arcilloso" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phAverage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>pH Promedio (Opcional)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.1" placeholder="e.g., 5.5" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
          <FormField
             control={form.control}
             name="sowingDate"
@@ -225,7 +253,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Distancia entre Plantas (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} />
+                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -238,7 +266,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Distancia entre Surcos (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} />
+                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -252,7 +280,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             <FormItem>
               <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
               <FormControl>
-                <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly />
+                <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
               </FormControl>
               <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
               <FormMessage />
@@ -266,7 +294,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             <FormItem>
               <FormLabel># Árboles del Lote</FormLabel>
               <FormControl>
-                <Input type="number" {...field} readOnly />
+                <Input type="number" {...field} readOnly value={field.value ?? ''} />
               </FormControl>
               <FormDescription>Se calcula del área y la densidad. Límite: (Área * Densidad).</FormDescription>
               <FormMessage />

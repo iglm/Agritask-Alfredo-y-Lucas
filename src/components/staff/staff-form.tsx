@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { employmentTypes, type Staff } from "@/lib/types"
@@ -15,6 +15,7 @@ const staffFormSchema = z.object({
   eps: z.string().optional(),
   employmentType: z.enum(employmentTypes),
   baseDailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
+  certifications: z.string().optional(),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>
@@ -33,6 +34,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
       eps: "",
       employmentType: "Temporal",
       baseDailyRate: 0,
+      certifications: "",
     },
   });
 
@@ -117,6 +119,20 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="certifications"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Certificaciones (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., BPA, Orgánica" {...field} value={field.value ?? ''} />
+              </FormControl>
+              <FormDescription>Separa las certificaciones por comas.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button type="submit" className="w-full">{staffMember ? "Actualizar Personal" : "Crear Personal"}</Button>
       </form>
     </Form>

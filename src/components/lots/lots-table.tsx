@@ -39,7 +39,7 @@ const SubLotsList: React.FC<{
   const { data: subLots, isLoading } = useCollection<SubLot>(subLotsQuery);
 
   return (
-    <div className="p-4 bg-muted/50">
+    <div className="p-4 bg-background">
       <div className="flex justify-between items-center mb-2">
         <h4 className="font-semibold text-sm">Sub-lotes de {lot.name}</h4>
         <Button size="sm" variant="outline" onClick={() => onAddSubLot(lot)}>
@@ -51,7 +51,7 @@ const SubLotsList: React.FC<{
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : subLots && subLots.length > 0 ? (
-         <Table className="bg-background">
+         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
@@ -166,12 +166,27 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
                       <CollapsibleContent asChild>
                         <TableRow>
                           <TableCell colSpan={8} className="p-0 border-b-0">
-                            <SubLotsList 
-                              lot={lot} 
-                              onAddSubLot={onAddSubLot} 
-                              onEditSubLot={onEditSubLot} 
-                              onDeleteSubLot={onDeleteSubLot} 
-                            />
+                            <div className="bg-muted/50">
+                              <div className="p-4 border-b">
+                                  <h4 className="font-semibold text-sm mb-2">Detalles Adicionales</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                                      <div>
+                                          <p className="font-medium text-muted-foreground">Tipo de Suelo</p>
+                                          <p className="text-foreground">{lot.soilType || 'No especificado'}</p>
+                                      </div>
+                                      <div>
+                                          <p className="font-medium text-muted-foreground">pH Promedio</p>
+                                          <p className="text-foreground">{lot.phAverage !== undefined ? lot.phAverage : 'No especificado'}</p>
+                                      </div>
+                                  </div>
+                              </div>
+                              <SubLotsList 
+                                lot={lot} 
+                                onAddSubLot={onAddSubLot} 
+                                onEditSubLot={onEditSubLot} 
+                                onDeleteSubLot={onDeleteSubLot} 
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       </CollapsibleContent>
