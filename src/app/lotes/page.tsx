@@ -6,7 +6,7 @@ import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { Download, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
 import { useAppData, useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";

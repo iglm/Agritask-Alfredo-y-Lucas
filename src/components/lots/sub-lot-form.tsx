@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { SubLot } from "@/lib/types"
@@ -22,6 +22,14 @@ const subLotFormSchema = z.object({
   sowingDensity: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
+}).refine(data => {
+    if (data.totalTrees && data.areaHectares && data.sowingDensity) {
+        return data.totalTrees <= data.areaHectares * data.sowingDensity;
+    }
+    return true;
+}, {
+    message: "El número de árboles excede la capacidad del sub-lote según la densidad de siembra.",
+    path: ["totalTrees"],
 });
 
 type SubLotFormValues = z.infer<typeof subLotFormSchema>;
@@ -84,6 +92,20 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
           />
            <FormField
             control={form.control}
+            name="sowingDensity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Densidad de Siembra</FormLabel>
+                <FormControl>
+                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+         <FormField
+            control={form.control}
             name="totalTrees"
             render={({ field }) => (
               <FormItem>
@@ -91,11 +113,11 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
+                 <FormDescription>Debe ser menor o igual que (Área * Densidad).</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
          <FormField
             control={form.control}
             name="sowingDate"
@@ -120,20 +142,6 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
             )}
           />
         
-          <FormField
-            control={form.control}
-            name="sowingDensity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Densidad de Siembra (Opcional)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
         <FormField
           control={form.control}
           name="technicalNotes"
