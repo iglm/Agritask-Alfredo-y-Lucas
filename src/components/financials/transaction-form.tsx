@@ -78,14 +78,17 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
   }
 
   const { lotsByUnit, unassignedLots } = useMemo(() => {
-    const lotsByUnit = productiveUnits
+    const safeLots = lots || [];
+    const safeProductiveUnits = productiveUnits || [];
+
+    const lotsByUnit = safeProductiveUnits
         .map(unit => ({
             unit,
-            lots: lots.filter(lot => lot.productiveUnitId === unit.id),
+            lots: safeLots.filter(lot => lot.productiveUnitId === unit.id),
         }))
         .filter(group => group.lots.length > 0);
     
-    const unassignedLots = lots.filter(lot => !lot.productiveUnitId);
+    const unassignedLots = safeLots.filter(lot => !lot.productiveUnitId);
 
     return { lotsByUnit, unassignedLots };
   }, [lots, productiveUnits]);
