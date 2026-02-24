@@ -14,14 +14,14 @@ import { Button } from "@/components/ui/button";
 import { exportToCsv } from "@/lib/csv";
 import { useToast } from "@/hooks/use-toast";
 import { SubLot } from "@/lib/types";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinancialTrendsChart } from "@/components/dashboard/FinancialTrendsChart";
 import { ProfitabilityByLotChart } from "@/components/dashboard/ProfitabilityByLotChart";
 import { WorkerPerformanceChart } from "@/components/dashboard/WorkerPerformanceChart";
 
 export default function DashboardPage() {
-  const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore } = useAppData();
+  const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore, user } = useAppData();
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   
@@ -54,7 +54,7 @@ export default function DashboardPage() {
   }, [lots, tasks, transactions, isLoading]);
 
   const handleExportAll = async () => {
-    if (!firestore) {
+    if (!firestore || !user) {
       toast({ variant: "destructive", title: "Error", description: "No se puede conectar a la base de datos." });
       return;
     }
@@ -81,6 +81,17 @@ export default function DashboardPage() {
       // 2. Lots and Sublots
       if (lots && lots.length > 0) {
         const dataToExport = [];
+        // Efficiently fetch all sublots for the user in one go
+        const allSublotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
+        const sublotsSnapshot = await getDocs(allSublotsQuery);
+        const sublotsByLotId = new Map<string, SubLot[]>();
+        sublotsSnapshot.forEach(doc => {
+            const subLot = doc.data() as SubLot;
+            const sublots = sublotsByLotId.get(subLot.lotId) || [];
+            sublots.push(subLot);
+            sublotsByLotId.set(subLot.lotId, sublots);
+        });
+
         for (const lot of lots) {
             dataToExport.push({
                 id: lot.id,
@@ -94,10 +105,9 @@ export default function DashboardPage() {
                 lote_padre: ''
             });
 
-            const sublotsSnapshot = await getDocs(collection(firestore, 'lots', lot.id, 'sublots'));
-            sublotsSnapshot.forEach(doc => {
-                const subLot = doc.data() as SubLot;
-                dataToExport.push({
+            const lotSublots = sublotsByLotId.get(lot.id) || [];
+            for (const subLot of lotSublots) {
+                 dataToExport.push({
                     id: subLot.id,
                     nombre: subLot.name,
                     area_hectareas: subLot.areaHectares,
@@ -108,7 +118,7 @@ export default function DashboardPage() {
                     tipo: 'Sub-Lote',
                     lote_padre: lot.name
                 });
-            });
+            }
         }
         if (dataToExport.length > 0) {
           exportToCsv(`lotes-y-sublotes_respaldo.csv`, dataToExport);
