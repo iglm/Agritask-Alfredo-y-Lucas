@@ -95,11 +95,16 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
   }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: SubLotFormValues) => {
-    const dataToSubmit = {
-      ...values,
-      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+    // Destructure to isolate the date object
+    const { sowingDate, ...rest } = values;
+    
+    // Create the final object for submission, ensuring date is a string
+    const dataToSubmit: Omit<SubLot, 'id' | 'userId' | 'lotId'> = {
+      ...rest,
+      sowingDate: sowingDate ? format(sowingDate, 'yyyy-MM-dd') : undefined,
     };
-    handleOnSubmit(dataToSubmit as any);
+    
+    handleOnSubmit(dataToSubmit);
   }
 
   return (

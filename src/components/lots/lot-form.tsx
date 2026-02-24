@@ -100,11 +100,16 @@ export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFo
   }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: LotFormValues) => {
-    const dataToSubmit = {
-      ...values,
-      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+    // Destructure to isolate the date object
+    const { sowingDate, ...rest } = values;
+    
+    // Create the final object for submission, ensuring date is a string
+    const dataToSubmit: Omit<Lot, 'id' | 'userId'> = {
+      ...rest,
+      sowingDate: sowingDate ? format(sowingDate, 'yyyy-MM-dd') : undefined,
     };
-    handleOnSubmit(dataToSubmit as any);
+    
+    handleOnSubmit(dataToSubmit);
   }
 
   return (
