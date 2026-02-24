@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { Lot } from "@/lib/types"
+import type { Lot, ProductiveUnit } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -41,6 +41,7 @@ type LotFormValues = z.infer<typeof lotFormSchema>;
 
 type LotFormProps = {
   lot?: Lot;
+  productiveUnit?: ProductiveUnit | null;
   onSubmit: (values: Omit<Lot, 'id' | 'userId'>) => void;
 };
 
@@ -66,7 +67,7 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 };
 
 
-export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
+export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFormProps) {
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: {
@@ -74,9 +75,9 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       areaHectares: lot?.areaHectares ?? 0,
       location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
-      sowingDensity: lot?.sowingDensity ?? 0,
-      distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
-      distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
+      sowingDensity: lot?.sowingDensity ?? productiveUnit?.sowingDensity ?? 0,
+      distanceBetweenPlants: lot?.distanceBetweenPlants ?? productiveUnit?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: lot?.distanceBetweenRows ?? productiveUnit?.distanceBetweenRows ?? undefined,
       totalTrees: lot?.totalTrees ?? 0,
       technicalNotes: lot?.technicalNotes ?? "",
     },

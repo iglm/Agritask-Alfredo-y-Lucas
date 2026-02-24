@@ -17,7 +17,7 @@ import { SubLotForm } from "@/components/lots/sub-lot-form";
 import { collectionGroup, getDocs, query, where } from "firebase/firestore";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
+  const { lots: allLots, tasks: allTasks, productiveUnit, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
   const { user } = useUser();
   const { toast } = useToast();
   
@@ -265,7 +265,7 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} />
+          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnit={productiveUnit} />
         </SheetContent>
       </Sheet>
       
