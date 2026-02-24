@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
-import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -40,16 +40,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const productiveUnitQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid), where('id', '==', user.uid)) : null, [firestore, user]);
+  
+  // CORRECTED: Use useDoc for fetching a single document by its known ID.
+  const productiveUnitDocRef = useMemoFirebase(() => user && firestore ? doc(firestore, 'productiveUnits', user.uid) : null, [firestore, user]);
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
-  const { data: productiveUnitCollection, isLoading: productiveUnitLoading } = useCollection<ProductiveUnit>(productiveUnitQuery);
+  const { data: productiveUnit, isLoading: productiveUnitLoading } = useDoc<ProductiveUnit>(productiveUnitDocRef);
 
-  const productiveUnit = useMemo(() => (productiveUnitCollection?.[0]) || null, [productiveUnitCollection]);
-  
+
   const ensureAuth = () => {
     if (!user || !firestore) {
         toast({ variant: 'destructive', title: 'Error de autenticación', description: 'Debes iniciar sesión para realizar esta acción.' });
