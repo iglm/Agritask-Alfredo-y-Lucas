@@ -61,7 +61,7 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
       description: transaction?.description ?? "",
       amount: transaction?.amount ?? 0,
       category: transaction?.category ?? "",
-      lotId: transaction?.lotId ?? "",
+      lotId: transaction?.lotId ?? "none",
     }
   });
 
@@ -74,7 +74,11 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
   }
 
   function handleFormSubmit(values: TransactionFormValues) {
-    onSubmit(values);
+    const dataToSubmit = {
+      ...values,
+      lotId: values.lotId === 'none' ? undefined : values.lotId,
+    };
+    onSubmit(dataToSubmit);
   }
 
   const { lotsByUnit, unassignedLots } = useMemo(() => {
@@ -207,9 +211,9 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
                 <FormItem>
                     <FormLabel>Lote Asociado (Opcional)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Ninguno" /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Ninguno / Gasto General" /></SelectTrigger></FormControl>
                     <SelectContent>
-                        <SelectItem value="">Ninguno</SelectItem>
+                        <SelectItem value="none">Ninguno / Gasto General</SelectItem>
                         {lotsByUnit.map(group => (
                             <SelectGroup key={group.unit.id}>
                                 <SelectLabel>{group.unit.farmName}</SelectLabel>
