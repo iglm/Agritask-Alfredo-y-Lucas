@@ -14,11 +14,11 @@ import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
 import { format } from "date-fns";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
+  const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore, user } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -92,19 +92,15 @@ export default function LotsPage() {
   };
 
   const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
-    const dataToSubmit = {
-        ...values,
-        sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
-    };
     try {
       if (editingLot) {
-        await updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
+        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
         toast({
           title: "¡Lote actualizado!",
           description: "Los detalles del lote han sido actualizados.",
         });
       } else {
-        await addLot(dataToSubmit);
+        await addLot(values);
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",
@@ -190,50 +186,61 @@ export default function LotsPage() {
   };
 
   const handleExport = async () => {
-    if (!firestore) {
-      toast({ variant: "destructive", title: "Error", description: "No se puede conectar a la base de datos." });
+    if (!firestore || !user) {
+      toast({ variant: "destructive", title: "Error de autenticación", description: "Inicia sesión para exportar." });
       return;
     }
     if (allLots && allLots.length > 0) {
       setIsExporting(true);
       try {
-        const dataToExport = [];
-        for (const lot of allLots) {
-            dataToExport.push({
-                id: lot.id,
-                nombre: lot.name,
-                area_hectareas: lot.areaHectares,
-                ubicacion: lot.location,
-                fecha_siembra: lot.sowingDate,
-                densidad_siembra: lot.sowingDensity,
-                arboles_totales: lot.totalTrees,
-                tipo: 'Lote Principal',
-                lote_padre: ''
-            });
+        const lotsToExport = allLots.map(lot => ({
+            id: lot.id,
+            nombre: lot.name,
+            area_hectareas: lot.areaHectares,
+            ubicacion: lot.location,
+            fecha_siembra: lot.sowingDate,
+            densidad_siembra: lot.sowingDensity,
+            arboles_totales: lot.totalTrees,
+            tipo: 'Lote Principal',
+            lote_padre: ''
+        }));
+        
+        // Efficiently fetch all sublots for the user in one go
+        const allSublotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
+        const sublotsSnapshot = await getDocs(allSublotsQuery);
+        const parentLotNames = new Map(allLots.map(lot => [lot.id, lot.name]));
 
-            const sublotsSnapshot = await getDocs(collection(firestore, 'lots', lot.id, 'sublots'));
-            sublotsSnapshot.forEach(doc => {
-                const subLot = doc.data() as SubLot;
-                dataToExport.push({
-                    id: subLot.id,
-                    nombre: subLot.name,
-                    area_hectareas: subLot.areaHectares,
-                    ubicacion: lot.location, // Inherits from parent
-                    fecha_siembra: subLot.sowingDate,
-                    densidad_siembra: subLot.sowingDensity,
-                    arboles_totales: subLot.totalTrees,
-                    tipo: 'Sub-Lote',
-                    lote_padre: lot.name
-                });
+        const sublotsToExport = sublotsSnapshot.docs.map(doc => {
+            const subLot = doc.data() as SubLot;
+            const parentLot = allLots.find(l => l.id === subLot.lotId);
+            return {
+                id: subLot.id,
+                nombre: subLot.name,
+                area_hectareas: subLot.areaHectares,
+                ubicacion: parentLot?.location || 'N/A', // Inherits from parent
+                fecha_siembra: subLot.sowingDate,
+                densidad_siembra: subLot.sowingDensity,
+                arboles_totales: subLot.totalTrees,
+                tipo: 'Sub-Lote',
+                lote_padre: parentLotNames.get(subLot.lotId) || ''
+            };
+        });
+
+        const dataToExport = [...lotsToExport, ...sublotsToExport];
+        if (dataToExport.length > 0) {
+            exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
+        } else {
+            toast({
+                title: "No hay datos para exportar",
+                description: "No se encontraron lotes ni sub-lotes.",
             });
         }
-        exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
       } catch (error) {
         console.error("Error al exportar lotes:", error);
         toast({
             variant: "destructive",
             title: "Error al exportar",
-            description: "No se pudieron obtener los datos de sub-lotes para la exportación.",
+            description: "No se pudieron obtener los datos para la exportación.",
         });
       } finally {
         setIsExporting(false);

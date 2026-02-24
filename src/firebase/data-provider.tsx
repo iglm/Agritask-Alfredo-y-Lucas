@@ -1,13 +1,14 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { User } from 'firebase/auth';
 
 interface DataContextState {
   lots: Lot[] | null;
@@ -16,6 +17,7 @@ interface DataContextState {
   supplies: Supply[] | null;
   productiveUnits: ProductiveUnit[] | null;
   transactions: Transaction[] | null;
+  user: User | null;
   isLoading: boolean;
   firestore: ReturnType<typeof useFirebase>['firestore'];
   addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
@@ -529,6 +531,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     supplies,
     productiveUnits,
     transactions,
+    user,
     isLoading,
     firestore,
     addLot, updateLot, deleteLot,
