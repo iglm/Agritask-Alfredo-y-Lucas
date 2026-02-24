@@ -272,10 +272,22 @@
           "description": "Fecha de finalización de la labor.",
           "format": "date"
         },
-        "reentryDate": {
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Indica si la labor es recurrente."
+        },
+        "recurrenceFrequency": {
           "type": "string",
-          "description": "Fecha de reingreso para la labor en el mismo lote.",
-          "format": "date"
+          "description": "La frecuencia con la que se repite la labor.",
+          "enum": [
+            "días",
+            "semanas",
+            "meses"
+          ]
+        },
+        "recurrenceInterval": {
+          "type": "number",
+          "description": "El intervalo para la frecuencia de recurrencia (ej. cada 2 semanas)."
         },
         "status": {
           "type": "string",
@@ -287,13 +299,13 @@
             "Finalizado"
           ]
         },
-        "plannedJournals": {
-          "type": "number",
-          "description": "Planned man-days (journals) for the task."
-        },
         "progress": {
           "type": "number",
           "description": "Progress of the task (0-100%)."
+        },
+        "plannedJournals": {
+          "type": "number",
+          "description": "Planned man-days (journals) for the task."
         },
         "plannedCost": {
           "type": "number",

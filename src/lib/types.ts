@@ -52,7 +52,9 @@ export type Task = {
   dependsOn?: string;
   startDate: string;
   endDate?: string;
-  reentryDate?: string;
+  isRecurring?: boolean;
+  recurrenceFrequency?: 'días' | 'semanas' | 'meses';
+  recurrenceInterval?: number;
   status: 'Por realizar' | 'En Proceso' | 'Pendiente' | 'Finalizado';
   progress: number;
   plannedJournals: number;
@@ -119,3 +121,4 @@ export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Tempor
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
 export const supplyUnits: Supply['unitOfMeasure'][] = ['Kg', 'Lt', 'Unidad', 'Bulto', 'Galón', 'Caja'];
+export const recurrenceFrequencies: NonNullable<Task['recurrenceFrequency']>[] = ['días', 'semanas', 'meses'];

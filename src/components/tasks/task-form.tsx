@@ -10,13 +10,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply } from "@/lib/types"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Slider } from "../ui/slider"
 import { SupplyUsageManager } from "./supply-usage-manager"
+import { Switch } from "../ui/switch"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
@@ -26,12 +27,22 @@ const taskFormSchema = z.object({
   category: z.enum(taskCategories),
   startDate: z.date({ required_error: "La fecha de inicio es obligatoria." }),
   endDate: z.date().optional(),
-  reentryDate: z.date().optional(),
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
   downtimeMinutes: z.coerce.number().optional(),
   observations: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceInterval: z.coerce.number().optional(),
+  recurrenceFrequency: z.enum(recurrenceFrequencies).optional(),
+}).refine(data => {
+    if (data.isRecurring) {
+        return data.recurrenceInterval && data.recurrenceInterval > 0 && data.recurrenceFrequency;
+    }
+    return true;
+}, {
+    message: "Debes definir un intervalo y frecuencia válidos para una labor recurrente.",
+    path: ["recurrenceInterval"],
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>
@@ -77,17 +88,20 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       category: task?.category ?? "Mantenimiento",
       startDate: getInitialDate(task?.startDate) ?? new Date(),
       endDate: getInitialDate(task?.endDate),
-      reentryDate: getInitialDate(task?.reentryDate),
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
       downtimeMinutes: task?.downtimeMinutes ?? 0,
       observations: task?.observations ?? "",
+      isRecurring: task?.isRecurring ?? false,
+      recurrenceInterval: task?.recurrenceInterval ?? undefined,
+      recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
     }
   });
 
   const availableDependencies = tasks.filter(t => t.id !== task?.id);
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'Lote no encontrado';
+  const isRecurring = form.watch('isRecurring');
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
@@ -116,7 +130,6 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       dependsOn: dependsOn === 'none' ? undefined : dependsOn,
       startDate: format(values.startDate, 'yyyy-MM-dd'),
       endDate: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : undefined,
-      reentryDate: values.reentryDate ? format(values.reentryDate, 'yyyy-MM-dd') : undefined,
       progress,
       plannedCost,
       supplyCost: task?.supplyCost || 0, // This is now managed by SupplyUsageManager
@@ -320,37 +333,62 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
         />
         
         <FormField
-            control={form.control}
-            name="reentryDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fecha Reingreso (Opcional)</FormLabel>
-                <Popover modal={true}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      locale={es}
-                      captionLayout="dropdown-buttons"
-                      fromYear={new Date().getFullYear() - 5}
-                      toYear={new Date().getFullYear() + 5}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          control={form.control}
+          name="isRecurring"
+          render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+              <FormLabel>Labor Recurrente</FormLabel>
+              <FormDescription>
+                  Si se marca, esta labor se creará automáticamente de nuevo después de finalizar.
+              </FormDescription>
+              </div>
+              <FormControl>
+              <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+              />
+              </FormControl>
+          </FormItem>
+          )}
+      />
+
+      {isRecurring && (
+          <div className="space-y-4 rounded-lg border p-4">
+              <h3 className="font-medium">Reglas de Recurrencia</h3>
+              <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                      control={form.control}
+                      name="recurrenceInterval"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Repetir cada</FormLabel>
+                          <FormControl>
+                          <Input type="number" placeholder="Ej: 30" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name="recurrenceFrequency"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Frecuencia</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                  {recurrenceFrequencies.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+              </div>
+          </div>
+      )}
 
         <div className="space-y-4 rounded-lg border p-4">
             <h3 className="font-medium">Costos y Tiempos</h3>

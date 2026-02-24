@@ -6,6 +6,8 @@ import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage } from '@
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
+import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface DataContextState {
   lots: Lot[] | null;
@@ -187,7 +189,61 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'tasks', data.id);
     try {
+        const originalTask = tasks?.find(t => t.id === data.id);
+        
         await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+
+        // Check for recurrence creation
+        if (
+            data.status === 'Finalizado' &&
+            originalTask?.status !== 'Finalizado' &&
+            data.isRecurring &&
+            data.recurrenceFrequency &&
+            data.recurrenceInterval &&
+            data.recurrenceInterval > 0
+        ) {
+            const oldStartDate = new Date(data.startDate.replace(/-/g, '/'));
+            let newStartDate: Date;
+
+            switch (data.recurrenceFrequency) {
+                case 'días':
+                    newStartDate = addDays(oldStartDate, data.recurrenceInterval);
+                    break;
+                case 'semanas':
+                    newStartDate = addWeeks(oldStartDate, data.recurrenceInterval);
+                    break;
+                case 'meses':
+                    newStartDate = addMonths(oldStartDate, data.recurrenceInterval);
+                    break;
+                default:
+                    console.error("Invalid recurrence frequency");
+                    return;
+            }
+
+            const nextTaskData: Omit<Task, 'id' | 'userId'> = {
+                lotId: data.lotId,
+                category: data.category,
+                type: data.type,
+                responsibleId: data.responsibleId,
+                startDate: format(newStartDate, 'yyyy-MM-dd'),
+                status: 'Por realizar',
+                progress: 0,
+                plannedJournals: data.plannedJournals,
+                plannedCost: data.plannedCost,
+                supplyCost: 0,
+                actualCost: 0,
+                isRecurring: data.isRecurring,
+                recurrenceFrequency: data.recurrenceFrequency,
+                recurrenceInterval: data.recurrenceInterval,
+            };
+
+            await addTask(nextTaskData);
+
+            toast({
+                title: 'Labor recurrente creada',
+                description: `Se ha programado la siguiente labor "${data.type}" para el ${format(newStartDate, "PPP", { locale: es })}.`
+            });
+        }
     } catch (error) {
         handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
     }
