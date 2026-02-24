@@ -12,6 +12,7 @@ import { employmentTypes, type Staff } from "@/lib/types"
 const staffFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   contact: z.string().min(7, { message: "El número de contacto es obligatorio." }),
+  eps: z.string().optional(),
   employmentType: z.enum(employmentTypes),
   baseDailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
 });
@@ -29,6 +30,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
     defaultValues: staffMember || {
       name: "",
       contact: "",
+      eps: "",
       employmentType: "Temporal",
       baseDailyRate: 0,
     },
@@ -50,19 +52,34 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="contact"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número de Contacto</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., 3101234567" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="contact"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número de Contacto</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., 3101234567" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="eps"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>EPS (Opcional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Sura" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

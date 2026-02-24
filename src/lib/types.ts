@@ -39,6 +39,7 @@ export type Staff = {
   contact: string;
   employmentType: "Permanente" | "Temporal" | "Contratista";
   baseDailyRate: number;
+  eps?: string;
 };
 
 export type Task = {

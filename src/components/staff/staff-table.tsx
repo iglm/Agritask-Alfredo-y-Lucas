@@ -31,7 +31,8 @@ export function StaffTable({ staff, onEdit, onDelete, onAdd }: StaffTableProps) 
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead className="hidden md:table-cell">Contacto</TableHead>
+              <TableHead className="hidden lg:table-cell">Contacto</TableHead>
+              <TableHead className="hidden md:table-cell">EPS</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Tarifa Diaria</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
@@ -42,7 +43,8 @@ export function StaffTable({ staff, onEdit, onDelete, onAdd }: StaffTableProps) 
               staff.map((staffMember) => (
                 <TableRow key={staffMember.id}>
                   <TableCell className="font-medium">{staffMember.name}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">{staffMember.contact}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">{staffMember.contact}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{staffMember.eps || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge variant={getBadgeVariant(staffMember.employmentType)}>{staffMember.employmentType}</Badge>
                   </TableCell>
@@ -71,7 +73,7 @@ export function StaffTable({ staff, onEdit, onDelete, onAdd }: StaffTableProps) 
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-96 p-0">
+                <TableCell colSpan={6} className="h-96 p-0">
                   <EmptyState
                     icon={<Users className="h-10 w-10" />}
                     title="Añade tu primer miembro del personal"
