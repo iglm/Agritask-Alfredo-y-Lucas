@@ -36,13 +36,14 @@ export default function ProductiveUnitsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!unitToDelete) return;
-    deleteProductiveUnit(unitToDelete.id);
-    toast({
-      title: "Unidad Productiva eliminada",
-      description: `La unidad "${unitToDelete.farmName}" ha sido eliminada.`,
-    });
+    try {
+      await deleteProductiveUnit(unitToDelete.id);
+    } catch (error) {
+        // Error toast is handled by the provider, no need to show another one.
+        console.error("Failed to delete productive unit:", error);
+    }
     setIsDeleteDialogOpen(false);
     setUnitToDelete(null);
   };

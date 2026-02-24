@@ -463,12 +463,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteProductiveUnit = async (id: string) => {
-    if (!ensureAuth()) return;
+    if (!ensureAuth()) throw new Error("Not authenticated");
+    
+    const associatedLots = lots?.filter(lot => lot.productiveUnitId === id) || [];
+    if (associatedLots.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No se puede eliminar la unidad',
+        description: `Esta unidad tiene ${associatedLots.length} lote(s) asociado(s). Debes eliminarlos o reasignarlos primero.`,
+        duration: 6000,
+      });
+      throw new Error('Unit has associated lots.');
+    }
+
     const docRef = doc(firestore, 'productiveUnits', id);
     try {
       await deleteDoc(docRef);
+      toast({
+        title: "Unidad Productiva eliminada",
+        description: "La unidad ha sido eliminada permanentemente.",
+      });
     } catch (error) {
       handleWriteError(error, docRef.path, 'delete');
+      throw error;
     }
   };
 

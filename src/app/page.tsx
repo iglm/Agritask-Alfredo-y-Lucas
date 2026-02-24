@@ -4,7 +4,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { InvestmentChart } from "@/components/dashboard/investment-chart";
 import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { useAppData } from "@/firebase";
-import { Tractor, Percent, TrendingUp, TrendingDown, Scale, Download, Loader2 } from "lucide-react";
+import { Tractor, TrendingUp, TrendingDown, Scale, Download, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,10 @@ import { exportToCsv } from "@/lib/csv";
 import { useToast } from "@/hooks/use-toast";
 import { SubLot } from "@/lib/types";
 import { collection, getDocs } from "firebase/firestore";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FinancialTrendsChart } from "@/components/dashboard/FinancialTrendsChart";
+import { ProfitabilityByLotChart } from "@/components/dashboard/ProfitabilityByLotChart";
+import { WorkerPerformanceChart } from "@/components/dashboard/WorkerPerformanceChart";
 
 export default function DashboardPage() {
   const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore } = useAppData();
@@ -23,19 +27,15 @@ export default function DashboardPage() {
   
   const { 
     totalLots, 
-    overallEfficiency, 
     totalIncome, 
     totalExpenses, 
     netBalance 
   } = useMemo(() => {
     if (isLoading || !lots || !tasks || !transactions) {
-      return { totalLots: 0, overallEfficiency: 0, totalIncome: 0, totalExpenses: 0, netBalance: 0 };
+      return { totalLots: 0, totalIncome: 0, totalExpenses: 0, netBalance: 0 };
     }
     
-    const totalLots = lots.length;
-    
-    const totalProgress = tasks.reduce((sum, task) => sum + task.progress, 0);
-    const overallEfficiency = tasks.length > 0 ? totalProgress / tasks.length : 0;
+    const totalLotsCount = lots.length;
 
     const totalIncome = transactions
       .filter(t => t.type === 'Ingreso')
@@ -49,7 +49,7 @@ export default function DashboardPage() {
     const totalExpenses = totalTaskCost + totalExplicitExpenses;
     const netBalance = totalIncome - totalExpenses;
 
-    return { totalLots, overallEfficiency, totalIncome, totalExpenses, netBalance };
+    return { totalLots: totalLotsCount, totalIncome, totalExpenses, netBalance };
   }, [lots, tasks, transactions, isLoading]);
 
   const handleExportAll = async () => {
@@ -229,19 +229,28 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3">
-          <InvestmentChart lots={lots || []} tasks={tasks || []} />
-        </div>
-        <div className="lg:col-span-2">
-          <TasksDistributionChart tasks={tasks || []} />
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UpcomingTasks tasks={tasks || []} lots={lots || []} />
-        <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
-      </div>
+       <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Visión General</TabsTrigger>
+          <TabsTrigger value="financial">Análisis Financiero</TabsTrigger>
+          <TabsTrigger value="operational">Análisis Operativo</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <UpcomingTasks tasks={tasks || []} lots={lots || []} />
+                <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
+            </div>
+        </TabsContent>
+        <TabsContent value="financial" className="mt-6 space-y-6">
+            <FinancialTrendsChart transactions={transactions || []} tasks={tasks || []} />
+            <ProfitabilityByLotChart lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
+            <InvestmentChart lots={lots || []} tasks={tasks || []} />
+        </TabsContent>
+        <TabsContent value="operational" className="mt-6 space-y-6">
+            <WorkerPerformanceChart staff={staff || []} tasks={tasks || []} />
+            <TasksDistributionChart tasks={tasks || []} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
