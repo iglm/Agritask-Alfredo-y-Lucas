@@ -20,7 +20,8 @@ export function InvestmentChart({ lots, tasks }: InvestmentChartProps) {
 
     tasks.forEach(task => {
       if (dataByLot[task.lotId]) {
-        dataByLot[task.lotId].planned += task.plannedCost;
+        const totalPlanned = (task.plannedCost || 0) + (task.supplyCost || 0);
+        dataByLot[task.lotId].planned += totalPlanned;
         dataByLot[task.lotId].actual += task.actualCost;
       }
     });

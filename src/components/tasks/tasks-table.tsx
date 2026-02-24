@@ -88,7 +88,10 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
                       <StatusBadge status={task.status} />
                     </TableCell>
                     <TableCell className="text-right hidden md:table-cell">
-                      ${task.actualCost.toFixed(0)} / <span className="text-muted-foreground">${totalPlannedCost.toFixed(0)}</span>
+                      <span className={cn(task.actualCost > totalPlannedCost && totalPlannedCost > 0 ? "text-destructive font-semibold" : "")}>
+                        ${task.actualCost.toFixed(0)}
+                      </span>
+                      {' '}/ <span className="text-muted-foreground">${totalPlannedCost.toFixed(0)}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
