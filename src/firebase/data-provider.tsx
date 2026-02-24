@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
@@ -9,6 +9,7 @@ import { FirestorePermissionError } from './errors';
 
 interface DataContextState {
   lots: Lot[] | null;
+  subLots: SubLot[] | null;
   staff: Staff[] | null;
   tasks: Task[] | null;
   supplies: Supply[] | null;
@@ -42,12 +43,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const subLotsQuery = useMemoFirebase(() => user && firestore ? query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const productiveUnitDocRef = useMemoFirebase(() => user && firestore ? doc(firestore, 'productiveUnits', user.uid) : null, [firestore, user]);
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
+  const { data: subLots, isLoading: subLotsLoading } = useCollection<SubLot>(subLotsQuery);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
@@ -334,10 +337,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitLoading;
+  const isLoading = isUserLoading || lotsLoading || subLotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitLoading;
 
   const value: DataContextState = {
     lots,
+    subLots,
     staff,
     tasks,
     supplies,

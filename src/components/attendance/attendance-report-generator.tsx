@@ -236,7 +236,7 @@ export function AttendanceReportGenerator({ staff }: Props) {
                         <TableBody>
                             {reportData.map(record => (
                             <TableRow key={record.id}>
-                                <TableCell>{format(new Date(record.date.replace(/-/g, '\/')), 'PPP', { locale: es })}</TableCell>
+                                <TableCell>{format(new Date(record.date), 'PPP', { locale: es })}</TableCell>
                                 <TableCell>
                                     <span className={cn(record.status === 'Presente' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-500')}>{record.status}</span>
                                 </TableCell>
