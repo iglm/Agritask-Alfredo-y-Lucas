@@ -55,7 +55,8 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', and 'productiveUnits' from the farm management system. Each object only contains the 'id' and 'name' of the entity. Also contains 'currentDate' in yyyy-MM-dd format."),
+  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', and 'productiveUnits' from the farm management system. Each object only contains the 'id' and 'name' of the entity."),
+  currentDate: z.string().describe("Today's date in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 
@@ -91,7 +92,7 @@ const assistantPrompt = ai.definePrompt({
     4.  **IF** the command is unclear, missing information (e.g., creating a task without specifying a lot), or refers to an entity not found in the context, you MUST respond with the \`error\` action. The error message must be specific and in Spanish.
     5.  **THE \`explanation\` FIELD** must be a single, short, past-tense sentence in Spanish confirming the action, like "Listo, he creado el lote La Pradera."
     6.  **NEVER** generate conversational text. Your entire output must be only the JSON object.
-    7.  Use the \`currentDate\` from the context to resolve relative dates like "mañana" or "el viernes". Today's date is: {{JSON.parse(contextData).currentDate}}.
+    7.  Use the \`currentDate\` from the context to resolve relative dates like "mañana" or "el viernes". Today's date is: {{currentDate}}.
 
     **User Command:** \`{{{command}}}\`
 

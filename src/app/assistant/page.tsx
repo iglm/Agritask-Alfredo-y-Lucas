@@ -74,7 +74,6 @@ export default function AssistantPage() {
         lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId })),
         staff: staff?.map(s => ({ id: s.id, name: s.name })),
         productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
-        currentDate: format(new Date(), 'yyyy-MM-dd')
       };
       
       const contextData = JSON.stringify(slimContext);
@@ -82,6 +81,7 @@ export default function AssistantPage() {
       const result: AssistantOutput = await runAssistant({
         command: input,
         contextData: contextData,
+        currentDate: format(new Date(), 'yyyy-MM-dd'),
       });
 
       let responseMessage: Message = {
