@@ -49,7 +49,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       name: lot?.name ?? "",
       areaHectares: lot?.areaHectares ?? 0,
       location: lot?.location ?? "",
-      sowingDate: lot?.sowingDate ? new Date(lot.sowingDate.replace(/-/g, '\/')) : undefined,
+      sowingDate: lot && lot.sowingDate ? new Date(lot.sowingDate.replace(/-/g, '\/')) : undefined,
       sowingDensity: lot?.sowingDensity ?? 0,
       distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
       distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
