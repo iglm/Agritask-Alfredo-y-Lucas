@@ -38,8 +38,8 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
       name: subLot?.name ?? "",
       areaHectares: subLot?.areaHectares ?? 0,
       sowingDate: subLot?.sowingDate ? new Date(subLot.sowingDate) : undefined,
-      sowingDensity: subLot?.sowingDensity ?? '',
-      totalTrees: subLot?.totalTrees ?? '',
+      sowingDensity: subLot?.sowingDensity ?? undefined,
+      totalTrees: subLot?.totalTrees ?? undefined,
       technicalNotes: subLot?.technicalNotes ?? "",
     },
   });

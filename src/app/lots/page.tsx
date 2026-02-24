@@ -45,8 +45,9 @@ export default function LotsPage() {
   }, [allLots, searchTerm]);
 
   // --- Lot Handlers ---
-  const handleAddLot = () => {
+  const handleAddLot = async () => {
     setEditingLot(undefined);
+    // The limit check is now in addLot, so we just open the sheet
     setIsLotSheetOpen(true);
   };
   
@@ -90,6 +91,8 @@ export default function LotsPage() {
         });
       } else {
         await addLot(values);
+        // The DataProvider will show the upgrade dialog if needed.
+        // We only toast on success, which happens when the limit is not reached.
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",

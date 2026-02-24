@@ -6,6 +6,7 @@ import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply } from '@/lib/types';
 import { getLocalItems, addLocalItem, updateLocalItem, deleteLocalItem, clearLocalCollection, saveLocalItems } from '@/lib/offline-store';
 import { useToast } from '@/hooks/use-toast';
 import { User } from 'firebase/auth';
+import { UpgradeDialog } from '@/components/subscriptions/upgrade-dialog';
 
 interface DataContextState {
   lots: Lot[] | null;
@@ -33,6 +34,12 @@ interface DataContextState {
 }
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
+
+// --- Define Limits for Freemium Plan ---
+const LOT_LIMIT = 5;
+const STAFF_LIMIT = 2;
+const TASK_LIMIT = 20;
+const SUPPLY_LIMIT = 10;
 
 async function syncLocalDataToFirebase(user: User, firestore: any): Promise<number> {
   if (!user || !firestore) return 0;
@@ -136,6 +143,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  const [upgradeInfo, setUpgradeInfo] = useState({ open: false, featureName: '', limit: 0 });
 
   const [localLots, setLocalLots] = useState<Lot[]>([]);
   const [localStaff, setLocalStaff] = useState<Staff[]>([]);
@@ -193,10 +202,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const createMutations = <T extends { id: string, userId?: string }>(
     collectionName: 'staff' | 'tasks' | 'supplies',
-    localSetter: React.Dispatch<React.SetStateAction<T[]>>
+    localSetter: React.Dispatch<React.SetStateAction<T[]>>,
+    limit: number,
+    featureName: string,
+    currentData: T[] | null
   ) => {
     const addItem = async (data: Omit<T, 'id' | 'userId'>) => {
       if (user && firestore) {
+        if (currentData && currentData.length >= limit) {
+          setUpgradeInfo({ open: true, featureName: featureName, limit: limit });
+          return;
+        }
         const newDocRef = doc(collection(firestore, collectionName));
         await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
       } else {
@@ -230,6 +246,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addLot = async (data: Omit<Lot, 'id' | 'userId'>) => {
     if (user && firestore) {
+        if (firestoreLots && firestoreLots.length >= LOT_LIMIT) {
+            setUpgradeInfo({ open: true, featureName: 'lotes', limit: LOT_LIMIT });
+            return;
+        }
         const newDocRef = doc(collection(firestore, 'lots'));
         await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
     } else {
@@ -277,16 +297,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
   };
 
-  const { addItem: addStaff, updateItem: updateStaff, deleteItem: deleteStaff } = createMutations<Staff>('staff', setLocalStaff);
-  const { addItem: addTask, updateItem: updateTask, deleteItem: deleteTask } = createMutations<Task>('tasks', setLocalTasks);
-  const { addItem: addSupply, updateItem: updateSupply, deleteItem: deleteSupply } = createMutations<Supply>('supplies', setLocalSupplies);
+  const { addItem: addStaff, updateItem: updateStaff, deleteItem: deleteStaff } = createMutations<Staff>('staff', setLocalStaff, STAFF_LIMIT, 'miembros del personal', firestoreStaff);
+  const { addItem: addTask, updateItem: updateTask, deleteItem: deleteTask } = createMutations<Task>('tasks', setLocalTasks, TASK_LIMIT, 'labores', firestoreTasks);
+  const { addItem: addSupply, updateItem: updateSupply, deleteItem: deleteSupply } = createMutations<Supply>('supplies', setLocalSupplies, SUPPLY_LIMIT, 'insumos', firestoreSupplies);
 
   const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (user && firestore) {
       const subLotRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
       await setDoc(subLotRef, { ...data, id: subLotRef.id, userId: user.uid, lotId });
     } else {
-      // Offline support for sub-lots is more complex and not implemented in this pass.
       toast({ variant: 'destructive', title: 'Funcionalidad no disponible sin conexión' });
     }
   };
@@ -342,7 +361,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateProductiveUnit,
   };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+        {children}
+        <UpgradeDialog 
+            open={upgradeInfo.open}
+            onOpenChange={(open) => setUpgradeInfo(prev => ({...prev, open}))}
+            featureName={upgradeInfo.featureName}
+            limit={upgradeInfo.limit}
+        />
+    </DataContext.Provider>
+  );
 }
 
 export const useAppData = () => {
