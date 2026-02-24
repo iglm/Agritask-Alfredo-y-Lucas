@@ -63,9 +63,13 @@
           "type": "number",
           "description": "Densidad de siembra del lote (árboles por hectárea)."
         },
-        "sowingDistance": {
+        "distanceBetweenPlants": {
           "type": "number",
-          "description": "Distancia de siembra entre plantas en metros."
+          "description": "Distancia de siembra entre plantas en una misma fila (metros)."
+        },
+        "distanceBetweenRows": {
+          "type": "number",
+          "description": "Distancia de siembra entre filas o surcos (metros)."
         },
         "totalTrees": {
           "type": "number",
@@ -108,6 +112,14 @@
         "sowingDensity": {
           "type": "number",
           "description": "Sowing density of the sub-lot (trees per hectare)."
+        },
+        "distanceBetweenPlants": {
+          "type": "number",
+          "description": "Distancia de siembra entre plantas en una misma fila (metros)."
+        },
+        "distanceBetweenRows": {
+          "type": "number",
+          "description": "Distancia de siembra entre filas o surcos (metros)."
         },
         "areaHectares": {
           "type": "number",
@@ -367,9 +379,13 @@
         "sowingDensity": {
           "type": "number"
         },
-        "sowingDistance": {
+        "distanceBetweenPlants": {
           "type": "number",
-          "description": "Distancia de siembra entre plantas en metros."
+          "description": "Distancia de siembra entre plantas en una misma fila (metros)."
+        },
+        "distanceBetweenRows": {
+          "type": "number",
+          "description": "Distancia de siembra entre filas o surcos (metros)."
         }
       },
       "required": [

@@ -21,7 +21,8 @@ const lotFormSchema = z.object({
   location: z.string().optional(),
   sowingDate: z.date().optional(),
   sowingDensity: z.coerce.number().optional(),
-  sowingDistance: z.coerce.number().optional(),
+  distanceBetweenPlants: z.coerce.number().optional(),
+  distanceBetweenRows: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
 }).refine(data => {
@@ -50,7 +51,8 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       location: lot?.location ?? "",
       sowingDate: lot?.sowingDate ? new Date(lot.sowingDate.replace(/-/g, '\/')) : undefined,
       sowingDensity: lot?.sowingDensity ?? 0,
-      sowingDistance: lot?.sowingDistance ?? 0,
+      distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
       totalTrees: lot?.totalTrees ?? 0,
       technicalNotes: lot?.technicalNotes ?? "",
     },
@@ -61,7 +63,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       ...values,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
     };
-    handleOnSubmit(dataToSubmit);
+    handleOnSubmit(dataToSubmit as any);
   }
 
   return (
@@ -131,15 +133,30 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
               </FormItem>
             )}
           />
+        
+        <FormField
+          control={form.control}
+          name="sowingDensity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
+              <FormControl>
+                <Input type="number" step="any" placeholder="e.g., 6000" {...field} />
+              </FormControl>
+              <FormDescription>Puede calcularse a partir de las distancias o ingresarse directamente.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="sowingDensity"
+            name="distanceBetweenPlants"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Densidad de Siembra</FormLabel>
+                <FormLabel>Distancia entre Plantas (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
+                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -147,12 +164,12 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
           />
           <FormField
             control={form.control}
-            name="sowingDistance"
+            name="distanceBetweenRows"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Distancia de Siembra (m)</FormLabel>
+                <FormLabel>Distancia entre Surcos (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 3" {...field} />
+                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

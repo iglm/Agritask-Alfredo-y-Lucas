@@ -26,7 +26,8 @@ const formSchema = z.object({
   totalFarmArea: z.coerce.number().optional(),
   cultivatedArea: z.coerce.number().optional(),
   sowingDensity: z.coerce.number().optional(),
-  sowingDistance: z.coerce.number().optional(),
+  distanceBetweenPlants: z.coerce.number().optional(),
+  distanceBetweenRows: z.coerce.number().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,7 +55,8 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       totalFarmArea: productiveUnit?.totalFarmArea ?? undefined,
       cultivatedArea: productiveUnit?.cultivatedArea ?? undefined,
       sowingDensity: productiveUnit?.sowingDensity ?? undefined,
-      sowingDistance: productiveUnit?.sowingDistance ?? undefined,
+      distanceBetweenPlants: productiveUnit?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: productiveUnit?.distanceBetweenRows ?? undefined,
     },
   });
 
@@ -138,13 +140,15 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             <FormItem><FormLabel>Área en cultivo (Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
-
+                     <FormField control={form.control} name="sowingDensity" render={({ field }) => (
+                        <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormDescription>Puede calcularse a partir de las distancias o ingresarse directamente.</FormDescription><FormMessage /></FormItem>
+                    )} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="sowingDensity" render={({ field }) => (
-                            <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="distanceBetweenPlants" render={({ field }) => (
+                            <FormItem><FormLabel>Distancia entre Plantas (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 2.5" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <FormField control={form.control} name="sowingDistance" render={({ field }) => (
-                            <FormItem><FormLabel>Distancia de Siembra (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="distanceBetweenRows" render={({ field }) => (
+                            <FormItem><FormLabel>Distancia entre Surcos (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
                 </AccordionContent>

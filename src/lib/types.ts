@@ -13,7 +13,8 @@ export type Lot = {
   technicalNotes?: string;
   sowingDate?: string;
   sowingDensity?: number;
-  sowingDistance?: number;
+  distanceBetweenPlants?: number;
+  distanceBetweenRows?: number;
   totalTrees?: number;
 };
 
@@ -25,6 +26,8 @@ export type SubLot = {
   areaHectares: number;
   sowingDate?: string;
   sowingDensity?: number;
+  distanceBetweenPlants?: number;
+  distanceBetweenRows?: number;
   totalTrees?: number;
   technicalNotes?: string;
 };
@@ -76,7 +79,8 @@ export type ProductiveUnit = {
   totalFarmArea?: number;
   cultivatedArea?: number;
   sowingDensity?: number;
-  sowingDistance?: number;
+  distanceBetweenPlants?: number;
+  distanceBetweenRows?: number;
 };
 
 export type StaffAttendance = {

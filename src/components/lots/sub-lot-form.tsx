@@ -20,6 +20,8 @@ const subLotFormSchema = z.object({
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   sowingDate: z.date().optional(),
   sowingDensity: z.coerce.number().optional(),
+  distanceBetweenPlants: z.coerce.number().optional(),
+  distanceBetweenRows: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
 }).refine(data => {
@@ -47,6 +49,8 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
       areaHectares: subLot?.areaHectares ?? 0,
       sowingDate: subLot?.sowingDate ? new Date(subLot.sowingDate.replace(/-/g, '\/')) : undefined,
       sowingDensity: subLot?.sowingDensity ?? undefined,
+      distanceBetweenPlants: subLot?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: subLot?.distanceBetweenRows ?? undefined,
       totalTrees: subLot?.totalTrees ?? undefined,
       technicalNotes: subLot?.technicalNotes ?? "",
     },
@@ -98,6 +102,34 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
                 <FormLabel>Densidad de Siembra</FormLabel>
                 <FormControl>
                   <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="distanceBetweenPlants"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Distancia entre Plantas (m)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="distanceBetweenRows"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Distancia entre Surcos (m)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
