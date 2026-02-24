@@ -15,13 +15,14 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Home, CalendarCheck, SprayCan } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Button } from './ui/button';
+import { ThemeToggle } from './theme-toggle';
 
 const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
@@ -166,9 +167,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarInset className="bg-muted/40 flex flex-col">
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold md:text-xl">
+            <h1 className="flex-1 text-lg font-semibold md:text-xl">
               {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'Optimizador de Labores')}
             </h1>
+            <ThemeToggle />
           </header>
           <main className="flex-1 p-4 sm:p-6 flex flex-col">{children}</main>
         </SidebarInset>
