@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,7 +15,7 @@ import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
-import { collectionGroup, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, productiveUnit, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
@@ -75,14 +76,19 @@ export default function LotsPage() {
   };
 
   const handleLotFormSubmit = (values: Omit<Lot, 'id' | 'userId'>) => {
+    const dataToSubmit = {
+      ...values,
+      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+    };
+
     if (editingLot) {
-      updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
+      updateLot({ ...dataToSubmit, id: editingLot.id, userId: editingLot.userId });
       toast({
         title: "¡Lote actualizado!",
         description: "Los detalles del lote han sido actualizados.",
       });
     } else {
-      addLot(values);
+      addLot(dataToSubmit);
       toast({
         title: "¡Lote creado!",
         description: "El nuevo lote ha sido agregado a tu lista.",
@@ -125,14 +131,20 @@ export default function LotsPage() {
   
   const handleSubLotFormSubmit = (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (!currentLot) return;
+    
+    const dataToSubmit = {
+      ...values,
+      sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+    };
+
     if (editingSubLot) {
-      updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+      updateSubLot({ ...dataToSubmit, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
       toast({
         title: "¡Sub-lote actualizado!",
         description: "Los detalles del sub-lote han sido actualizados.",
       });
     } else {
-      addSubLot(currentLot.id, values);
+      addSubLot(currentLot.id, dataToSubmit);
       toast({
         title: "¡Sub-lote creado!",
         description: "El nuevo sub-lote ha sido agregado.",
@@ -166,10 +178,6 @@ export default function LotsPage() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        const subLotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
-        const subLotsSnapshot = await getDocs(subLotsQuery);
-        const allSubLots = subLotsSnapshot.docs.map(doc => doc.data() as SubLot);
-
         const dataToExport: any[] = [];
 
         for (const lot of filteredLots) {
@@ -189,8 +197,11 @@ export default function LotsPage() {
               notas_tecnicas: lot.technicalNotes || '',
             });
 
-            // Find and add its sub-lots
-            const subLotsOfThisLot = allSubLots.filter(sl => sl.lotId === lot.id);
+            // Fetch sub-lots for the current lot
+            const sublotsRef = collection(firestore, 'lots', lot.id, 'sublots');
+            const sublotsSnapshot = await getDocs(sublotsRef);
+            const subLotsOfThisLot = sublotsSnapshot.docs.map(doc => doc.data() as SubLot);
+
             for (const subLot of subLotsOfThisLot) {
                  dataToExport.push({
                     id: subLot.id,
@@ -215,8 +226,8 @@ export default function LotsPage() {
         toast({ 
             variant: 'destructive', 
             title: 'Error al exportar', 
-            description: 'No se pudieron generar los datos. Es posible que necesites crear un índice en Firestore. Revisa la consola del navegador para ver el enlace.',
-            duration: 9000,
+            description: 'Ocurrió un error inesperado al generar los datos. Por favor, inténtalo de nuevo.',
+            duration: 6000,
         });
     } finally {
         setIsExporting(false);
@@ -322,3 +333,5 @@ export default function LotsPage() {
     </div>
   );
 }
+
+    
