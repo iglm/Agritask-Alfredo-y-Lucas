@@ -628,7 +628,7 @@
           "schema": {
             "$ref": "#/backend/entities/ProductiveUnit"
           },
-          "description": "Collection for storing the user's single productive unit information. Each document is owned by a single user.",
+          "description": "Collection for storing the user's productive units. Each document is a single productive unit owned by a user.",
           "params": [
             {
               "name": "unitId",

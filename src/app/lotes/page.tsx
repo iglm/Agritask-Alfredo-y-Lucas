@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,17 +8,16 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
-import { useAppData, useUser } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
-import { collection, getDocs } from "firebase/firestore";
+import { format } from "date-fns";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, productiveUnit, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
-  const { user } = useUser();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -77,8 +75,15 @@ export default function LotsPage() {
 
   const handleLotFormSubmit = (values: Omit<Lot, 'id' | 'userId'>) => {
     const dataToSubmit = {
-      ...values,
+      name: values.name,
+      areaHectares: values.areaHectares,
+      location: values.location,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+      sowingDensity: values.sowingDensity,
+      distanceBetweenPlants: values.distanceBetweenPlants,
+      distanceBetweenRows: values.distanceBetweenRows,
+      totalTrees: values.totalTrees,
+      technicalNotes: values.technicalNotes,
     };
 
     if (editingLot) {
@@ -133,8 +138,14 @@ export default function LotsPage() {
     if (!currentLot) return;
     
     const dataToSubmit = {
-      ...values,
+      name: values.name,
+      areaHectares: values.areaHectares,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
+      sowingDensity: values.sowingDensity,
+      distanceBetweenPlants: values.distanceBetweenPlants,
+      distanceBetweenRows: values.distanceBetweenRows,
+      totalTrees: values.totalTrees,
+      technicalNotes: values.technicalNotes,
     };
 
     if (editingSubLot) {
@@ -155,84 +166,17 @@ export default function LotsPage() {
     setCurrentLot(undefined);
   };
 
-  const handleExport = async () => {
-    if (!user || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Error de autenticación",
-        description: "Inicia sesión para poder exportar los datos.",
-      });
-      return;
-    }
-    if (filteredLots.length === 0) {
+  const handleExport = () => {
+    if (filteredLots.length > 0) {
+      exportToCsv(`lotes-${new Date().toISOString()}.csv`, filteredLots);
+    } else {
       toast({
         title: "No hay datos para exportar",
-        description: "No hay lotes en la vista actual para exportar.",
-      });
-      return;
-    }
-    
-    setIsExporting(true);
-    toast({ title: "Preparando exportación completa...", description: "Esto puede tardar un momento." });
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    try {
-        const dataToExport: any[] = [];
-
-        for (const lot of filteredLots) {
-            // Add parent lot
-            dataToExport.push({
-              id: lot.id,
-              nombre: lot.name,
-              tipo: 'Lote',
-              lote_padre: '',
-              area_hectareas: lot.areaHectares,
-              ubicacion: lot.location || 'N/A',
-              fecha_siembra: lot.sowingDate ? lot.sowingDate : 'N/A',
-              densidad_siembra: lot.sowingDensity || 'N/A',
-              distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
-              distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
-              arboles_totales: lot.totalTrees || 0,
-              notas_tecnicas: lot.technicalNotes || '',
-            });
-
-            // Fetch sub-lots for the current lot
-            const sublotsRef = collection(firestore, 'lots', lot.id, 'sublots');
-            const sublotsSnapshot = await getDocs(sublotsRef);
-            const subLotsOfThisLot = sublotsSnapshot.docs.map(doc => doc.data() as SubLot);
-
-            for (const subLot of subLotsOfThisLot) {
-                 dataToExport.push({
-                    id: subLot.id,
-                    nombre: subLot.name,
-                    tipo: 'Sub-Lote',
-                    lote_padre: lot.name,
-                    area_hectareas: subLot.areaHectares,
-                    ubicacion: 'N/A', // Sublots don't have location
-                    fecha_siembra: subLot.sowingDate ? subLot.sowingDate : 'N/A',
-                    densidad_siembra: subLot.sowingDensity || 'N/A',
-                    distancia_entre_plantas_m: subLot.distanceBetweenPlants || 'N/A',
-                    distancia_entre_surcos_m: subLot.distanceBetweenRows || 'N/A',
-                    arboles_totales: subLot.totalTrees || 0,
-                    notas_tecnicas: subLot.technicalNotes || '',
-                 });
-            }
-        }
-        
-        exportToCsv(`lotes-y-sublotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
-    } catch (error) {
-        console.error("Export error:", error);
-        toast({ 
-            variant: 'destructive', 
-            title: 'Error al exportar', 
-            description: 'Ocurrió un error inesperado al generar los datos. Por favor, inténtalo de nuevo.',
-            duration: 6000,
-        });
-    } finally {
-        setIsExporting(false);
+        description: "Filtra los datos que deseas exportar.",
+      })
     }
   };
+
 
   return (
     <div>
@@ -276,7 +220,7 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnit={productiveUnit} />
+          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} />
         </SheetContent>
       </Sheet>
       
@@ -333,5 +277,3 @@ export default function LotsPage() {
     </div>
   );
 }
-
-    

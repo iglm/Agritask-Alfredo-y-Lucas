@@ -14,7 +14,7 @@ interface DataContextState {
   staff: Staff[] | null;
   tasks: Task[] | null;
   supplies: Supply[] | null;
-  productiveUnit: ProductiveUnit | null;
+  productiveUnits: ProductiveUnit[] | null;
   isLoading: boolean;
   firestore: ReturnType<typeof useFirebase>['firestore'];
   addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
@@ -34,7 +34,9 @@ interface DataContextState {
   deleteSupply: (id: string) => Promise<void>;
   addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number) => Promise<void>;
   deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
-  updateProductiveUnit: (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => Promise<void>;
+  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<void>;
+  updateProductiveUnit: (data: ProductiveUnit) => Promise<void>;
+  deleteProductiveUnit: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
@@ -47,13 +49,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const productiveUnitDocRef = useMemoFirebase(() => user && firestore ? doc(firestore, 'productiveUnits', user.uid) : null, [firestore, user]);
+  const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
-  const { data: productiveUnit, isLoading: productiveUnitLoading } = useDoc<ProductiveUnit>(productiveUnitDocRef);
+  const { data: productiveUnits, isLoading: productiveUnitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
 
 
   const ensureAuth = () => {
@@ -434,24 +436,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateProductiveUnit = async (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => {
+    const addProductiveUnit = async (data: Omit<ProductiveUnit, 'id' | 'userId'>) => {
     if (!ensureAuth()) return;
-    const docRef = doc(firestore, 'productiveUnits', user.uid);
+    const newDocRef = doc(collection(firestore, 'productiveUnits'));
     try {
-        await setDoc(docRef, { ...data, id: user.uid, userId: user.uid }, { merge: true });
+      await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
     } catch (error) {
-        handleWriteError(error, docRef.path, 'update', { ...data, id: user.uid, userId: user.uid });
+      handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
     }
   };
 
-  const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitLoading;
+  const updateProductiveUnit = async (data: ProductiveUnit) => {
+    if (!ensureAuth()) return;
+    const docRef = doc(firestore, 'productiveUnits', data.id);
+    try {
+      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
+    }
+  };
+
+  const deleteProductiveUnit = async (id: string) => {
+    if (!ensureAuth()) return;
+    const docRef = doc(firestore, 'productiveUnits', id);
+    try {
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'delete');
+    }
+  };
+
+  const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitsLoading;
 
   const value: DataContextState = {
     lots,
     staff,
     tasks,
     supplies,
-    productiveUnit,
+    productiveUnits,
     isLoading,
     firestore,
     addLot, updateLot, deleteLot,
@@ -460,7 +482,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addTask, updateTask, deleteTask,
     addSupply, updateSupply, deleteSupply,
     addSupplyUsage, deleteSupplyUsage,
-    updateProductiveUnit,
+    addProductiveUnit, updateProductiveUnit, deleteProductiveUnit,
   };
 
   return (
