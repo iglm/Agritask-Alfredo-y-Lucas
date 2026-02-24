@@ -26,6 +26,7 @@ export default function AssistantPage() {
     lots,
     staff,
     productiveUnits,
+    addProductiveUnit,
     addLot,
     addTask,
     addStaff,
@@ -36,7 +37,7 @@ export default function AssistantPage() {
     {
       id: 'initial',
       role: 'assistant',
-      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea un lote llamado La Pradera de 10 hectáreas" o "Programa una labor de fumigación para mañana".',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza" o "Programa una labor de fumigación para mañana".',
     },
   ]);
   const [input, setInput] = useState('');
@@ -95,6 +96,10 @@ export default function AssistantPage() {
       } else {
         // Execute the action
         switch (result.action.action) {
+          case 'addProductiveUnit':
+            const { id: unitId, userId: unitUserId, ...unitPayload } = result.action.payload as any;
+            await addProductiveUnit(unitPayload as any);
+            break;
           case 'addLot':
             // The payload from AI is almost right, but we ensure userId is not there
             // and other server-managed fields.
@@ -179,7 +184,7 @@ export default function AssistantPage() {
           <Input
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Ej: Crea una labor de fertilización para el lote 'La Esperanza' para este viernes..."
+            placeholder="Ej: Crea una finca llamada 'La Esperanza'..."
             disabled={isAssistantLoading || isDataLoading}
           />
           <Button type="submit" disabled={isAssistantLoading || isDataLoading || !input.trim()}>

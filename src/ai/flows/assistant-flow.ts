@@ -9,6 +9,10 @@ import { Lot, Staff, Task } from '@/lib/types';
 
 // Schemas for the actions the assistant can perform.
 // These should correspond to the data needed to *create* an entity.
+const AddProductiveUnitPayloadSchema = z.object({
+  farmName: z.string().describe("The name of the farm or productive unit."),
+});
+
 const AddLotPayloadSchema = z.object({
   productiveUnitId: z.string().describe("The ID of the productive unit this lot belongs to."),
   name: z.string().describe("Name of the lot."),
@@ -46,6 +50,7 @@ const ErrorPayloadSchema = z.object({
 
 // Union of all possible actions
 const AssistantActionSchema = z.union([
+  z.object({ action: z.enum(['addProductiveUnit']), payload: AddProductiveUnitPayloadSchema }),
   z.object({ action: z.enum(['addLot']), payload: AddLotPayloadSchema }),
   z.object({ action: z.enum(['addTask']), payload: AddTaskPayloadSchema }),
   z.object({ action: z.enum(['addStaff']), payload: AddStaffPayloadSchema }),
@@ -83,16 +88,16 @@ const assistantPrompt = ai.definePrompt({
   input: { schema: AssistantInputSchema },
   output: { schema: AssistantOutputSchema },
   prompt: `
-    You are a command-parsing AI for a farm management app. Your SOLE function is to translate a user's command into a single, structured JSON action. You are forbidden from answering questions, holding conversations, or generating any text that is not part of the specified JSON output format.
+    You are an intelligent command-parsing AI for a farm management app. Your only job is to translate a user's natural language command into a structured JSON action. You must be efficient and precise. You are forbidden from having conversations.
 
-    **STRICT INSTRUCTIONS:**
-    1.  **ANALYZE** the user's command.
-    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any entities mentioned by name (e.g., lot names, staff names, productive unit names).
-    3.  **CONSTRUCT** one of the allowed JSON actions (\`addLot\`, \`addTask\`, \`addStaff\`).
-    4.  **IF** the command is unclear, missing information (e.g., creating a task without specifying a lot), or refers to an entity not found in the context, you MUST respond with the \`error\` action. The error message must be specific and in Spanish.
-    5.  **THE \`explanation\` FIELD** must be a single, short, past-tense sentence in Spanish confirming the action, like "Listo, he creado el lote La Pradera."
-    6.  **NEVER** generate conversational text. Your entire output must be only the JSON object.
-    7.  Use the \`currentDate\` from the context to resolve relative dates like "mañana" or "el viernes". Today's date is: {{currentDate}}.
+    **CRITICAL INSTRUCTIONS:**
+    1.  **ANALYZE** the user's command to understand their intent, even if they don't use exact words.
+    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any existing entities mentioned by name (e.g., lots, staff, productive units).
+    3.  **CONSTRUCT** one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`.
+    4.  **IF** the command is ambiguous, missing critical information (like a lot name for a task), or refers to an entity not in the context, you MUST use the \`error\` action with a clear, helpful message in Spanish.
+    5.  **THE \`explanation\` FIELD** must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor de Fertilización." or "Listo. He creado la finca 'La Esperanza'".
+    6.  **NEVER** generate conversational text. Your output must ONLY be the final JSON object.
+    7.  Use \`{{currentDate}}\` to resolve relative dates like "mañana" or "el próximo lunes".
 
     **User Command:** \`{{{command}}}\`
 
