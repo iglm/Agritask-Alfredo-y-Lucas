@@ -40,7 +40,7 @@ export default function AssistantPage() {
     {
       id: 'initial',
       role: 'assistant',
-      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza" o "Marca la labor de fumigación como Finalizada".',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza", "Marca la labor de fumigación como Finalizada" o preguntarme "¿Cuántos lotes tengo?".',
     },
   ]);
   const [input, setInput] = useState('');
@@ -96,7 +96,9 @@ export default function AssistantPage() {
       };
 
       if (result.action.action === 'error') {
-        responseMessage.content = `Error: ${result.action.payload.message}`;
+        responseMessage.content = result.action.payload.message;
+      } else if (result.action.action === 'answer') {
+        responseMessage.content = result.action.payload.text;
       } else {
         // Execute the action
         switch (result.action.action) {
@@ -136,6 +138,9 @@ export default function AssistantPage() {
             }
             break;
           }
+          case 'answer':
+            // The content is already set in the 'answer' block above
+            break;
           default:
             responseMessage.content = "No entendí esa acción, pero la he registrado.";
             console.warn("Unknown action from AI:", result.action);
@@ -205,7 +210,7 @@ export default function AssistantPage() {
           <Input
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Ej: Marca la labor 'fumigación' como Finalizada..."
+            placeholder="Ej: ¿Cuál es la tarifa de Juan Pérez?"
             disabled={isAssistantLoading || isDataLoading}
           />
           <Button type="submit" disabled={isAssistantLoading || isDataLoading || !input.trim()}>

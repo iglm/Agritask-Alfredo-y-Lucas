@@ -52,9 +52,12 @@ const UpdateStaffRatePayloadSchema = z.object({
     newRate: z.number().positive().describe("The new daily rate for the staff member."),
 });
 
+const AnswerPayloadSchema = z.object({
+  text: z.string().describe("The direct, concise answer to the user's question."),
+});
 
 const ErrorPayloadSchema = z.object({
-    message: z.string().describe("A description of why the command could not be processed."),
+    message: z.string().describe("A clear and direct question in Spanish asking the user for the information that is missing to complete the command."),
 });
 
 
@@ -66,6 +69,7 @@ const AssistantActionSchema = z.union([
   z.object({ action: z.enum(['addStaff']), payload: AddStaffPayloadSchema }),
   z.object({ action: z.enum(['updateTaskStatus']), payload: UpdateTaskStatusPayloadSchema }),
   z.object({ action: z.enum(['updateStaffRate']), payload: UpdateStaffRatePayloadSchema }),
+  z.object({ action: z.enum(['answer']), payload: AnswerPayloadSchema }),
   z.object({ action: z.enum(['error']), payload: ErrorPayloadSchema }),
 ]);
 
@@ -80,7 +84,7 @@ export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 // Define the output schema for the flow
 const AssistantOutputSchema = z.object({
     action: AssistantActionSchema,
-    explanation: z.string().describe("A single, brief, past-tense confirmation sentence for the UI to display AFTER the action is successful, e.g., 'OK. He programado la labor de Fertilización.' or 'Listo. He actualizado la labor.'"),
+    explanation: z.string().describe("A single, brief confirmation sentence for the UI, e.g., 'OK. He programado la labor.', 'Aquí tienes la información que pediste.', or 'Disculpa, necesito un dato más.'"),
 });
 export type AssistantOutput = z.infer<typeof AssistantOutputSchema>;
 
@@ -100,19 +104,25 @@ const assistantPrompt = ai.definePrompt({
   input: { schema: AssistantInputSchema },
   output: { schema: AssistantOutputSchema },
   prompt: `
-    You are an intelligent command-parsing AI for a farm management app. Your only job is to translate a user's natural language command into a structured JSON action. You must be efficient and precise. You are forbidden from having conversations.
+    You are an intelligent assistant AI for a farm management app. Your primary jobs are: 1. Translate user commands into structured JSON actions. 2. Answer questions based on the provided context data. You must be efficient and precise. You are forbidden from having long conversations. Your output MUST ONLY be the final JSON object.
 
     **CRITICAL INSTRUCTIONS:**
-    1.  **ANALYZE** the user's command to understand their intent. This can be creating new items or updating existing ones.
+    1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating existing ones, or asking a question.
     2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any existing entities mentioned (e.g., lots, staff, productive units, tasks).
-    3.  **CONSTRUCT** one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`, \`updateTaskStatus\`, \`updateStaffRate\`.
-    4.  **FOR UPDATES:**
-        *   When a user asks to change a task's status (e.g., "mark as done", "finish this task"), use the \`updateTaskStatus\` action. If the new status is 'Finalizado', you MUST set the progress to 100.
-        *   When a user asks to change a staff member's pay (e.g., "update Juan's rate to 60000"), use the \`updateStaffRate\` action.
-    5.  **IF** the command is ambiguous, missing critical information (like a task name or a new rate), or refers to an entity not in the context, you MUST use the \`error\` action with a clear, helpful message in Spanish.
-    6.  **THE \`explanation\` FIELD** must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor de Fertilización." or "Listo. He actualizado la tarifa de Juan.".
-    7.  **NEVER** generate conversational text. Your output must ONLY be the final JSON object.
-    8.  Use \`{{currentDate}}\` to resolve relative dates like "mañana" or "el próximo lunes" when creating new items.
+    3.  **EXECUTING COMMANDS:**
+        *   For creating or updating, construct one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`, \`updateTaskStatus\`, \`updateStaffRate\`.
+        *   When a user asks to change a task's status (e.g., "mark as done"), use the \`updateTaskStatus\` action. If the new status is 'Finalizado', you MUST set the progress to 100.
+        *   Use \`{{currentDate}}\` to resolve relative dates like "mañana" or "el próximo lunes".
+    4.  **ANSWERING QUESTIONS:**
+        *   If the user asks a question (e.g., "cuántos lotes tengo?", "cuál es la tarifa de Juan?"), you MUST use the \`answer\` action.
+        *   Formulate a direct, concise answer based *only* on the provided \`contextData\` and place it in the \`payload.text\`.
+    5.  **HANDLING AMBIGUITY (VERY IMPORTANT):**
+        *   If a command is ambiguous or missing critical information (e.g., "crea una labor" without a name or lot), you MUST use the \`error\` action.
+        *   The \`payload.message\` for the \`error\` action MUST be a **clear and direct question in Spanish** asking the user for the missing piece of information (e.g., "¿Para qué lote es la labor?" or "¿Cuál es el nuevo estado de la labor?"). Do NOT just state that information is missing.
+    6.  **THE \`explanation\` FIELD:**
+        *   For successful **actions** (create/update), this must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor."
+        *   For **answers**, this should be a simple transition like "Aquí tienes la información que pediste."
+        *   For **errors**, this should be an apologetic phrase like "Disculpa, necesito un dato más."
 
     **User Command:** \`{{{command}}}\`
 
