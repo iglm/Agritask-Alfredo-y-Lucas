@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -56,7 +55,7 @@ export default function FinancialsPage() {
       date: format(values.date as any, 'yyyy-MM-dd'),
     };
     if (editingTransaction) {
-      updateTransaction({ ...dataToSubmit, id: editingTransaction.id });
+      updateTransaction({ ...dataToSubmit, id: editingTransaction.id, userId: editingTransaction.userId });
       toast({
         title: "¡Transacción actualizada!",
         description: "El registro financiero ha sido actualizado.",
