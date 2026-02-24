@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-// The login page is the only "public" route that a logged-in user shouldn't see.
-const publicRoutes = ["/login"];
+// The login page is the only "public" route. All others require authentication.
+const publicPath = "/login";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -18,20 +18,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return; // Wait until user status is determined
     }
 
-    const isPublicRoute = publicRoutes.includes(pathname);
+    const isPublicPage = pathname === publicPath;
 
-    // If a logged-in user tries to access the login page, redirect them to the dashboard.
-    if (user && isPublicRoute) {
+    // If the user is logged in and on the login page, redirect to home.
+    if (user && isPublicPage) {
       router.push("/");
     }
-    
-    // Unauthenticated users can now access any page, so no redirect logic is needed here.
-    // The DataProvider will handle serving local or remote data.
+
+    // If the user is not logged in and not on the login page, redirect to login.
+    if (!user && !isPublicPage) {
+      router.push(publicPath);
+    }
 
   }, [user, isUserLoading, router, pathname]);
 
-  // The loading screen is still useful during the initial auth check.
-  if (isUserLoading && !user) {
+  // Show a loading screen while checking auth state or if the user is not logged in 
+  // and not on the login page (to prevent content from flashing before redirect).
+  if (isUserLoading || (!user && pathname !== publicPath)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -42,6 +45,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // The AppShell is now always rendered, and DataProvider decides what to show.
   return <>{children}</>;
 }

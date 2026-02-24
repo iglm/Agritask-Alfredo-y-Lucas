@@ -15,14 +15,13 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Cloud, WifiOff, Home, CalendarCheck, SprayCan } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, LogIn, Home, CalendarCheck, SprayCan } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
@@ -130,19 +129,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-              <div className="flex items-center justify-center gap-1.5 rounded-md text-xs p-2 bg-muted text-muted-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                       {user ? ( <Cloud className="h-4 w-4 text-primary" /> ) : ( <WifiOff className="h-4 w-4" /> )}
-                    </TooltipTrigger>
-                    <TooltipContent side="right" align="center">
-                        <p>{user ? "Conectado. Tus datos se guardan en la nube." : "Modo local. Inicia sesión para sincronizar."}</p>
-                    </TooltipContent>
-                </Tooltip>
-                 <span className="group-data-[collapsible=icon]:hidden">
-                    {user ? 'Online' : 'Modo Local'}
-                </span>
-            </div>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -173,14 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="p-2 group-data-[collapsible=icon]:p-0">
-                <Button asChild className="w-full">
-                  <Link href="/login">
-                    <LogIn className="h-4 w-4" />
-                    <span className="group-data-[collapsible=icon]:hidden">Iniciar Sesión</span>
-                  </Link>
-                </Button>
-              </div>
+              null // User will be redirected to login, so no button is needed here
             )}
           </SidebarFooter>
         </Sidebar>

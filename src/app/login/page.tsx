@@ -19,10 +19,6 @@ export default function LoginPage() {
   const auth = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const handleSkipLogin = () => {
-    router.push("/");
-  };
-
   const handleAuthError = (error: FirebaseError) => {
     let title = "Error de autenticación";
     let description = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
@@ -88,7 +84,7 @@ export default function LoginPage() {
           <Card className="text-center border-0 shadow-none bg-transparent">
               <CardHeader>
                   <CardTitle>Bienvenido</CardTitle>
-                  <CardDescription>Inicia sesión o continúa en modo local.</CardDescription>
+                  <CardDescription>Inicia sesión para acceder a la plataforma.</CardDescription>
               </CardHeader>
               <CardContent>
                   <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
@@ -97,11 +93,8 @@ export default function LoginPage() {
                   </Button>
               </CardContent>
               <CardFooter className="flex-col gap-4">
-                  <Button variant="link" className="text-muted-foreground p-0 h-auto" onClick={handleSkipLogin}>
-                      Omitir y trabajar sin conexión
-                  </Button>
-                  <p className="text-xs text-muted-foreground px-4">
-                      Tus datos se guardarán de forma segura en este dispositivo.
+                  <p className="text-xs text-muted-foreground px-4 text-center">
+                      Debes iniciar sesión con tu cuenta de Google para acceder a la plataforma.
                   </p>
               </CardFooter>
           </Card>
