@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EmptyState } from "../ui/empty-state";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Progress } from '../ui/progress';
 
 type TasksTableProps = {
   tasks: Task[];
@@ -23,16 +24,16 @@ type TasksTableProps = {
 
 const StatusBadge = ({ status }: { status: Task['status'] }) => {
   const statusConfig = {
-    'Finalizado': { icon: <CheckCircle2 />, className: 'bg-green-100 text-green-800 border-green-200' },
-    'En Proceso': { icon: <Hourglass />, className: 'bg-blue-100 text-blue-800 border-blue-200' },
-    'Pendiente': { icon: <CircleDashed />, className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    'Por realizar': { icon: <CircleX />, className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    'Finalizado': { icon: <CheckCircle2 />, className: 'bg-[hsl(var(--chart-1))]/10 text-[hsl(var(--chart-1))] border-[hsl(var(--chart-1))]/20' },
+    'En Proceso': { icon: <Hourglass />, className: 'bg-[hsl(var(--chart-3))]/10 text-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]/20' },
+    'Pendiente': { icon: <CircleDashed />, className: 'bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2))]/20' },
+    'Por realizar': { icon: <CircleX />, className: 'bg-muted text-muted-foreground/80 border-border' },
   };
 
   const config = statusConfig[status] || statusConfig['Por realizar'];
 
   return (
-    <Badge variant="outline" className={cn("gap-1.5", config.className)}>
+    <Badge variant="outline" className={cn("gap-1.5 w-fit", config.className)}>
       {React.cloneElement(config.icon, {className: 'h-3 w-3'})}
       {status}
     </Badge>
@@ -52,7 +53,7 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
               <TableHead>Labor</TableHead>
               <TableHead className="hidden lg:table-cell">Lote</TableHead>
               <TableHead className="hidden lg:table-cell">Responsable</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead className="w-[180px]">Estado</TableHead>
               <TableHead className="text-right hidden md:table-cell">Costos (Actual vs Plan.)</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
@@ -85,8 +86,18 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-muted-foreground">{getLotName(task.lotId)}</TableCell>
                     <TableCell className="hidden lg:table-cell text-muted-foreground">{getStaffName(task.responsibleId)}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={task.status} />
+                    <TableCell className="w-[180px]">
+                      <div className="flex flex-col gap-1.5">
+                        <StatusBadge status={task.status} />
+                        {task.status !== 'Finalizado' && (
+                          <div className="flex items-center gap-2">
+                            <Progress value={task.progress} className="h-2 flex-1" />
+                            <span className="text-xs font-medium text-muted-foreground w-9 text-right">
+                              {task.progress.toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right hidden md:table-cell">
                       <span className={cn(task.actualCost > totalPlannedCost && totalPlannedCost > 0 ? "text-destructive font-semibold" : "")}>
