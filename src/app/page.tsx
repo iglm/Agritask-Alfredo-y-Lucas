@@ -4,14 +4,22 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { InvestmentChart } from "@/components/dashboard/investment-chart";
 import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { useAppData } from "@/firebase";
-import { Tractor, Percent, TrendingUp, TrendingDown, Scale } from "lucide-react";
-import { useMemo } from "react";
+import { Tractor, Percent, TrendingUp, TrendingDown, Scale, Download, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnomalyDetector } from "@/components/dashboard/anomaly-detector";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { exportToCsv } from "@/lib/csv";
+import { useToast } from "@/hooks/use-toast";
+import { SubLot } from "@/lib/types";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function DashboardPage() {
-  const { lots, tasks, transactions, isLoading } = useAppData();
+  const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore } = useAppData();
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
   
   const { 
     totalLots, 
@@ -43,6 +51,126 @@ export default function DashboardPage() {
 
     return { totalLots, overallEfficiency, totalIncome, totalExpenses, netBalance };
   }, [lots, tasks, transactions, isLoading]);
+
+  const handleExportAll = async () => {
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Error", description: "No se puede conectar a la base de datos." });
+      return;
+    }
+    
+    if ([lots, staff, tasks, supplies, productiveUnits, transactions].every(data => !data || data.length === 0)) {
+        toast({
+            variant: "destructive",
+            title: "No hay datos para exportar",
+            description: "No se encontró información en ninguna de las secciones para crear un respaldo.",
+        });
+        return;
+    }
+
+    setIsExporting(true);
+    let exportedSomething = false;
+
+    try {
+      // 1. Productive Units
+      if (productiveUnits && productiveUnits.length > 0) {
+          exportToCsv(`unidades-productivas_respaldo.csv`, productiveUnits);
+          exportedSomething = true;
+      }
+
+      // 2. Lots and Sublots
+      if (lots && lots.length > 0) {
+        const dataToExport = [];
+        for (const lot of lots) {
+            dataToExport.push({
+                id: lot.id,
+                nombre: lot.name,
+                area_hectareas: lot.areaHectares,
+                ubicacion: lot.location,
+                fecha_siembra: lot.sowingDate,
+                densidad_siembra: lot.sowingDensity,
+                arboles_totales: lot.totalTrees,
+                tipo: 'Lote Principal',
+                lote_padre: ''
+            });
+
+            const sublotsSnapshot = await getDocs(collection(firestore, 'lots', lot.id, 'sublots'));
+            sublotsSnapshot.forEach(doc => {
+                const subLot = doc.data() as SubLot;
+                dataToExport.push({
+                    id: subLot.id,
+                    nombre: subLot.name,
+                    area_hectareas: subLot.areaHectares,
+                    ubicacion: lot.location, // Inherits from parent
+                    fecha_siembra: subLot.sowingDate,
+                    densidad_siembra: subLot.sowingDensity,
+                    arboles_totales: subLot.totalTrees,
+                    tipo: 'Sub-Lote',
+                    lote_padre: lot.name
+                });
+            });
+        }
+        if (dataToExport.length > 0) {
+          exportToCsv(`lotes-y-sublotes_respaldo.csv`, dataToExport);
+          exportedSomething = true;
+        }
+      }
+
+      // 3. Staff
+      if (staff && staff.length > 0) {
+          exportToCsv(`personal_respaldo.csv`, staff);
+          exportedSomething = true;
+      }
+
+      // 4. Supplies
+      if (supplies && supplies.length > 0) {
+          exportToCsv(`insumos_respaldo.csv`, supplies);
+          exportedSomething = true;
+      }
+
+      // 5. Tasks
+      if (tasks && tasks.length > 0) {
+        const dataToExport = tasks.map(task => ({
+          ...task,
+          lotName: lots?.find(l => l.id === task.lotId)?.name || 'N/A',
+          responsibleName: staff?.find(s => s.id === task.responsibleId)?.name || 'N/A',
+        }));
+        exportToCsv(`labores_respaldo.csv`, dataToExport);
+        exportedSomething = true;
+      }
+
+      // 6. Transactions
+      if (transactions && transactions.length > 0) {
+        const dataToExport = transactions.map(transaction => ({
+          ...transaction,
+          lotName: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
+        }));
+        exportToCsv(`transacciones_respaldo.csv`, dataToExport);
+        exportedSomething = true;
+      }
+
+      if (exportedSomething) {
+        toast({
+            title: "Respaldo completo iniciado",
+            description: "Se están descargando los archivos CSV para cada sección de la aplicación.",
+        });
+      } else {
+          toast({
+              variant: "destructive",
+              title: "No hay datos para exportar",
+              description: "No se encontró información en ninguna de las secciones.",
+          });
+      }
+    } catch (error) {
+        console.error("Error durante la exportación completa:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al exportar",
+            description: "Ocurrió un error al generar el respaldo completo.",
+        });
+    } finally {
+        setIsExporting(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -67,6 +195,13 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageHeader title="Panel Principal">
+        <Button variant="outline" onClick={handleExportAll} disabled={isExporting}>
+          {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          Crear Respaldo Completo
+        </Button>
+      </PageHeader>
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Lotes Totales"

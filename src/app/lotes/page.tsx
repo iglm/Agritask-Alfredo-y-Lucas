@@ -14,10 +14,10 @@ import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
-import { format } from "date-fns";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -33,6 +33,7 @@ export default function LotsPage() {
 
   const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -176,35 +177,55 @@ export default function LotsPage() {
     }
   };
 
-
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Error", description: "No se puede conectar a la base de datos." });
+      return;
+    }
     if (allLots && allLots.length > 0) {
-      const dataToExport = allLots.flatMap(lot => {
-          const lotData = {
-              id: lot.id,
-              nombre: lot.name,
-              area_hectareas: lot.areaHectares,
-              ubicacion: lot.location,
-              fecha_siembra: lot.sowingDate,
-              densidad_siembra: lot.sowingDensity,
-              arboles_totales: lot.totalTrees,
-              tipo: 'Lote Principal',
-              lote_padre: ''
-          };
-          const subLotsData = (lot.subLots || []).map(subLot => ({
-              id: subLot.id,
-              nombre: subLot.name,
-              area_hectareas: subLot.areaHectares,
-              ubicacion: lot.location, // Inherits from parent
-              fecha_siembra: subLot.sowingDate,
-              densidad_siembra: subLot.sowingDensity,
-              arboles_totales: subLot.totalTrees,
-              tipo: 'Sub-Lote',
-              lote_padre: lot.name
-          }));
-          return [lotData, ...subLotsData];
-      });
-      exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
+      setIsExporting(true);
+      try {
+        const dataToExport = [];
+        for (const lot of allLots) {
+            dataToExport.push({
+                id: lot.id,
+                nombre: lot.name,
+                area_hectareas: lot.areaHectares,
+                ubicacion: lot.location,
+                fecha_siembra: lot.sowingDate,
+                densidad_siembra: lot.sowingDensity,
+                arboles_totales: lot.totalTrees,
+                tipo: 'Lote Principal',
+                lote_padre: ''
+            });
+
+            const sublotsSnapshot = await getDocs(collection(firestore, 'lots', lot.id, 'sublots'));
+            sublotsSnapshot.forEach(doc => {
+                const subLot = doc.data() as SubLot;
+                dataToExport.push({
+                    id: subLot.id,
+                    nombre: subLot.name,
+                    area_hectareas: subLot.areaHectares,
+                    ubicacion: lot.location, // Inherits from parent
+                    fecha_siembra: subLot.sowingDate,
+                    densidad_siembra: subLot.sowingDensity,
+                    arboles_totales: subLot.totalTrees,
+                    tipo: 'Sub-Lote',
+                    lote_padre: lot.name
+                });
+            });
+        }
+        exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
+      } catch (error) {
+        console.error("Error al exportar lotes:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al exportar",
+            description: "No se pudieron obtener los datos de sub-lotes para la exportación.",
+        });
+      } finally {
+        setIsExporting(false);
+      }
     } else {
         toast({
             title: "No hay datos para exportar",
@@ -223,8 +244,9 @@ export default function LotsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Exportar
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Exportar
             </Button>
         </div>
       </PageHeader>
