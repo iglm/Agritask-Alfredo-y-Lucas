@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 import { collection, getDocs } from "firebase/firestore";
+import { format } from "date-fns";
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
@@ -344,5 +345,3 @@ export default function LotsPage() {
     </div>
   );
 }
-
-    
