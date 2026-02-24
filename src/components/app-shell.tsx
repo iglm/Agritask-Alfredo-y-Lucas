@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        <Sidebar>
+        <Sidebar className="print:hidden">
           <SidebarHeader>
             <Link href="/" className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-primary">
@@ -166,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-muted/40 flex flex-col">
-           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
             <SidebarTrigger className="md:hidden" />
             <h1 className="flex-1 text-lg font-semibold md:text-xl">
               {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'Optimizador de Labores')}
