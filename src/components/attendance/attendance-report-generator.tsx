@@ -186,6 +186,9 @@ export function AttendanceReportGenerator({ staff }: Props) {
                   onSelect={setDateRange}
                   numberOfMonths={2}
                   locale={es}
+                  captionLayout="dropdown-buttons"
+                  fromYear={new Date().getFullYear() - 5}
+                  toYear={new Date().getFullYear()}
                 />
               </PopoverContent>
             </Popover>

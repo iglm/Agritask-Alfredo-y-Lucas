@@ -95,8 +95,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
   }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: SubLotFormValues) => {
-    // Explicitly build the submission object field-by-field to avoid reference issues.
-    const dataToSubmit: Omit<SubLot, 'id' | 'userId' | 'lotId'> = {
+    const dataToSubmit = {
       name: values.name,
       areaHectares: values.areaHectares,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
@@ -106,7 +105,6 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
       totalTrees: values.totalTrees,
       technicalNotes: values.technicalNotes,
     };
-    
     handleOnSubmit(dataToSubmit);
   }
 
@@ -213,7 +211,16 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 50}
+                      toYear={new Date().getFullYear() + 5}
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />

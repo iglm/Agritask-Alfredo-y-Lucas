@@ -250,7 +250,16 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 5}
+                      toYear={new Date().getFullYear() + 5}
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -273,7 +282,16 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 5}
+                      toYear={new Date().getFullYear() + 5}
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -317,7 +335,16 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 5}
+                      toYear={new Date().getFullYear() + 5}
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />

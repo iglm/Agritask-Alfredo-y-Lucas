@@ -100,8 +100,7 @@ export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFo
   }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: LotFormValues) => {
-    // Explicitly build the submission object field-by-field to avoid reference issues.
-    const dataToSubmit: Omit<Lot, 'id' | 'userId'> = {
+    const dataToSubmit = {
       name: values.name,
       areaHectares: values.areaHectares,
       location: values.location,
@@ -112,7 +111,6 @@ export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFo
       totalTrees: values.totalTrees,
       technicalNotes: values.technicalNotes,
     };
-    
     handleOnSubmit(dataToSubmit);
   }
 
@@ -176,7 +174,16 @@ export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFo
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 50}
+                      toYear={new Date().getFullYear() + 5}
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />

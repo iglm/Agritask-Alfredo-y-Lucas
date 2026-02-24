@@ -53,11 +53,14 @@ export default function AttendancePage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                     <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => setDate(newDate || new Date())}
-                    initialFocus
-                    locale={es}
+                      mode="single"
+                      selected={date}
+                      onSelect={(newDate) => setDate(newDate || new Date())}
+                      initialFocus
+                      locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 5}
+                      toYear={new Date().getFullYear()}
                     />
                 </PopoverContent>
                 </Popover>
