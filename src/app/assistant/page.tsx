@@ -26,10 +26,13 @@ export default function AssistantPage() {
     lots,
     staff,
     productiveUnits,
+    tasks,
     addProductiveUnit,
     addLot,
     addTask,
     addStaff,
+    updateTask,
+    updateStaff,
     isLoading: isDataLoading,
   } = useAppData();
 
@@ -37,7 +40,7 @@ export default function AssistantPage() {
     {
       id: 'initial',
       role: 'assistant',
-      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza" o "Programa una labor de fumigación para mañana".',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza" o "Marca la labor de fumigación como Finalizada".',
     },
   ]);
   const [input, setInput] = useState('');
@@ -73,8 +76,9 @@ export default function AssistantPage() {
       // Optimize context data to send only essential information
       const slimContext = {
         lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId })),
-        staff: staff?.map(s => ({ id: s.id, name: s.name })),
+        staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate })),
         productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
+        tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId })),
       };
       
       const contextData = JSON.stringify(slimContext);
@@ -101,10 +105,8 @@ export default function AssistantPage() {
             await addProductiveUnit(unitPayload as any);
             break;
           case 'addLot':
-            // The payload from AI is almost right, but we ensure userId is not there
-            // and other server-managed fields.
             const { id, userId, ...lotPayload } = result.action.payload as any;
-            await addLot(lotPayload as any); // Cast because AI payload might differ slightly
+            await addLot(lotPayload as any);
             break;
           case 'addTask':
             const { id: taskId, userId: taskUserId, ...taskPayload } = result.action.payload as any;
@@ -114,7 +116,26 @@ export default function AssistantPage() {
             const { id: staffId, userId: staffUserId, ...staffPayload } = result.action.payload as any;
              await addStaff(staffPayload as any);
             break;
-          // Add cases for other actions here
+          case 'updateTaskStatus': {
+            const { taskId, status, progress } = result.action.payload;
+            const taskToUpdate = tasks?.find(t => t.id === taskId);
+            if (taskToUpdate) {
+                await updateTask({ ...taskToUpdate, status, progress: progress ?? taskToUpdate.progress });
+            } else {
+                responseMessage.content = "Error: No pude encontrar la labor para actualizar.";
+            }
+            break;
+          }
+          case 'updateStaffRate': {
+            const { staffId: sId, newRate } = result.action.payload;
+            const staffToUpdate = staff?.find(s => s.id === sId);
+            if (staffToUpdate) {
+                await updateStaff({ ...staffToUpdate, baseDailyRate: newRate });
+            } else {
+                responseMessage.content = "Error: No pude encontrar al trabajador para actualizar.";
+            }
+            break;
+          }
           default:
             responseMessage.content = "No entendí esa acción, pero la he registrado.";
             console.warn("Unknown action from AI:", result.action);
@@ -184,7 +205,7 @@ export default function AssistantPage() {
           <Input
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Ej: Crea una finca llamada 'La Esperanza'..."
+            placeholder="Ej: Marca la labor 'fumigación' como Finalizada..."
             disabled={isAssistantLoading || isDataLoading}
           />
           <Button type="submit" disabled={isAssistantLoading || isDataLoading || !input.trim()}>
