@@ -9,6 +9,7 @@ export type Lot = {
   userId?: string;
   productiveUnitId: string;
   name: string;
+  crop: string;
   areaHectares: number;
   location?: string;
   technicalNotes?: string;

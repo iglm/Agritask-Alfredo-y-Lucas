@@ -42,6 +42,10 @@
           "type": "string",
           "description": "The ID of the productive unit this lot belongs to."
         },
+        "crop": {
+          "type": "string",
+          "description": "The primary crop grown in this lot (e.g., Café, Aguacate)."
+        },
         "name": {
           "type": "string",
           "description": "Name of the lot."
@@ -92,7 +96,8 @@
         "id",
         "name",
         "areaHectares",
-        "productiveUnitId"
+        "productiveUnitId",
+        "crop"
       ]
     },
     "SubLot": {

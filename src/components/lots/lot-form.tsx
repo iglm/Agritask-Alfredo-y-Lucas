@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 const lotFormSchema = z.object({
   productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  crop: z.string().min(2, { message: "Debes especificar el cultivo principal del lote." }),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   location: z.string().optional(),
   soilType: z.string().optional(),
@@ -77,6 +78,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
     defaultValues: {
       productiveUnitId: lot?.productiveUnitId ?? "",
       name: lot?.name ?? "",
+      crop: lot?.crop ?? "",
       areaHectares: lot?.areaHectares ?? undefined,
       location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
@@ -111,6 +113,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
       ...values,
       productiveUnitId: values.productiveUnitId,
       name: values.name,
+      crop: values.crop,
       areaHectares: values.areaHectares,
       location: values.location,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
@@ -143,19 +146,35 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre del Lote</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., El Manantial" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Nombre del Lote</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g., El Manantial" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="crop"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Cultivo Principal</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Ej: Café" {...field} />
+                    </FormControl>
+                     <FormDescription>El cultivo principal de este lote.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

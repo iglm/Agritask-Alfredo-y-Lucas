@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2 } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot } from "lucide-react";
 import { Lot, SubLot, Task } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { TaskPlanner } from './task-planner';
 
 type LotsTableProps = {
   lots: Lot[];
@@ -150,6 +151,12 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <TaskPlanner lot={lot}>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <Bot className="mr-2 h-4 w-4" />
+                                        Agente Planificador
+                                    </DropdownMenuItem>
+                                </TaskPlanner>
                                 <DropdownMenuItem onClick={() => onEditLot(lot)}>
                                   <SquarePen className="mr-2 h-4 w-4" />
                                   Editar Lote
@@ -170,6 +177,10 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
                               <div className="p-4 border-b">
                                   <h4 className="font-semibold text-sm mb-2">Detalles Adicionales</h4>
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                                      <div>
+                                          <p className="font-medium text-muted-foreground">Cultivo</p>
+                                          <p className="text-foreground">{lot.crop || 'No especificado'}</p>
+                                      </div>
                                       <div>
                                           <p className="font-medium text-muted-foreground">Tipo de Suelo</p>
                                           <p className="text-foreground">{lot.soilType || 'No especificado'}</p>
