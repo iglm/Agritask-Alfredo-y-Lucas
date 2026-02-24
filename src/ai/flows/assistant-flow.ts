@@ -14,6 +14,7 @@ const AddProductiveUnitPayloadSchema = z.object({
 const AddLotPayloadSchema = z.object({
   productiveUnitId: z.string().describe("The ID of the productive unit this lot belongs to."),
   name: z.string().describe("Name of the lot."),
+  crop: z.string().describe("The main crop for this lot (e.g., 'Aguacate', 'Café')."),
   areaHectares: z.number().describe("Area of the lot in hectares."),
   location: z.string().optional().describe("Location of the lot (Vereda/Sector)."),
   technicalNotes: z.string().optional().describe("Technical notes about the lot."),
@@ -32,6 +33,12 @@ const AddTaskPayloadSchema = z.object({
     plannedCost: z.number().default(0),
     supplyCost: z.number().default(0),
     actualCost: z.number().default(0),
+    plannedSupplies: z.array(
+        z.object({
+            supplyId: z.string().describe("The ID of the supply to be used, found in contextData."),
+            quantity: z.number().positive().describe("The planned quantity of the supply."),
+        })
+    ).optional().describe("A list of supplies planned for this task. Use the 'supplies' array from contextData to find the correct supplyId."),
 });
 
 const AddStaffPayloadSchema = z.object({
@@ -86,7 +93,7 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', and 'tasks' from the farm management system. Each object only contains the 'id', 'name' (or 'type' for tasks), and any other relevant fields like 'status' for tasks or 'baseDailyRate' for staff."),
+  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains the 'id' and 'name' (or 'type' for tasks). Use this to find IDs for existing items."),
   currentDate: z.string().describe("Today's date in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
@@ -118,7 +125,7 @@ const assistantPrompt = ai.definePrompt({
 
     **CRITICAL INSTRUCTIONS:**
     1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating, deleting, asking a question, or a sequence of these.
-    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any **existing** entities mentioned.
+    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any **existing** entities mentioned (lots, staff, supplies, etc.).
     3.  **COMMAND SEQUENCING:**
         *   If the user gives multiple commands (e.g., "crea una finca y añádele un lote"), you MUST generate an array of actions in the \`actions\` field, in the correct logical order.
         *   For a single command, the \`actions\` array will have only one element.
@@ -129,9 +136,10 @@ const assistantPrompt = ai.definePrompt({
     5.  **EXECUTING ACTIONS:**
         *   For creating, updating, or deleting, construct the appropriate JSON actions.
         *   When a user asks to change a task's status, use \`updateTaskStatus\`. If the new status is 'Finalizado', you MUST set the progress to 100.
+        *   When creating a task, if the user mentions using supplies (e.g., "usando 100kg de abono"), you MUST identify the supply in the \`contextData\` and include it in the \`plannedSupplies\` array of the \`addTask\` payload.
     6.  **ANSWERING & ERRORS:**
         *   If the user asks a question, the \`actions\` array MUST contain a single \`answer\` action.
-        *   If a command is ambiguous or missing information, the \`actions\` array MUST contain a single \`error\` action with a clear question for the user.
+        *   If a command is ambiguous or missing information (like a responsible person for a new task), the \`actions\` array MUST contain a single \`error\` action with a clear question for the user. Do not try to guess missing information.
     7.  **THE \`explanation\` FIELD:**
         *   This must be a single, brief confirmation sentence in Spanish that summarizes ALL actions performed, e.g., "OK. He creado la finca y el lote." or "Listo. He eliminado la labor y actualizado al trabajador."
 

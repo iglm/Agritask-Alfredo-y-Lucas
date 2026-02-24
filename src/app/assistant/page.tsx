@@ -27,6 +27,7 @@ export default function AssistantPage() {
     staff,
     productiveUnits,
     tasks,
+    supplies,
     addProductiveUnit,
     addLot,
     addTask,
@@ -42,7 +43,7 @@ export default function AssistantPage() {
     {
       id: 'initial',
       role: 'assistant',
-      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza", "Marca la labor de fumigación como Finalizada" o "Crea un lote y luego una tarea de siembra en él".',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza", "Marca la labor de fumigación como Finalizada" o "Crea un lote para aguacate, luego programa una labor de siembra para el 1 de agosto y planifica el uso de 100kg de abono".',
     },
   ]);
   const [input, setInput] = useState('');
@@ -81,6 +82,7 @@ export default function AssistantPage() {
         staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate })),
         productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
         tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId })),
+        supplies: supplies?.map(s => ({ id: s.id, name: s.name, unitOfMeasure: s.unitOfMeasure })),
       };
       
       const contextData = JSON.stringify(slimContext);
