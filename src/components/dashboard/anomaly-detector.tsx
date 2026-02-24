@@ -38,6 +38,14 @@ export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorPr
   const { toast } = useToast();
 
   const handleDetection = async () => {
+    if (lots.length === 0 && tasks.length === 0 && transactions.length === 0) {
+      toast({
+        title: 'No hay datos para analizar',
+        description: 'Registra algunas labores, lotes o transacciones antes de usar el asistente de IA.',
+      });
+      return;
+    }
+      
     setIsLoading(true);
     setError(null);
     setResult(null);
