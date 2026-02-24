@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,8 @@ const managementNavItems = [
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
 ];
-const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems];
+const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
+const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, legalNavItem];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -154,6 +155,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <span>Perfil</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/legal">
+                      <Gavel className="mr-2 h-4 w-4" />
+                      <span>Legal y Contacto</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar sesión</span>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,7 +98,7 @@ export default function LoginPage() {
               </CardContent>
               <CardFooter className="flex-col gap-4 text-center">
                 <p className="text-xs text-muted-foreground px-4">
-                    Al iniciar sesión, aceptas nuestra política de tratamiento de datos (Habeas Data) y confías en que guardamos tu información de forma segura.
+                    Al iniciar sesión, aceptas nuestra <Link href="/legal" className="underline hover:text-primary">política de privacidad y tratamiento de datos</Link>.
                 </p>
                 <div className="text-xs text-muted-foreground mt-4">
                     <p>
