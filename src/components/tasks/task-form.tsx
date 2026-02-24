@@ -433,6 +433,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
             <SupplyUsageManager 
                 taskId={task.id}
                 allSupplies={supplies}
+                task={task}
             />
         )}
         
@@ -454,3 +455,5 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
     </Form>
   )
 }
+
+    

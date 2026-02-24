@@ -114,6 +114,7 @@ export type SupplyUsage = {
   supplyName: string;
   quantityUsed: number;
   costAtTimeOfUse: number; // Snapshot of costPerUnit * quantityUsed
+  date: string; // YYYY-MM-DD
 };
 
 export type Transaction = {
@@ -150,5 +151,7 @@ export const expenseCategories = [
   "Gastos Administrativos",
   "Otro Egreso"
 ];
+
+    
 
     

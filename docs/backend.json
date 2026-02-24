@@ -491,6 +491,11 @@
         },
         "costAtTimeOfUse": {
           "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The specific date the supply was used."
         }
       },
       "required": [
@@ -499,7 +504,8 @@
         "taskId",
         "supplyId",
         "quantityUsed",
-        "costAtTimeOfUse"
+        "costAtTimeOfUse",
+        "date"
       ]
     },
     "Transaction": {
@@ -617,3 +623,5 @@
     }
   }
 }
+
+    

@@ -33,7 +33,7 @@ interface DataContextState {
   addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
   updateSupply: (data: Supply) => Promise<void>;
   deleteSupply: (id: string) => Promise<void>;
-  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number) => Promise<void>;
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<void>;
   deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
   addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<void>;
   updateProductiveUnit: (data: ProductiveUnit) => Promise<void>;
@@ -352,7 +352,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number) => {
+  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number, date: string) => {
     if (!ensureAuth()) return;
 
     const taskRef = doc(firestore, 'tasks', taskId);
@@ -389,6 +389,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             supplyName: supplyData.name,
             quantityUsed,
             costAtTimeOfUse,
+            date,
         };
 
         batch.set(usageRef, newUsage);
@@ -398,7 +399,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await batch.commit();
 
     } catch (error: any) {
-        handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed });
+        handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed, date });
         throw error; // Re-throw to be caught by the component
     }
   };
@@ -554,3 +555,5 @@ export const useAppData = () => {
   }
   return context;
 };
+
+    
