@@ -46,10 +46,10 @@ const ErrorPayloadSchema = z.object({
 
 // Union of all possible actions
 const AssistantActionSchema = z.union([
-  z.object({ action: z.literal('addLot'), payload: AddLotPayloadSchema }),
-  z.object({ action: z.literal('addTask'), payload: AddTaskPayloadSchema }),
-  z.object({ action: z.literal('addStaff'), payload: AddStaffPayloadSchema }),
-  z.object({ action: z.literal('error'), payload: ErrorPayloadSchema }),
+  z.object({ action: z.enum(['addLot']), payload: AddLotPayloadSchema }),
+  z.object({ action: z.enum(['addTask']), payload: AddTaskPayloadSchema }),
+  z.object({ action: z.enum(['addStaff']), payload: AddStaffPayloadSchema }),
+  z.object({ action: z.enum(['error']), payload: ErrorPayloadSchema }),
 ]);
 
 // Define the input schema for the flow
