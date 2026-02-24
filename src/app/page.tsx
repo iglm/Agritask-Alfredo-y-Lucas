@@ -8,6 +8,7 @@ import { DollarSign, Tractor, Percent, CheckSquare } from "lucide-react";
 import { useMemo } from "react";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnomalyDetector } from "@/components/dashboard/anomaly-detector";
 
 export default function DashboardPage() {
   const { lots, tasks, isLoading } = useAppData();
@@ -39,7 +40,8 @@ export default function DashboardPage() {
           <Skeleton className="lg:col-span-3 h-[380px]" />
           <Skeleton className="lg:col-span-2 h-[380px]" />
         </div>
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[300px]" />
           <Skeleton className="h-[300px]" />
         </div>
       </div>
@@ -84,8 +86,9 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingTasks tasks={tasks || []} lots={lots || []} />
+        <AnomalyDetector lots={lots || []} tasks={tasks || []} />
       </div>
     </div>
   );
