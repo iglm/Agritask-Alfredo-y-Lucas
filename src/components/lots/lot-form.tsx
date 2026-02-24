@@ -88,7 +88,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
               <FormItem>
                 <FormLabel>Área (Hectáreas)</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input type="number" step="any" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -137,9 +137,9 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
             name="sowingDensity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Densidad Siembra</FormLabel>
+                <FormLabel>Densidad de Siembra</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="árboles/Ha" {...field} />
+                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -150,9 +150,9 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
             name="sowingDistance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Distancia Siembra (m)</FormLabel>
+                <FormLabel>Distancia de Siembra (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 3" {...field} />
+                  <Input type="number" step="any" placeholder="e.g., 3" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

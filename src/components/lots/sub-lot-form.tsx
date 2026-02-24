@@ -76,7 +76,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
               <FormItem>
                 <FormLabel>Área (Hectáreas)</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input type="number" step="any" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -125,9 +125,9 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
             name="sowingDensity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Densidad Siembra (Opcional)</FormLabel>
+                <FormLabel>Densidad de Siembra (Opcional)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="árboles/Ha" {...field} />
+                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -123,7 +123,7 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             <FormItem><FormLabel>Rango Altimétrico (msnm)</FormLabel><FormControl><Input placeholder="1700-1850" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="averageTemperature" render={({ field }) => (
-                            <FormItem><FormLabel>Temperatura Promedio (°C)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Temperatura Promedio (°C)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="projectStartDate" render={({ field }) => (
                             <FormItem><FormLabel>Inicio del Proyecto</FormLabel><FormControl><Input type="month" {...field} /></FormControl><FormMessage /></FormItem>
@@ -132,19 +132,19 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="totalFarmArea" render={({ field }) => (
-                            <FormItem><FormLabel>Área total de la finca (Ha)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Área total de la finca (Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="cultivatedArea" render={({ field }) => (
-                            <FormItem><FormLabel>Área en cultivo (Ha)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Área en cultivo (Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="sowingDensity" render={({ field }) => (
-                            <FormItem><FormLabel>Densidad siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="sowingDistance" render={({ field }) => (
-                            <FormItem><FormLabel>Distancia Siembra (m)</FormLabel><FormControl><Input type="number" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Distancia de Siembra (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
                 </AccordionContent>
@@ -159,5 +159,3 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     </Form>
   );
 }
-
-    
