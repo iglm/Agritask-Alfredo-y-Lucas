@@ -1,8 +1,6 @@
 "use client";
 
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { InvestmentChart } from "@/components/dashboard/investment-chart";
-import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { useAppData } from "@/firebase";
 import { Tractor, TrendingUp, TrendingDown, Scale, Download, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,10 +13,6 @@ import { exportToCsv } from "@/lib/csv";
 import { useToast } from "@/hooks/use-toast";
 import { SubLot } from "@/lib/types";
 import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FinancialTrendsChart } from "@/components/dashboard/FinancialTrendsChart";
-import { ProfitabilityByLotChart } from "@/components/dashboard/ProfitabilityByLotChart";
-import { WorkerPerformanceChart } from "@/components/dashboard/WorkerPerformanceChart";
 
 export default function DashboardPage() {
   const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore, user } = useAppData();
@@ -192,13 +186,9 @@ export default function DashboardPage() {
           <Skeleton className="h-[108px]" />
           <Skeleton className="h-[108px]" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <Skeleton className="lg:col-span-3 h-[380px]" />
-          <Skeleton className="lg:col-span-2 h-[380px]" />
-        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-[300px]" />
-          <Skeleton className="h-[300px]" />
+          <Skeleton className="h-[380px]" />
+          <Skeleton className="h-[380px]" />
         </div>
       </div>
     );
@@ -240,28 +230,10 @@ export default function DashboardPage() {
         />
       </div>
 
-       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Visión General</TabsTrigger>
-          <TabsTrigger value="financial">Análisis Financiero</TabsTrigger>
-          <TabsTrigger value="operational">Análisis Operativo</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="mt-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <UpcomingTasks tasks={tasks || []} lots={lots || []} />
-                <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
-            </div>
-        </TabsContent>
-        <TabsContent value="financial" className="mt-6 space-y-6">
-            <FinancialTrendsChart transactions={transactions || []} tasks={tasks || []} />
-            <ProfitabilityByLotChart lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
-            <InvestmentChart lots={lots || []} tasks={tasks || []} />
-        </TabsContent>
-        <TabsContent value="operational" className="mt-6 space-y-6">
-            <WorkerPerformanceChart staff={staff || []} tasks={tasks || []} />
-            <TasksDistributionChart tasks={tasks || []} />
-        </TabsContent>
-      </Tabs>
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UpcomingTasks tasks={tasks || []} lots={lots || []} />
+          <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
+      </div>
     </div>
   );
 }

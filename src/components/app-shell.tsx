@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, Bot } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, Bot, BarChart3 } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,7 @@ const managementNavItems = [
   { href: '/financials', label: 'Finanzas', icon: Banknote },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
+  { href: '/reports', label: 'Reportes', icon: BarChart3 },
 ];
 const assistantNavItem = { href: '/assistant', label: 'Asistente IA', icon: Bot };
 const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
@@ -66,6 +67,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (item.href === '/') {
       return pathname === '/';
     }
+    // Check if the current path starts with the item's href.
+    // This handles nested routes correctly (e.g., /lotes/some-id).
     return pathname.startsWith(item.href);
   });
 
@@ -202,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
             <SidebarTrigger className="md:hidden" />
             <h1 className="flex-1 text-lg font-semibold md:text-xl">
-              {pathname === '/profile' ? 'Perfil' : (currentPage?.label || 'Optimizador de Labores')}
+              {currentPage?.label || 'Optimizador de Labores'}
             </h1>
             <ThemeToggle />
           </header>
