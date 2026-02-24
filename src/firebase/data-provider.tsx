@@ -1,8 +1,8 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply } from '@/lib/types';
+import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp } from 'firebase/firestore';
+import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
@@ -30,6 +30,8 @@ interface DataContextState {
   addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
   updateSupply: (data: Supply) => Promise<void>;
   deleteSupply: (id: string) => Promise<void>;
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number) => Promise<void>;
+  deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
   updateProductiveUnit: (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => Promise<void>;
 }
 
@@ -232,6 +234,96 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number) => {
+    if (!ensureAuth()) return;
+
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const supplyRef = doc(firestore, 'supplies', supplyId);
+    const usageRef = doc(collection(firestore, 'tasks', taskId, 'supplyUsages'));
+
+    const batch = writeBatch(firestore);
+
+    try {
+        // We must get the latest data from the server to avoid race conditions.
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyRef)]);
+
+        if (!taskDoc.exists() || !supplyDoc.exists()) {
+            throw new Error('La labor o el insumo no existen.');
+        }
+
+        const taskData = taskDoc.data() as Task;
+        const supplyData = supplyDoc.data() as Supply;
+
+        if (quantityUsed > supplyData.currentStock) {
+            throw new Error('Stock insuficiente.');
+        }
+
+        const costAtTimeOfUse = supplyData.costPerUnit * quantityUsed;
+        const newSupplyCostForTask = (taskData.supplyCost || 0) + costAtTimeOfUse;
+        const newActualCostForTask = (taskData.actualCost || 0) + costAtTimeOfUse;
+        const newCurrentStock = supplyData.currentStock - quantityUsed;
+
+        const newUsage: SupplyUsage = {
+            id: usageRef.id,
+            userId: user.uid,
+            taskId,
+            supplyId,
+            supplyName: supplyData.name,
+            quantityUsed,
+            costAtTimeOfUse,
+        };
+
+        batch.set(usageRef, newUsage);
+        batch.update(taskRef, { supplyCost: newSupplyCostForTask, actualCost: newActualCostForTask });
+        batch.update(supplyRef, { currentStock: newCurrentStock });
+
+        await batch.commit();
+
+    } catch (error: any) {
+        handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed });
+        throw error; // Re-throw to be caught by the component
+    }
+  };
+
+  const deleteSupplyUsage = async (usage: SupplyUsage) => {
+    if (!ensureAuth()) return;
+
+    const { id, taskId, supplyId, quantityUsed, costAtTimeOfUse } = usage;
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const supplyRef = doc(firestore, 'supplies', supplyId);
+    const usageRef = doc(firestore, 'tasks', taskId, 'supplyUsages', id);
+
+    const batch = writeBatch(firestore);
+
+    try {
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyRef)]);
+        
+        const taskData = taskDoc.exists() ? taskDoc.data() as Task : null;
+        const supplyData = supplyDoc.exists() ? supplyDoc.data() as Supply : null;
+
+        // Revert supply cost on task
+        if (taskData) {
+            const newSupplyCost = Math.max(0, (taskData.supplyCost || 0) - costAtTimeOfUse);
+            const newActualCost = Math.max(0, (taskData.actualCost || 0) - costAtTimeOfUse);
+            batch.update(taskRef, { supplyCost: newSupplyCost, actualCost: newActualCost });
+        }
+        
+        // Revert stock on supply
+        if (supplyData) {
+            const newStock = (supplyData.currentStock || 0) + quantityUsed;
+            batch.update(supplyRef, { currentStock: newStock });
+        }
+
+        batch.delete(usageRef);
+        
+        await batch.commit();
+        
+    } catch (error: any) {
+        handleWriteError(error, usageRef.path, 'delete');
+        throw error;
+    }
+  };
+
   const updateProductiveUnit = async (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'productiveUnits', user.uid);
@@ -257,6 +349,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addStaff, updateStaff, deleteStaff,
     addTask, updateTask, deleteTask,
     addSupply, updateSupply, deleteSupply,
+    addSupplyUsage, deleteSupplyUsage,
     updateProductiveUnit,
   };
 

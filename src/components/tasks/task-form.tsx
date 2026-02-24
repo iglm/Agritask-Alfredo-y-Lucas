@@ -10,12 +10,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { taskCategories, type Task, type Lot, type Staff, taskStatuses } from "@/lib/types"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Slider } from "../ui/slider"
+import { SupplyUsageManager } from "./supply-usage-manager"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
@@ -29,7 +30,6 @@ const taskFormSchema = z.object({
   status: z.enum(taskStatuses, { required_error: "El estado es obligatorio."}),
   progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
-  supplyCost: z.coerce.number().min(0).optional(),
   downtimeMinutes: z.coerce.number().optional(),
   observations: z.string().optional(),
 });
@@ -42,6 +42,7 @@ type TaskFormProps = {
   lots: Lot[];
   staff: Staff[];
   tasks: Task[];
+  supplies: Supply[];
 };
 
 // This robustly handles dates that might be strings or Firestore Timestamps
@@ -65,7 +66,7 @@ const getInitialDate = (dateValue: any): Date | undefined => {
   return undefined;
 };
 
-export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -80,7 +81,6 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
-      supplyCost: task?.supplyCost ?? 0,
       downtimeMinutes: task?.downtimeMinutes ?? 0,
       observations: task?.observations ?? "",
     }
@@ -107,8 +107,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
     }
 
     // The actual cost in-app is an estimation based on labor progress.
-    // The engineer will do the detailed analysis with the exported data.
-    const actualCost = plannedCost * (progress / 100);
+    const actualCost = plannedCost * (progress / 100) + (task?.supplyCost || 0);
 
     const { dependsOn, ...restOfValues } = values;
 
@@ -120,7 +119,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
       reentryDate: values.reentryDate ? format(values.reentryDate, 'yyyy-MM-dd') : undefined,
       progress,
       plannedCost,
-      supplyCost: values.supplyCost || 0,
+      supplyCost: task?.supplyCost || 0, // This is now managed by SupplyUsageManager
       actualCost,
     };
     onSubmit(fullTaskData);
@@ -194,7 +193,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>La labor 'previa' debe guardarse primero para aparecer en esta lista. La labor actual no podrá iniciarse hasta que su dependencia esté finalizada.</FormDescription>
+              <FormDescription>Para que una labor aparezca aquí, primero debe ser creada. La labor actual no podrá iniciarse hasta que su dependencia esté finalizada.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -325,47 +324,53 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
               </FormItem>
             )}
           />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-              control={form.control}
-              name="plannedJournals"
-              render={({ field }) => (
+
+        <div className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-medium">Costos y Tiempos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="plannedJournals"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Jornales Planificados</FormLabel>
+                        <FormControl>
+                            <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 <FormItem>
-                  <FormLabel>Jornales Planificados</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
+                    <FormLabel>Costo Insumos (Auto)</FormLabel>
+                    <FormControl>
+                        <Input type="text" readOnly disabled value={`$${(task?.supplyCost || 0).toLocaleString()}`} />
+                    </FormControl>
+                    <FormDescription>Se calcula desde el gestor de insumos.</FormDescription>
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="supplyCost"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Costo Insumos (Plan.)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="Costo total de insumos" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            </div>
+             <FormField
+                  control={form.control}
+                  name="downtimeMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tiempo Inactividad (minutos)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
         </div>
-         <FormField
-              control={form.control}
-              name="downtimeMinutes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tiempo Inactividad (minutos)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        
+        {task?.id && (
+            <SupplyUsageManager 
+                taskId={task.id}
+                allSupplies={supplies}
             />
+        )}
+        
          <FormField
           control={form.control}
           name="observations"

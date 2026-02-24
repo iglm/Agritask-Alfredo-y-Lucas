@@ -16,7 +16,7 @@ import { exportToCsv } from "@/lib/csv";
 import { Input } from "@/components/ui/input";
 
 export default function TasksPage() {
-  const { tasks: allTasks, lots, staff, isLoading, addTask, updateTask, deleteTask } = useAppData();
+  const { tasks: allTasks, lots, staff, supplies, isLoading, addTask, updateTask, deleteTask } = useAppData();
   const { toast } = useToast();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -151,7 +151,14 @@ export default function TasksPage() {
               {editingTask ? 'Actualiza los detalles de esta labor.' : 'Completa los detalles para la nueva labor.'}
             </SheetDescription>
           </SheetHeader>
-          <TaskForm task={editingTask} onSubmit={handleFormSubmit} lots={lots || []} staff={staff || []} tasks={allTasks || []} />
+          <TaskForm 
+            task={editingTask} 
+            onSubmit={handleFormSubmit} 
+            lots={lots || []} 
+            staff={staff || []} 
+            tasks={allTasks || []}
+            supplies={supplies || []}
+          />
         </SheetContent>
       </Sheet>
 
