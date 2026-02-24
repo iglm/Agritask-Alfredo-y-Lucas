@@ -91,20 +91,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!ensureAuth()) return;
     const lotRef = doc(firestore, 'lots', id);
     try {
-        const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
-        const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
-        
         const batch = writeBatch(firestore);
         
+        // 1. Delete sub-lots
+        const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
         const sublotsSnapshot = await getDocs(sublotsQuery);
         sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
-        
+
+        // 2. Process tasks for deletion and stock reversion
+        const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
         const tasksSnapshot = await getDocs(tasksQuery);
-        tasksSnapshot.forEach(doc => batch.delete(doc.ref));
-        
+
+        const stockUpdates = new Map<string, number>();
+
+        for (const taskDoc of tasksSnapshot.docs) {
+            // Find supply usages for each task
+            const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
+            const usagesSnapshot = await getDocs(usagesQuery);
+            
+            usagesSnapshot.forEach(usageDoc => {
+                const usageData = usageDoc.data() as SupplyUsage;
+                const currentStockUpdate = stockUpdates.get(usageData.supplyId) || 0;
+                stockUpdates.set(usageData.supplyId, currentStockUpdate + usageData.quantityUsed);
+                batch.delete(usageDoc.ref); // Delete the usage document
+            });
+            
+            batch.delete(taskDoc.ref); // Delete the task document
+        }
+
+        // 3. Apply all stock updates
+        for (const [supplyId, quantityToRevert] of stockUpdates.entries()) {
+            const supplyRef = doc(firestore, 'supplies', supplyId);
+            const supplyDoc = await getDoc(supplyRef);
+            if (supplyDoc.exists()) {
+                const supplyData = supplyDoc.data() as Supply;
+                batch.update(supplyRef, { currentStock: supplyData.currentStock + quantityToRevert });
+            }
+        }
+
+        // 4. Delete the main lot
         batch.delete(lotRef);
         
         await batch.commit();
+
     } catch (error) {
         handleWriteError(error, lotRef.path, 'delete');
     }
@@ -166,11 +195,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteTask = async (id: string) => {
     if (!ensureAuth()) return;
-    const docRef = doc(firestore, 'tasks', id);
+    const taskRef = doc(firestore, 'tasks', id);
     try {
-        await deleteDoc(docRef);
+        const batch = writeBatch(firestore);
+
+        const usagesQuery = collection(firestore, 'tasks', id, 'supplyUsages');
+        const usagesSnapshot = await getDocs(usagesQuery);
+
+        const stockUpdates = new Map<string, number>();
+
+        usagesSnapshot.forEach(usageDoc => {
+            const usageData = usageDoc.data() as SupplyUsage;
+            const currentStockUpdate = stockUpdates.get(usageData.supplyId) || 0;
+            stockUpdates.set(usageData.supplyId, currentStockUpdate + usageData.quantityUsed);
+            batch.delete(usageDoc.ref); // Delete the usage document
+        });
+        
+        for (const [supplyId, quantityToRevert] of stockUpdates.entries()) {
+            const supplyRef = doc(firestore, 'supplies', supplyId);
+            const supplyDoc = await getDoc(supplyRef);
+            if (supplyDoc.exists()) {
+                const supplyData = supplyDoc.data() as Supply;
+                batch.update(supplyRef, { currentStock: supplyData.currentStock + quantityToRevert });
+            }
+        }
+
+        batch.delete(taskRef); // Finally, delete the task itself
+
+        await batch.commit();
     } catch (error) {
-        handleWriteError(error, docRef.path, 'delete');
+        handleWriteError(error, taskRef.path, 'delete');
     }
   };
   
