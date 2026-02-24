@@ -15,6 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 import { collection, getDocs } from "firebase/firestore";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
@@ -209,7 +211,7 @@ export default function LotsPage() {
         lote_padre: '',
         area_hectareas: lot.areaHectares,
         ubicacion: lot.location || 'N/A',
-        fecha_siembra: lot.sowingDate ? new Date(lot.sowingDate.replace(/-/g, '\/')).toLocaleDateString('es-CO') : 'N/A',
+        fecha_siembra: lot.sowingDate ? format(new Date(lot.sowingDate.replace(/-/g, '\/')), 'P', { locale: es }) : 'N/A',
         densidad_siembra: lot.sowingDensity || 'N/A',
         distancia_siembra: lot.sowingDistance || 'N/A',
         arboles_totales: lot.totalTrees || 0,
@@ -228,7 +230,7 @@ export default function LotsPage() {
           lote_padre: lot.name,
           area_hectareas: subLot.areaHectares,
           ubicacion: lot.location || 'N/A',
-          fecha_siembra: subLot.sowingDate ? new Date(subLot.sowingDate.replace(/-/g, '\/')).toLocaleDateString('es-CO') : 'N/A',
+          fecha_siembra: subLot.sowingDate ? format(new Date(subLot.sowingDate.replace(/-/g, '\/')), 'P', { locale: es }) : 'N/A',
           densidad_siembra: subLot.sowingDensity || 'N/A',
           distancia_siembra: 'N/A',
           arboles_totales: subLot.totalTrees || 0,

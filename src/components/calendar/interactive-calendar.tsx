@@ -52,11 +52,11 @@ export function InteractiveCalendar({ tasks, onDateSelect, onTaskSelect, onTaskD
   });
 
   const getTasksForDay = (day: Date) => {
+    const formattedDay = format(day, 'yyyy-MM-dd');
     return tasks
       .filter(task => {
-        const taskDate = new Date(task.startDate);
-        const taskDateLocal = new Date(taskDate.valueOf() + taskDate.getTimezoneOffset() * 60 * 1000);
-        return format(taskDateLocal, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+        // Compare date strings directly to avoid timezone issues
+        return task.startDate === formattedDay;
       })
       .sort((a, b) => a.type.localeCompare(b.type));
   };

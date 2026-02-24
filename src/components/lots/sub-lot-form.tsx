@@ -37,7 +37,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
     defaultValues: {
       name: subLot?.name ?? "",
       areaHectares: subLot?.areaHectares ?? 0,
-      sowingDate: subLot?.sowingDate ? new Date(subLot.sowingDate) : undefined,
+      sowingDate: subLot?.sowingDate ? new Date(subLot.sowingDate.replace(/-/g, '\/')) : undefined,
       sowingDensity: subLot?.sowingDensity ?? undefined,
       totalTrees: subLot?.totalTrees ?? undefined,
       technicalNotes: subLot?.technicalNotes ?? "",

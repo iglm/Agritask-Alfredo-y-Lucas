@@ -95,7 +95,7 @@ export default function CalendarPage() {
   };
   
   const taskForForm = editingTask || (selectedDate ? {
-    startDate: selectedDate.toISOString(),
+    startDate: format(selectedDate, 'yyyy-MM-dd'),
     status: 'Por realizar',
   } : undefined);
 
