@@ -166,7 +166,7 @@ export function LotForm({ lot, productiveUnit, onSubmit: handleOnSubmit }: LotFo
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha de siembra</FormLabel>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>

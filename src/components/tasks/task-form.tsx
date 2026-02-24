@@ -240,7 +240,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha Inicio</FormLabel>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -263,7 +263,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha Finalización</FormLabel>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -307,7 +307,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha Reingreso (Opcional)</FormLabel>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>

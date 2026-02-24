@@ -203,7 +203,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha de siembra (Opcional)</FormLabel>
-                <Popover>
+                <Popover modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
