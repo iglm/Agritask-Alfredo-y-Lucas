@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 
 export default function StaffPage() {
-  const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
+  const { staff: allStaff, tasks: allTasks, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
   const { toast } = useToast();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -62,64 +62,62 @@ export default function StaffPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!staffToDelete) return;
-    try {
-      await deleteStaff(staffToDelete.id);
+    
+    // Data Integrity Check: Prevent deleting staff with assigned tasks
+    const assignedTasks = (allTasks || []).filter(task => task.responsibleId === staffToDelete.id && task.status !== 'Finalizado');
+    if (assignedTasks.length > 0) {
       toast({
-        title: "Personal eliminado",
-        description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
+        variant: 'destructive',
+        title: 'No se puede eliminar al personal',
+        description: `"${staffToDelete.name}" está asignado a ${assignedTasks.length} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`,
+        duration: 6000,
       });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar al miembro del personal. Inténtalo de nuevo.",
-      });
-    } finally {
       setIsDeleteDialogOpen(false);
       setStaffToDelete(null);
+      return;
     }
+
+    deleteStaff(staffToDelete.id);
+    toast({
+      title: "Personal eliminado",
+      description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
+    });
+    setIsDeleteDialogOpen(false);
+    setStaffToDelete(null);
   };
 
-  const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
-    try {
-      const isDuplicated = (allStaff || []).some(s => 
-        s.id !== editingStaff?.id &&
-        (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
-      );
+  const handleFormSubmit = (values: Omit<Staff, 'id' | 'userId'>) => {
+    const isDuplicated = (allStaff || []).some(s => 
+      s.id !== editingStaff?.id &&
+      (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
+    );
 
-      if (isDuplicated) {
-        toast({
-          variant: "destructive",
-          title: "Personal duplicado",
-          description: "Ya existe un miembro del personal con este nombre o contacto.",
-        });
-        return;
-      }
-      
-      if (editingStaff) {
-        await updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
-        toast({
-          title: "¡Personal actualizado!",
-          description: "Los detalles del miembro del personal han sido actualizados.",
-        });
-      } else {
-        await addStaff(values);
-        toast({
-          title: "¡Personal creado!",
-          description: "El nuevo miembro del personal ha sido agregado.",
-        });
-      }
-      setIsSheetOpen(false);
-      setEditingStaff(undefined);
-    } catch (error: any) {
+    if (isDuplicated) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: "No se pudo guardar el miembro del personal. Por favor, inténtalo de nuevo.",
+        title: "Personal duplicado",
+        description: "Ya existe un miembro del personal con este nombre o contacto.",
+      });
+      return;
+    }
+    
+    if (editingStaff) {
+      updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
+      toast({
+        title: "¡Personal actualizado!",
+        description: "Los detalles del miembro del personal han sido actualizados.",
+      });
+    } else {
+      addStaff(values);
+      toast({
+        title: "¡Personal creado!",
+        description: "El nuevo miembro del personal ha sido agregado.",
       });
     }
+    setIsSheetOpen(false);
+    setEditingStaff(undefined);
   };
 
   const handleExport = () => {

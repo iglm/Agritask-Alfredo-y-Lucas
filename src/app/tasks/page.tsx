@@ -62,50 +62,33 @@ export default function TasksPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!taskToDelete) return;
-    try {
-      await deleteTask(taskToDelete.id);
-      toast({
-        title: "Labor eliminada",
-        description: `La labor "${taskToDelete.type}" ha sido eliminada.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar la labor. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setTaskToDelete(null);
-    }
+    deleteTask(taskToDelete.id);
+    toast({
+      title: "Labor eliminada",
+      description: `La labor "${taskToDelete.type}" ha sido eliminada.`,
+    });
+    setIsDeleteDialogOpen(false);
+    setTaskToDelete(null);
   };
 
-  const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
-    try {
-      if (editingTask) {
-        await updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
-        toast({
-          title: "¡Labor actualizada!",
-          description: "Los detalles de la labor han sido actualizados.",
-        });
-      } else {
-        await addTask(values);
-        toast({
-          title: "¡Labor creada!",
-          description: "La nueva labor ha sido agregada a tu lista.",
-        });
-      }
-      setIsSheetOpen(false);
-      setEditingTask(undefined);
-    } catch (error: any) {
+  const handleFormSubmit = (values: Omit<Task, 'id' | 'userId'>) => {
+    if (editingTask) {
+      updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
       toast({
-        variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: "No se pudo guardar la labor. Por favor, inténtalo de nuevo.",
+        title: "¡Labor actualizada!",
+        description: "Los detalles de la labor han sido actualizados.",
+      });
+    } else {
+      addTask(values);
+      toast({
+        title: "¡Labor creada!",
+        description: "La nueva labor ha sido agregada a tu lista.",
       });
     }
+    setIsSheetOpen(false);
+    setEditingTask(undefined);
   };
 
   const handleExport = () => {

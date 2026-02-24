@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
-import { useAppData, useFirebase } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -19,8 +19,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
-  const { firestore, user } = useFirebase();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -48,17 +47,8 @@ export default function LotsPage() {
     }
   }, [allLots, searchTerm]);
 
-  const ensureAuth = () => {
-    if (!user || !firestore) {
-        toast({ variant: 'destructive', title: 'Error de autenticación', description: 'Debes iniciar sesión para realizar esta acción.' });
-        return false;
-    }
-    return true;
-  }
-
   // --- Lot Handlers ---
-  const handleAddLot = async () => {
-    if (!ensureAuth()) return;
+  const handleAddLot = () => {
     setEditingLot(undefined);
     setIsLotSheetOpen(true);
   };
@@ -73,57 +63,38 @@ export default function LotsPage() {
     setIsLotDeleteDialogOpen(true);
   };
 
-  const confirmDeleteLot = async () => {
-    if (!lotToDelete || !ensureAuth()) return;
-    try {
-      await deleteLot(lotToDelete.id);
-      toast({
-        title: "Lote eliminado",
-        description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el lote. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsLotDeleteDialogOpen(false);
-      setLotToDelete(null);
-    }
+  const confirmDeleteLot = () => {
+    if (!lotToDelete) return;
+    deleteLot(lotToDelete.id);
+    toast({
+      title: "Lote eliminado",
+      description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
+    });
+    setIsLotDeleteDialogOpen(false);
+    setLotToDelete(null);
   };
 
-  const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
-    try {
-      if (editingLot) {
-        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
-        toast({
-          title: "¡Lote actualizado!",
-          description: "Los detalles del lote han sido actualizados.",
-        });
-      } else {
-        await addLot(values);
-        toast({
-          title: "¡Lote creado!",
-          description: "El nuevo lote ha sido agregado a tu lista.",
-        });
-      }
-      setIsLotSheetOpen(false);
-      setEditingLot(undefined);
-    } catch (error: any) {
+  const handleLotFormSubmit = (values: Omit<Lot, 'id' | 'userId'>) => {
+    if (editingLot) {
+      updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
       toast({
-        variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: error.message || "No se pudo guardar el lote. Por favor, inténtalo de nuevo.",
+        title: "¡Lote actualizado!",
+        description: "Los detalles del lote han sido actualizados.",
+      });
+    } else {
+      addLot(values);
+      toast({
+        title: "¡Lote creado!",
+        description: "El nuevo lote ha sido agregado a tu lista.",
       });
     }
+    setIsLotSheetOpen(false);
+    setEditingLot(undefined);
   };
   
   // --- SubLot Handlers ---
 
   const handleAddSubLot = (lot: Lot) => {
-    if (!ensureAuth()) return;
     setCurrentLot(lot);
     setEditingSubLot(undefined);
     setIsSubLotSheetOpen(true);
@@ -141,56 +112,42 @@ export default function LotsPage() {
     setIsSubLotDeleteDialogOpen(true);
   };
 
-  const confirmDeleteSubLot = async () => {
-    if (!subLotToDelete || !ensureAuth()) return;
-    try {
-      await deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
-      toast({
-        title: "Sub-lote eliminado",
-        description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el sub-lote. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsSubLotDeleteDialogOpen(false);
-      setSubLotToDelete(null);
-    }
+  const confirmDeleteSubLot = () => {
+    if (!subLotToDelete) return;
+    deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
+    toast({
+      title: "Sub-lote eliminado",
+      description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
+    });
+    setIsSubLotDeleteDialogOpen(false);
+    setSubLotToDelete(null);
   };
   
-  const handleSubLotFormSubmit = async (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
-    if (!currentLot || !ensureAuth()) return;
-    try {
-      if (editingSubLot) {
-        await updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
-        toast({
-          title: "¡Sub-lote actualizado!",
-          description: "Los detalles del sub-lote han sido actualizados.",
-        });
-      } else {
-        await addSubLot(currentLot.id, values);
-        toast({
-          title: "¡Sub-lote creado!",
-          description: "El nuevo sub-lote ha sido agregado.",
-        });
-      }
-      setIsSubLotSheetOpen(false);
-      setEditingSubLot(undefined);
-      setCurrentLot(undefined);
-    } catch (error: any) {
+  const handleSubLotFormSubmit = (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+    if (!currentLot) return;
+    if (editingSubLot) {
+      updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
       toast({
-        variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: error.message || "No se pudo guardar el sub-lote. Por favor, inténtalo de nuevo.",
+        title: "¡Sub-lote actualizado!",
+        description: "Los detalles del sub-lote han sido actualizados.",
+      });
+    } else {
+      addSubLot(currentLot.id, values);
+      toast({
+        title: "¡Sub-lote creado!",
+        description: "El nuevo sub-lote ha sido agregado.",
       });
     }
+    setIsSubLotSheetOpen(false);
+    setEditingSubLot(undefined);
+    setCurrentLot(undefined);
   };
 
   const handleExport = async () => {
-    if (!ensureAuth()) return;
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se puede conectar a la base de datos.'});
+      return;
+    }
     if (filteredLots.length === 0) {
       toast({
         title: "No hay datos para exportar",

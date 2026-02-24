@@ -52,64 +52,47 @@ export default function SuppliesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!supplyToDelete) return;
-    try {
-      await deleteSupply(supplyToDelete.id);
-      toast({
-        title: "Insumo eliminado",
-        description: `El insumo "${supplyToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el insumo. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setSupplyToDelete(null);
-    }
+    deleteSupply(supplyToDelete.id);
+    toast({
+      title: "Insumo eliminado",
+      description: `El insumo "${supplyToDelete.name}" ha sido eliminado.`,
+    });
+    setIsDeleteDialogOpen(false);
+    setSupplyToDelete(null);
   };
 
-  const handleFormSubmit = async (values: Omit<Supply, 'id' | 'userId'>) => {
-    try {
-      const isDuplicated = (allSupplies || []).some(s => 
-        s.id !== editingSupply?.id &&
-        s.name.toLowerCase().trim() === values.name.toLowerCase().trim()
-      );
+  const handleFormSubmit = (values: Omit<Supply, 'id' | 'userId'>) => {
+    const isDuplicated = (allSupplies || []).some(s => 
+      s.id !== editingSupply?.id &&
+      s.name.toLowerCase().trim() === values.name.toLowerCase().trim()
+    );
 
-      if (isDuplicated) {
-        toast({
-          variant: "destructive",
-          title: "Insumo duplicado",
-          description: "Ya existe un insumo con este nombre.",
-        });
-        return;
-      }
-      
-      if (editingSupply) {
-        await updateSupply({ ...values, id: editingSupply.id, userId: editingSupply.userId });
-        toast({
-          title: "¡Insumo actualizado!",
-          description: "Los detalles del insumo han sido actualizados.",
-        });
-      } else {
-        await addSupply(values);
-        toast({
-          title: "¡Insumo creado!",
-          description: "El nuevo insumo ha sido agregado al inventario.",
-        });
-      }
-      setIsSheetOpen(false);
-      setEditingSupply(undefined);
-    } catch (error: any) {
+    if (isDuplicated) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: "No se pudo guardar el insumo. Por favor, inténtalo de nuevo.",
+        title: "Insumo duplicado",
+        description: "Ya existe un insumo con este nombre.",
+      });
+      return;
+    }
+    
+    if (editingSupply) {
+      updateSupply({ ...values, id: editingSupply.id, userId: editingSupply.userId });
+      toast({
+        title: "¡Insumo actualizado!",
+        description: "Los detalles del insumo han sido actualizados.",
+      });
+    } else {
+      addSupply(values);
+      toast({
+        title: "¡Insumo creado!",
+        description: "El nuevo insumo ha sido agregado al inventario.",
       });
     }
+    setIsSheetOpen(false);
+    setEditingSupply(undefined);
   };
 
   const handleExport = () => {

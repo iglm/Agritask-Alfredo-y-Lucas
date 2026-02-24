@@ -14,20 +14,12 @@ export default function ProductiveUnitPage() {
   const { productiveUnit, lots, updateProductiveUnit, isLoading } = useAppData();
   const { toast } = useToast();
 
-  const handleFormSubmit = async (values: Partial<ProductiveUnit>) => {
-    try {
-      await updateProductiveUnit(values);
-      toast({
-        title: "¡Unidad Productiva Actualizada!",
-        description: "La información de tu finca ha sido guardada.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo guardar la información.",
-      });
-    }
+  const handleFormSubmit = (values: Partial<ProductiveUnit>) => {
+    updateProductiveUnit(values);
+    toast({
+      title: "¡Unidad Productiva Actualizada!",
+      description: "La información de tu finca ha sido guardada.",
+    });
   };
 
   if (isLoading) {
@@ -81,5 +73,3 @@ export default function ProductiveUnitPage() {
     </div>
   );
 }
-
-    

@@ -4,6 +4,8 @@ import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/
 import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from './error-emitter';
+import { FirestorePermissionError } from './errors';
 
 interface DataContextState {
   lots: Lot[] | null;
@@ -12,22 +14,23 @@ interface DataContextState {
   supplies: Supply[] | null;
   productiveUnit: ProductiveUnit | null;
   isLoading: boolean;
-  addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
-  updateLot: (data: Lot) => Promise<void>;
-  deleteLot: (id: string) => Promise<void>;
-  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => Promise<void>;
-  updateSubLot: (subLot: SubLot) => Promise<void>;
-  deleteSubLot: (lotId: string, subLotId: string) => Promise<void>;
-  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => Promise<void>;
-  updateStaff: (data: Staff) => Promise<void>;
-  deleteStaff: (id: string) => Promise<void>;
-  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<void>;
-  updateTask: (data: Task) => Promise<void>;
-  deleteTask: (id: string) => Promise<void>;
-  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
-  updateSupply: (data: Supply) => Promise<void>;
-  deleteSupply: (id: string) => Promise<void>;
-  updateProductiveUnit: (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => Promise<void>;
+  firestore: ReturnType<typeof useFirebase>['firestore'];
+  addLot: (data: Omit<Lot, 'id' | 'userId'>) => void;
+  updateLot: (data: Lot) => void;
+  deleteLot: (id: string) => void;
+  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => void;
+  updateSubLot: (subLot: SubLot) => void;
+  deleteSubLot: (lotId: string, subLotId: string) => void;
+  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => void;
+  updateStaff: (data: Staff) => void;
+  deleteStaff: (id: string) => void;
+  addTask: (data: Omit<Task, 'id' | 'userId'>) => void;
+  updateTask: (data: Task) => void;
+  deleteTask: (id: string) => void;
+  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => void;
+  updateSupply: (data: Supply) => void;
+  deleteSupply: (id: string) => void;
+  updateProductiveUnit: (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => void;
 }
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
@@ -40,8 +43,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  
-  // CORRECTED: Use useDoc for fetching a single document by its known ID.
   const productiveUnitDocRef = useMemoFirebase(() => user && firestore ? doc(firestore, 'productiveUnits', user.uid) : null, [firestore, user]);
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
@@ -59,104 +60,147 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return true;
   }
 
-  const addLot = async (data: Omit<Lot, 'id' | 'userId'>) => {
+  const addLot = (data: Omit<Lot, 'id' | 'userId'>) => {
     if (!ensureAuth()) return;
     const newDocRef = doc(collection(firestore, 'lots'));
-    await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+    setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: newDocRef.path, operation: 'create', requestResourceData: { ...data, id: newDocRef.id, userId: user.uid } }));
+    });
   };
 
-  const updateLot = async (data: Lot) => {
+  const updateLot = (data: Lot) => {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'lots', data.id);
-    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+    setDoc(docRef, { ...data, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { ...data, userId: user.uid } }));
+    });
   };
 
-  const deleteLot = async (id: string) => {
+  const deleteLot = (id: string) => {
     if (!ensureAuth()) return;
-    const lotRef = doc(firestore, 'lots', id);
-    const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
-    const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
-    
-    const batch = writeBatch(firestore);
-    
-    const sublotsSnapshot = await getDocs(sublotsQuery);
-    sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
-    
-    const tasksSnapshot = await getDocs(tasksQuery);
-    tasksSnapshot.forEach(doc => batch.delete(doc.ref));
-    
-    batch.delete(lotRef);
-    
-    await batch.commit();
+    (async () => {
+        const lotRef = doc(firestore, 'lots', id);
+        const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
+        const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
+        
+        const batch = writeBatch(firestore);
+        
+        const sublotsSnapshot = await getDocs(sublotsQuery);
+        sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        const tasksSnapshot = await getDocs(tasksQuery);
+        tasksSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        batch.delete(lotRef);
+        
+        batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: lotRef.path, operation: 'delete' }));
+        });
+    })();
   };
 
-  const addStaff = async (data: Omit<Staff, 'id' | 'userId'>) => {
+  const addStaff = (data: Omit<Staff, 'id' | 'userId'>) => {
     if (!ensureAuth()) return;
     const newDocRef = doc(collection(firestore, 'staff'));
-    await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
-  }
-  const updateStaff = async (data: Staff) => {
+    setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: newDocRef.path, operation: 'create', requestResourceData: { ...data, id: newDocRef.id, userId: user.uid } }));
+    });
+  };
+
+  const updateStaff = (data: Staff) => {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'staff', data.id);
-    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-  }
-  const deleteStaff = async (id: string) => {
-    if (!ensureAuth()) return;
-    await deleteDoc(doc(firestore, 'staff', id));
-  }
+    setDoc(docRef, { ...data, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { ...data, userId: user.uid } }));
+    });
+  };
 
-  const addTask = async (data: Omit<Task, 'id' | 'userId'>) => {
+  const deleteStaff = (id: string) => {
+    if (!ensureAuth()) return;
+    const docRef = doc(firestore, 'staff', id);
+    deleteDoc(docRef).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    });
+  };
+
+  const addTask = (data: Omit<Task, 'id' | 'userId'>) => {
     if (!ensureAuth()) return;
     const newDocRef = doc(collection(firestore, 'tasks'));
-    await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
-  }
-  const updateTask = async (data: Task) => {
+    setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: newDocRef.path, operation: 'create', requestResourceData: { ...data, id: newDocRef.id, userId: user.uid } }));
+    });
+  };
+
+  const updateTask = (data: Task) => {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'tasks', data.id);
-    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-  }
-  const deleteTask = async (id: string) => {
+    setDoc(docRef, { ...data, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { ...data, userId: user.uid } }));
+    });
+  };
+
+  const deleteTask = (id: string) => {
     if (!ensureAuth()) return;
-    await deleteDoc(doc(firestore, 'tasks', id));
-  }
+    const docRef = doc(firestore, 'tasks', id);
+    deleteDoc(docRef).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    });
+  };
   
-  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>) => {
+  const addSupply = (data: Omit<Supply, 'id' | 'userId'>) => {
     if (!ensureAuth()) return;
     const newDocRef = doc(collection(firestore, 'supplies'));
-    await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
-  }
-  const updateSupply = async (data: Supply) => {
+    setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: newDocRef.path, operation: 'create', requestResourceData: { ...data, id: newDocRef.id, userId: user.uid } }));
+    });
+  };
+
+  const updateSupply = (data: Supply) => {
     if (!ensureAuth()) return;
     const docRef = doc(firestore, 'supplies', data.id);
-    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-  }
-  const deleteSupply = async (id: string) => {
-    if (!ensureAuth()) return;
-    await deleteDoc(doc(firestore, 'supplies', id));
-  }
+    setDoc(docRef, { ...data, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { ...data, userId: user.uid } }));
+    });
+  };
 
-  const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+  const deleteSupply = (id: string) => {
+    if (!ensureAuth()) return;
+    const docRef = doc(firestore, 'supplies', id);
+    deleteDoc(docRef).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    });
+  };
+
+  const addSubLot = (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (!ensureAuth()) return;
     const subLotRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
-    await setDoc(subLotRef, { ...data, id: subLotRef.id, userId: user.uid, lotId });
+    setDoc(subLotRef, { ...data, id: subLotRef.id, userId: user.uid, lotId }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: subLotRef.path, operation: 'create', requestResourceData: { ...data, id: subLotRef.id, userId: user.uid, lotId } }));
+    });
   };
 
-  const updateSubLot = async (subLot: SubLot) => {
+  const updateSubLot = (subLot: SubLot) => {
     if (!ensureAuth()) return;
     const subLotRef = doc(firestore, 'lots', subLot.lotId, 'sublots', subLot.id);
-    await setDoc(subLotRef, { ...subLot, userId: user.uid }, { merge: true });
+    setDoc(subLotRef, { ...subLot, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: subLotRef.path, operation: 'update', requestResourceData: { ...subLot, userId: user.uid } }));
+    });
   };
 
-  const deleteSubLot = async (lotId: string, subLotId: string) => {
+  const deleteSubLot = (lotId: string, subLotId: string) => {
     if (!ensureAuth()) return;
-    await deleteDoc(doc(firestore, 'lots', lotId, 'sublots', subLotId));
+    const docRef = doc(firestore, 'lots', lotId, 'sublots', subLotId);
+    deleteDoc(docRef).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    });
   };
 
-  const updateProductiveUnit = async (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => {
+  const updateProductiveUnit = (data: Partial<Omit<ProductiveUnit, 'id' | 'userId'>>) => {
     if (!ensureAuth()) return;
-    // The document ID for the productive unit is the user's UID to ensure one per user.
     const docRef = doc(firestore, 'productiveUnits', user.uid);
-    await setDoc(docRef, { ...data, id: user.uid, userId: user.uid }, { merge: true });
+    setDoc(docRef, { ...data, id: user.uid, userId: user.uid }, { merge: true }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { ...data, id: user.uid, userId: user.uid } }));
+    });
   };
 
   const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitLoading;
@@ -168,6 +212,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     supplies,
     productiveUnit,
     isLoading,
+    firestore,
     addLot, updateLot, deleteLot,
     addSubLot, updateSubLot, deleteSubLot,
     addStaff, updateStaff, deleteStaff,
