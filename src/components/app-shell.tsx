@@ -130,6 +130,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+            <SidebarMenu>
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(legalNavItem.href)}
+                    tooltip={{ children: legalNavItem.label }}
+                  >
+                    <Link href={legalNavItem.href}>
+                      <legalNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{legalNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
             {user ? (
@@ -153,12 +168,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href="/profile">
                       <UserIcon className="mr-2 h-4 w-4" />
                       <span>Perfil</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/legal">
-                      <Gavel className="mr-2 h-4 w-4" />
-                      <span>Legal y Contacto</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
