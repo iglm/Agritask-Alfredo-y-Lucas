@@ -253,7 +253,7 @@
         },
         "category": {
           "type": "string",
-          "description": "Category of the task (Preparation, Sowing, Maintenance, Harvest, Post-Harvest)."
+          "description": "Category of the task (Preparation, Sowing, Maintenance, Harvest, Post-Harvest, Other)."
         },
         "type": {
           "type": "string",

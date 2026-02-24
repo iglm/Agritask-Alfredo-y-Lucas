@@ -47,7 +47,7 @@ export type Task = {
   id: string;
   userId?: string;
   lotId: string;
-  category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha";
+  category: "Preparación" | "Siembra" | "Mantenimiento" | "Cosecha" | "Post-Cosecha" | "Otro";
   type: string;
   responsibleId: string;
   dependsOn?: string;
@@ -127,7 +127,7 @@ export type Transaction = {
   lotId?: string;
 };
 
-export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha"];
+export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha", "Otro"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
