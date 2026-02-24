@@ -384,11 +384,19 @@
           "type": "number",
           "description": "Longitud de la unidad productiva."
         },
-        "crop": {
-          "type": "string"
+        "crops": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lista de cultivos en la unidad productiva."
         },
-        "variety": {
-          "type": "string"
+        "varieties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lista de variedades de los cultivos."
         },
         "altitudeRange": {
           "type": "string"
@@ -609,5 +617,3 @@
     }
   }
 }
-
-    

@@ -22,7 +22,7 @@ export function ProductiveUnitsTable({ units, onEdit, onDelete, onAdd }: Product
             <TableRow>
               <TableHead>Nombre Finca</TableHead>
               <TableHead className="hidden md:table-cell">Ubicación</TableHead>
-              <TableHead className="hidden lg:table-cell">Cultivo</TableHead>
+              <TableHead className="hidden lg:table-cell">Cultivos</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -32,7 +32,7 @@ export function ProductiveUnitsTable({ units, onEdit, onDelete, onAdd }: Product
                 <TableRow key={unit.id}>
                   <TableCell className="font-medium">{unit.farmName || 'Sin nombre'}</TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">{unit.municipality || 'N/A'}, {unit.department || 'N/A'}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-muted-foreground">{unit.crop || 'N/A'}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">{unit.crops?.join(', ') || 'N/A'}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -77,8 +77,8 @@ export type ProductiveUnit = {
   shareGps?: boolean;
   latitude?: number;
   longitude?: number;
-  crop?: string;
-  variety?: string;
+  crops?: string[];
+  varieties?: string[];
   altitudeRange?: string;
   averageTemperature?: number;
   projectStartDate?: string;

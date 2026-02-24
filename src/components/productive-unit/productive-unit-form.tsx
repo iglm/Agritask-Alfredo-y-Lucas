@@ -22,8 +22,8 @@ const formSchema = z.object({
   shareGps: z.boolean().default(false).optional(),
   latitude: z.coerce.number().optional(),
   longitude: z.coerce.number().optional(),
-  crop: z.string().optional(),
-  variety: z.string().optional(),
+  crops: z.string().optional(),
+  varieties: z.string().optional(),
   altitudeRange: z.string().optional(),
   averageTemperature: z.coerce.number().optional(),
   projectStartDate: z.string().optional(),
@@ -35,7 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 type ProductiveUnitFormProps = {
   productiveUnit?: ProductiveUnit | null;
-  onSubmit: (values: FormValues) => void;
+  onSubmit: (values: Omit<ProductiveUnit, 'id' | 'userId'>) => void;
 };
 
 export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitFormProps) {
@@ -51,8 +51,8 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       shareGps: productiveUnit?.shareGps ?? false,
       latitude: productiveUnit?.latitude ?? undefined,
       longitude: productiveUnit?.longitude ?? undefined,
-      crop: productiveUnit?.crop ?? "",
-      variety: productiveUnit?.variety ?? "",
+      crops: productiveUnit?.crops?.join(', ') ?? "",
+      varieties: productiveUnit?.varieties?.join(', ') ?? "",
       altitudeRange: productiveUnit?.altitudeRange ?? "",
       averageTemperature: productiveUnit?.averageTemperature ?? undefined,
       projectStartDate: productiveUnit?.projectStartDate ?? "",
@@ -105,10 +105,19 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     }
   }, [shareGps, setValue, toast, form]);
 
+  function handleFormSubmit(values: FormValues) {
+    const { crops, varieties, ...rest } = values;
+    const dataToSubmit: Omit<ProductiveUnit, 'id' | 'userId'> = {
+      ...rest,
+      crops: crops ? crops.split(',').map(c => c.trim()).filter(Boolean) : [],
+      varieties: varieties ? varieties.split(',').map(v => v.trim()).filter(Boolean) : [],
+    };
+    onSubmit(dataToSubmit);
+  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         
         <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3']} className="w-full">
             <AccordionItem value="item-1">
@@ -161,11 +170,21 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                 <AccordionTrigger>2. Información del Cultivo</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="crop" render={({ field }) => (
-                            <FormItem><FormLabel>Cultivo</FormLabel><FormControl><Input placeholder="Ej: Café" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="crops" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Cultivos</FormLabel>
+                                <FormControl><Input placeholder="Ej: Café, Plátano, Aguacate" {...field} /></FormControl>
+                                <FormDescription>Separa los diferentes cultivos con comas.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
                         )} />
-                        <FormField control={form.control} name="variety" render={({ field }) => (
-                            <FormItem><FormLabel>Variedad</FormLabel><FormControl><Input placeholder="Ej: Castillo" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="varieties" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Variedades</FormLabel>
+                                <FormControl><Input placeholder="Ej: Castillo, Dominico Hartón" {...field} /></FormControl>
+                                <FormDescription>Separa las diferentes variedades con comas.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                     </div>
                 </AccordionContent>
@@ -206,5 +225,3 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     </Form>
   );
 }
-
-    
