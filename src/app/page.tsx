@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SubLot } from "@/lib/types";
 import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
 import { DataAuditor } from "@/components/dashboard/data-auditor";
+import { ResourceOptimizer } from "@/components/dashboard/resource-optimizer";
 
 export default function DashboardPage() {
   const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore, user } = useAppData();
@@ -235,9 +236,10 @@ export default function DashboardPage() {
         <UpcomingTasks tasks={tasks || []} lots={lots || []} />
       </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
           <DataAuditor lots={lots || []} tasks={tasks || []} staff={staff || []} />
+          <ResourceOptimizer tasks={tasks || []} staff={staff || []} />
       </div>
     </div>
   );
