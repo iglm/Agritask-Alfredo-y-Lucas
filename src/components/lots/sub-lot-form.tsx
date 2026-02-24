@@ -41,13 +41,34 @@ type SubLotFormProps = {
   onSubmit: (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => void;
 };
 
+// This robustly handles dates that might be strings or Firestore Timestamps
+const getInitialDate = (dateValue: any): Date | undefined => {
+  if (!dateValue) {
+    return undefined;
+  }
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  // Firestore Timestamps have a toDate() method
+  if (typeof dateValue.toDate === 'function') {
+    return dateValue.toDate();
+  }
+  if (typeof dateValue === 'string') {
+    // Important: Prevents timezone issues.
+    // '2023-10-25' is parsed as UTC midnight, which can be the day before in local time.
+    // '2023/10/25' is parsed as local midnight.
+    return new Date(dateValue.replace(/-/g, '/'));
+  }
+  return undefined;
+};
+
 export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps) {
   const form = useForm<SubLotFormValues>({
     resolver: zodResolver(subLotFormSchema),
     defaultValues: {
       name: subLot?.name ?? "",
       areaHectares: subLot?.areaHectares ?? 0,
-      sowingDate: subLot && subLot.sowingDate ? new Date(subLot.sowingDate.replace(/-/g, '\/')) : undefined,
+      sowingDate: getInitialDate(subLot?.sowingDate),
       sowingDensity: subLot?.sowingDensity ?? undefined,
       distanceBetweenPlants: subLot?.distanceBetweenPlants ?? undefined,
       distanceBetweenRows: subLot?.distanceBetweenRows ?? undefined,

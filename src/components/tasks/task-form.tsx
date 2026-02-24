@@ -44,6 +44,27 @@ type TaskFormProps = {
   tasks: Task[];
 };
 
+// This robustly handles dates that might be strings or Firestore Timestamps
+const getInitialDate = (dateValue: any): Date | undefined => {
+  if (!dateValue) {
+    return undefined;
+  }
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  // Firestore Timestamps have a toDate() method
+  if (typeof dateValue.toDate === 'function') {
+    return dateValue.toDate();
+  }
+  if (typeof dateValue === 'string') {
+    // Important: Prevents timezone issues.
+    // '2023-10-25' is parsed as UTC midnight, which can be the day before in local time.
+    // '2023/10/25' is parsed as local midnight.
+    return new Date(dateValue.replace(/-/g, '/'));
+  }
+  return undefined;
+};
+
 export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -53,9 +74,9 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
       responsibleId: task?.responsibleId ?? "",
       dependsOn: task?.dependsOn ?? "",
       category: task?.category ?? "Mantenimiento",
-      startDate: task && task.startDate ? new Date(task.startDate.replace(/-/g, '\/')) : new Date(),
-      endDate: task && task.endDate ? new Date(task.endDate.replace(/-/g, '\/')) : undefined,
-      reentryDate: task && task.reentryDate ? new Date(task.reentryDate.replace(/-/g, '\/')) : undefined,
+      startDate: getInitialDate(task?.startDate) ?? new Date(),
+      endDate: getInitialDate(task?.endDate),
+      reentryDate: getInitialDate(task?.reentryDate),
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
@@ -173,7 +194,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks }: TaskFormProps) 
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>Primero debes guardar la labor previa para que aparezca en esta lista. La labor actual no podrá iniciarse hasta que su dependencia esté finalizada.</FormDescription>
+              <FormDescription>La labor 'previa' debe guardarse primero para aparecer en esta lista. La labor actual no podrá iniciarse hasta que su dependencia esté finalizada.</FormDescription>
               <FormMessage />
             </FormItem>
           )}

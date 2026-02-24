@@ -42,6 +42,28 @@ type LotFormProps = {
   onSubmit: (values: Omit<Lot, 'id' | 'userId'>) => void;
 };
 
+// This robustly handles dates that might be strings or Firestore Timestamps
+const getInitialDate = (dateValue: any): Date | undefined => {
+  if (!dateValue) {
+    return undefined;
+  }
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  // Firestore Timestamps have a toDate() method
+  if (typeof dateValue.toDate === 'function') {
+    return dateValue.toDate();
+  }
+  if (typeof dateValue === 'string') {
+    // Important: Prevents timezone issues.
+    // '2023-10-25' is parsed as UTC midnight, which can be the day before in local time.
+    // '2023/10/25' is parsed as local midnight.
+    return new Date(dateValue.replace(/-/g, '/'));
+  }
+  return undefined;
+};
+
+
 export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
@@ -49,7 +71,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       name: lot?.name ?? "",
       areaHectares: lot?.areaHectares ?? 0,
       location: lot?.location ?? "",
-      sowingDate: lot && lot.sowingDate ? new Date(lot.sowingDate.replace(/-/g, '\/')) : undefined,
+      sowingDate: getInitialDate(lot?.sowingDate),
       sowingDensity: lot?.sowingDensity ?? 0,
       distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
       distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
