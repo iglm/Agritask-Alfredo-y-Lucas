@@ -1,0 +1,196 @@
+"use client";
+
+import { useState, useRef, useEffect } from 'react';
+import { PageHeader } from '@/components/page-header';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Bot, Loader2, Send, User as UserIcon } from 'lucide-react';
+import { useAppData } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { runAssistant, AssistantOutput } from '@/ai/flows/assistant-flow';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
+type Message = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  isPending?: boolean;
+};
+
+export default function AssistantPage() {
+  const { toast } = useToast();
+  const {
+    lots,
+    staff,
+    productiveUnits,
+    supplies,
+    transactions,
+    tasks,
+    addLot,
+    addTask,
+    addStaff,
+    // Add other actions here as they are implemented in the assistant
+    isLoading: isDataLoading,
+  } = useAppData();
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'initial',
+      role: 'assistant',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea un lote llamado La Pradera de 10 hectáreas" o "Programa una labor de fumigación para mañana".',
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [isAssistantLoading, setIsAssistantLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to the bottom when messages change
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isAssistantLoading || isDataLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+    };
+
+    setMessages(prev => [...prev, userMessage, { id: 'pending', role: 'assistant', content: '', isPending: true }]);
+    setInput('');
+
+    setIsAssistantLoading(true);
+
+    try {
+      const contextData = JSON.stringify({
+        lots,
+        staff,
+        productiveUnits,
+        supplies,
+        tasks,
+        transactions,
+        currentDate: format(new Date(), 'yyyy-MM-dd')
+      });
+      
+      const result: AssistantOutput = await runAssistant({
+        command: input,
+        contextData: contextData,
+      });
+
+      let responseMessage: Message = {
+        id: Date.now().toString() + '-res',
+        role: 'assistant',
+        content: result.explanation,
+      };
+
+      if (result.action.action === 'error') {
+        responseMessage.content = `Error: ${result.action.payload.message}`;
+      } else {
+        // Execute the action
+        switch (result.action.action) {
+          case 'addLot':
+            // The payload from AI is almost right, but we ensure userId is not there
+            // and other server-managed fields.
+            const { id, userId, ...lotPayload } = result.action.payload;
+            await addLot(lotPayload as any); // Cast because AI payload might differ slightly
+            break;
+          case 'addTask':
+            const { id: taskId, userId: taskUserId, ...taskPayload } = result.action.payload;
+            await addTask(taskPayload as any);
+            break;
+          case 'addStaff':
+            const { id: staffId, userId: staffUserId, ...staffPayload } = result.action.payload;
+             await addStaff(staffPayload as any);
+            break;
+          // Add cases for other actions here
+          default:
+            responseMessage.content = "No entendí esa acción, pero la he registrado.";
+            console.warn("Unknown action from AI:", result.action);
+        }
+      }
+      
+      setMessages(prev => prev.filter(m => m.id !== 'pending').concat(responseMessage));
+
+    } catch (error: any) {
+      console.error("Error running assistant:", error);
+      const errorMessage: Message = {
+        id: Date.now().toString() + '-err',
+        role: 'system',
+        content: 'Hubo un error al procesar tu solicitud. Revisa la consola para más detalles.',
+      };
+      setMessages(prev => prev.filter(m => m.id !== 'pending').concat(errorMessage));
+      toast({
+        variant: 'destructive',
+        title: 'Error del Asistente de IA',
+        description: error.message || 'No se pudo obtener una respuesta del asistente.',
+      });
+    } finally {
+      setIsAssistantLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Asistente de Comandos IA" />
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+        <ScrollArea className="flex-1 p-4 border rounded-lg bg-card" ref={scrollAreaRef}>
+          <div className="space-y-6">
+            {messages.map(m => (
+              <div key={m.id} className={cn('flex items-start gap-4', m.role === 'user' && 'justify-end')}>
+                {m.role !== 'user' && (
+                  <Avatar className="h-9 w-9 border-2 border-primary">
+                    <AvatarFallback className="bg-transparent text-primary"><Bot /></AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn(
+                    'max-w-md rounded-lg p-3 text-sm',
+                    m.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  )}
+                >
+                  {m.isPending ? (
+                     <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Pensando...</span>
+                    </div>
+                  ) : (
+                    m.content
+                  )}
+                </div>
+                 {m.role === 'user' && (
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback><UserIcon /></AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <Input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Ej: Crea una labor de fertilización para el lote 'La Esperanza' para este viernes..."
+            disabled={isAssistantLoading || isDataLoading}
+          />
+          <Button type="submit" disabled={isAssistantLoading || isDataLoading || !input.trim()}>
+            <Send className="mr-2 h-4 w-4" /> Enviar
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
