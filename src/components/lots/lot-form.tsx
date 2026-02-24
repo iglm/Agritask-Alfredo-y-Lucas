@@ -14,6 +14,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
+import { useEffect } from "react"
 
 const lotFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -27,7 +28,8 @@ const lotFormSchema = z.object({
   technicalNotes: z.string().optional(),
 }).refine(data => {
     if (data.totalTrees && data.areaHectares && data.sowingDensity) {
-        return data.totalTrees <= data.areaHectares * data.sowingDensity;
+        // Allow a small tolerance for rounding issues
+        return data.totalTrees <= (data.areaHectares * data.sowingDensity) + 1;
     }
     return true;
 }, {
@@ -79,6 +81,22 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
       technicalNotes: lot?.technicalNotes ?? "",
     },
   });
+
+  const { watch, setValue } = form;
+  const distanceBetweenPlants = watch('distanceBetweenPlants');
+  const distanceBetweenRows = watch('distanceBetweenRows');
+  const areaHectares = watch('areaHectares');
+
+  useEffect(() => {
+    if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
+      const density = 10000 / (distanceBetweenPlants * distanceBetweenRows);
+      setValue('sowingDensity', parseFloat(density.toFixed(2)));
+      if (areaHectares && areaHectares > 0) {
+        const total = density * areaHectares;
+        setValue('totalTrees', Math.floor(total));
+      }
+    }
+  }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: LotFormValues) => {
     const dataToSubmit = {
@@ -156,20 +174,6 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
             )}
           />
         
-        <FormField
-          control={form.control}
-          name="sowingDensity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
-              <FormControl>
-                <Input type="number" step="any" placeholder="e.g., 6000" {...field} />
-              </FormControl>
-              <FormDescription>Puede calcularse a partir de las distancias o ingresarse directamente.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -200,14 +204,28 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
         </div>
         <FormField
           control={form.control}
+          name="sowingDensity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
+              <FormControl>
+                <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly />
+              </FormControl>
+              <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="totalTrees"
           render={({ field }) => (
             <FormItem>
               <FormLabel># Árboles del Lote</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <Input type="number" {...field} readOnly />
               </FormControl>
-              <FormDescription>Debe ser menor o igual que (Área * Densidad).</FormDescription>
+              <FormDescription>Se calcula del área y la densidad. Límite: (Área * Densidad).</FormDescription>
               <FormMessage />
             </FormItem>
           )}

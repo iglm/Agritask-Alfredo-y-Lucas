@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { ProductiveUnit } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   farmName: z.string().optional(),
@@ -34,7 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 type ProductiveUnitFormProps = {
   productiveUnit?: ProductiveUnit | null;
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: FormValues) => void;
 };
 
 export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitFormProps) {
@@ -61,6 +62,17 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
   });
 
   const { isSubmitting } = form.formState;
+  const { watch, setValue } = form;
+  const distanceBetweenPlants = watch('distanceBetweenPlants');
+  const distanceBetweenRows = watch('distanceBetweenRows');
+
+  useEffect(() => {
+    if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
+      const density = 10000 / (distanceBetweenPlants * distanceBetweenRows);
+      setValue('sowingDensity', parseFloat(density.toFixed(2)));
+    }
+  }, [distanceBetweenPlants, distanceBetweenRows, setValue]);
+
 
   return (
     <Form {...form}>
@@ -140,9 +152,6 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             <FormItem><FormLabel>Área en cultivo (Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
-                     <FormField control={form.control} name="sowingDensity" render={({ field }) => (
-                        <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormDescription>Puede calcularse a partir de las distancias o ingresarse directamente.</FormDescription><FormMessage /></FormItem>
-                    )} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="distanceBetweenPlants" render={({ field }) => (
                             <FormItem><FormLabel>Distancia entre Plantas (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 2.5" {...field} /></FormControl><FormMessage /></FormItem>
@@ -151,6 +160,9 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
                             <FormItem><FormLabel>Distancia entre Surcos (m)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                     </div>
+                     <FormField control={form.control} name="sowingDensity" render={({ field }) => (
+                        <FormItem><FormLabel>Densidad de siembra (árboles/Ha)</FormLabel><FormControl><Input type="number" step="any" {...field} placeholder="Calculada..." readOnly /></FormControl><FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription><FormMessage /></FormItem>
+                    )} />
                 </AccordionContent>
             </AccordionItem>
         </Accordion>

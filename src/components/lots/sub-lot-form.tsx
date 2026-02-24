@@ -14,6 +14,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
+import { useEffect } from "react"
 
 const subLotFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -26,7 +27,7 @@ const subLotFormSchema = z.object({
   technicalNotes: z.string().optional(),
 }).refine(data => {
     if (data.totalTrees && data.areaHectares && data.sowingDensity) {
-        return data.totalTrees <= data.areaHectares * data.sowingDensity;
+        return data.totalTrees <= (data.areaHectares * data.sowingDensity) + 1;
     }
     return true;
 }, {
@@ -77,6 +78,22 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
     },
   });
 
+  const { watch, setValue } = form;
+  const distanceBetweenPlants = watch('distanceBetweenPlants');
+  const distanceBetweenRows = watch('distanceBetweenRows');
+  const areaHectares = watch('areaHectares');
+
+  useEffect(() => {
+    if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
+      const density = 10000 / (distanceBetweenPlants * distanceBetweenRows);
+      setValue('sowingDensity', parseFloat(density.toFixed(2)));
+      if (areaHectares && areaHectares > 0) {
+        const total = density * areaHectares;
+        setValue('totalTrees', Math.floor(total));
+      }
+    }
+  }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
+
   const onSubmit = (values: SubLotFormValues) => {
     const dataToSubmit = {
       ...values,
@@ -122,8 +139,9 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
               <FormItem>
                 <FormLabel>Densidad de Siembra</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="árboles/Ha" {...field} />
+                  <Input type="number" step="any" placeholder="Calculada..." {...field} readOnly />
                 </FormControl>
+                <FormDescription>Se calcula automáticamente.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -164,9 +182,9 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
               <FormItem>
                 <FormLabel># Árboles</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input type="number" {...field} readOnly />
                 </FormControl>
-                 <FormDescription>Debe ser menor o igual que (Área * Densidad).</FormDescription>
+                 <FormDescription>Se calcula a partir del área y la densidad.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
