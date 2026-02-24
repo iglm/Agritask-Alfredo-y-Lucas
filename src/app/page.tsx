@@ -13,6 +13,7 @@ import { exportToCsv } from "@/lib/csv";
 import { useToast } from "@/hooks/use-toast";
 import { SubLot } from "@/lib/types";
 import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
+import { DataAuditor } from "@/components/dashboard/data-auditor";
 
 export default function DashboardPage() {
   const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore, user } = useAppData();
@@ -230,9 +231,13 @@ export default function DashboardPage() {
         />
       </div>
 
+      <div className="grid grid-cols-1 gap-6">
+        <UpcomingTasks tasks={tasks || []} lots={lots || []} />
+      </div>
+
        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UpcomingTasks tasks={tasks || []} lots={lots || []} />
           <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
+          <DataAuditor lots={lots || []} tasks={tasks || []} staff={staff || []} />
       </div>
     </div>
   );
