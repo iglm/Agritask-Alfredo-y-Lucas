@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 
 export default function LotsPage() {
-  const { lots: allLots, subLots: allSubLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -142,7 +142,7 @@ export default function LotsPage() {
   };
 
   const handleExport = async () => {
-    if (filteredLots.length === 0 && (!allSubLots || allSubLots.length === 0)) {
+    if (filteredLots.length === 0) {
       toast({
         title: "No hay datos para exportar",
         description: "No hay lotes en la vista actual para exportar.",
@@ -157,47 +157,25 @@ export default function LotsPage() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        const dataToExport = [];
-        const lotIdsInFilter = new Set(filteredLots.map(l => l.id));
-
-        for (const lot of filteredLots) {
-          dataToExport.push({
-            id: lot.id,
-            nombre: lot.name,
-            tipo: 'Lote',
-            lote_padre: '',
-            area_hectareas: lot.areaHectares,
-            ubicacion: lot.location || 'N/A',
-            fecha_siembra: lot.sowingDate ? lot.sowingDate : 'N/A',
-            densidad_siembra: lot.sowingDensity || 'N/A',
-            distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
-            distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
-            arboles_totales: lot.totalTrees || 0,
-            notas_tecnicas: lot.technicalNotes || '',
-          });
-        }
+        // NOTE: This is not ideal as it doesn't export sub-lots.
+        // The previous implementation was more complete but relied on the now-removed collection group query.
+        // For now, we export only parent lots to maintain stability.
+        const dataToExport = filteredLots.map(lot => ({
+          id: lot.id,
+          nombre: lot.name,
+          tipo: 'Lote',
+          lote_padre: '',
+          area_hectareas: lot.areaHectares,
+          ubicacion: lot.location || 'N/A',
+          fecha_siembra: lot.sowingDate ? lot.sowingDate : 'N/A',
+          densidad_siembra: lot.sowingDensity || 'N/A',
+          distancia_entre_plantas_m: lot.distanceBetweenPlants || 'N/A',
+          distancia_entre_surcos_m: lot.distanceBetweenRows || 'N/A',
+          arboles_totales: lot.totalTrees || 0,
+          notas_tecnicas: lot.technicalNotes || '',
+        }));
         
-        const relevantSubLots = (allSubLots || []).filter(sl => lotIdsInFilter.has(sl.lotId));
-
-        for (const subLot of relevantSubLots) {
-            const parentLot = allLots?.find(l => l.id === subLot.lotId);
-            dataToExport.push({
-              id: subLot.id,
-              nombre: subLot.name,
-              tipo: 'Sub-Lote',
-              lote_padre: parentLot?.name || 'N/A',
-              area_hectareas: subLot.areaHectares,
-              ubicacion: parentLot?.location || 'N/A',
-              fecha_siembra: subLot.sowingDate ? subLot.sowingDate : 'N/A',
-              densidad_siembra: subLot.sowingDensity || 'N/A',
-              distancia_entre_plantas_m: subLot.distanceBetweenPlants || 'N/A',
-              distancia_entre_surcos_m: subLot.distanceBetweenRows || 'N/A',
-              arboles_totales: subLot.totalTrees || 0,
-              notas_tecnicas: subLot.technicalNotes || '',
-            });
-        }
-        
-        exportToCsv(`lotes-y-sublotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
+        exportToCsv(`lotes-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
     } catch (error) {
         console.error("Export error:", error);
         toast({ variant: 'destructive', title: 'Error al exportar', description: 'No se pudieron generar los datos. Inténtalo de nuevo.' });
@@ -230,7 +208,6 @@ export default function LotsPage() {
       ) : (
         <LotsTable 
           lots={filteredLots}
-          subLots={allSubLots || []}
           tasks={allTasks || []} 
           onEditLot={handleEditLot} 
           onDeleteLot={handleDeleteLotRequest}

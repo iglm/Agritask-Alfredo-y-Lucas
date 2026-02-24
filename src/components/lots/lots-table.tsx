@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown } from "lucide-react";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2 } from "lucide-react";
 import { Lot, SubLot, Task } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -10,10 +10,11 @@ import { Progress } from "../ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type LotsTableProps = {
   lots: Lot[];
-  subLots: SubLot[];
   tasks: Task[];
   onEditLot: (lot: Lot) => void;
   onDeleteLot: (lot: Lot) => void;
@@ -25,12 +26,18 @@ type LotsTableProps = {
 
 const SubLotsList: React.FC<{ 
   lot: Lot; 
-  subLots: SubLot[]; 
   onAddSubLot: (lot: Lot) => void; 
   onEditSubLot: (subLot: SubLot) => void; 
   onDeleteSubLot: (lotId: string, subLotId: string, name: string) => void; 
-}> = ({ lot, subLots, onAddSubLot, onEditSubLot, onDeleteSubLot }) => {
+}> = ({ lot, onAddSubLot, onEditSubLot, onDeleteSubLot }) => {
+  const { firestore, user } = useFirebase();
   
+  const subLotsQuery = useMemoFirebase(
+    () => user && firestore ? collection(firestore, 'lots', lot.id, 'sublots') : null,
+    [firestore, user, lot.id]
+  );
+  const { data: subLots, isLoading } = useCollection<SubLot>(subLotsQuery);
+
   return (
     <div className="p-4 bg-muted/50">
       <div className="flex justify-between items-center mb-2">
@@ -39,7 +46,11 @@ const SubLotsList: React.FC<{
           <PlusCircle className="mr-2 h-4 w-4" /> Agregar Sub-lote
         </Button>
       </div>
-      {subLots && subLots.length > 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center items-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      ) : subLots && subLots.length > 0 ? (
          <Table className="bg-background">
           <TableHeader>
             <TableRow>
@@ -84,7 +95,7 @@ const SubLotsList: React.FC<{
 };
 
 
-export function LotsTable({ lots, subLots: allSubLots, tasks, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
+export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -108,8 +119,6 @@ export function LotsTable({ lots, subLots: allSubLots, tasks, onEditLot, onDelet
                 const averageProgress = lotTasks.length > 0
                     ? lotTasks.reduce((sum, task) => sum + task.progress, 0) / lotTasks.length
                     : 0;
-                
-                const subLotsForThisLot = allSubLots.filter(sl => sl.lotId === lot.id);
                 
                 return (
                   <Collapsible asChild key={lot.id}>
@@ -159,7 +168,6 @@ export function LotsTable({ lots, subLots: allSubLots, tasks, onEditLot, onDelet
                           <TableCell colSpan={8} className="p-0 border-b-0">
                             <SubLotsList 
                               lot={lot} 
-                              subLots={subLotsForThisLot} 
                               onAddSubLot={onAddSubLot} 
                               onEditSubLot={onEditSubLot} 
                               onDeleteSubLot={onDeleteSubLot} 
