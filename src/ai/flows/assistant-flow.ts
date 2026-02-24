@@ -55,14 +55,14 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', etc., from the farm management system. Also contains 'currentDate' in yyyy-MM-dd format."),
+  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', and 'productiveUnits' from the farm management system. Each object only contains the 'id' and 'name' of the entity. Also contains 'currentDate' in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 
 // Define the output schema for the flow
 const AssistantOutputSchema = z.object({
     action: AssistantActionSchema,
-    explanation: z.string().describe("A brief, past-tense confirmation message for the UI to display AFTER the action is successful, e.g., 'OK. He programado la labor de Fertilización.' or 'Listo, he creado el lote La Pradera.'"),
+    explanation: z.string().describe("A single, brief, past-tense confirmation sentence for the UI to display AFTER the action is successful, e.g., 'OK. He programado la labor de Fertilización.' or 'Listo, he creado el lote La Pradera.'"),
 });
 export type AssistantOutput = z.infer<typeof AssistantOutputSchema>;
 
@@ -82,19 +82,20 @@ const assistantPrompt = ai.definePrompt({
   input: { schema: AssistantInputSchema },
   output: { schema: AssistantOutputSchema },
   prompt: `
-    You are a highly efficient, task-oriented assistant for a farm management application. Your ONLY job is to convert a user's natural language command into a structured JSON object representing a single, executable action.
-    You MUST use the provided JSON context data to find the necessary IDs for lots, staff, productiveUnits, etc., based on the names the user provides.
+    You are a command-parsing AI for a farm management app. Your SOLE function is to translate a user's command into a single, structured JSON action. You are forbidden from answering questions, holding conversations, or generating any text that is not part of the specified JSON output format.
 
-    **RULES:**
-    1.  **NEVER engage in conversation.** Do not ask for clarification, apologize, or offer suggestions.
-    2.  **ONLY respond with the structured JSON output.** Do not add any extra text or explanations before or after the JSON.
-    3.  If a command is ambiguous, lacks information, or refers to items not found in the context data, you MUST return a specific error action: \`{ "action": "error", "payload": { "message": "Your error description here" } }\`. Be specific in the error message. For example, if a lot name is not found, say "No se pudo encontrar un lote llamado 'nombre_del_lote'".
-    4.  The 'explanation' field in the output should be a very brief, past-tense confirmation message for the UI to display AFTER the action is successful. E.g., "OK. He programado la labor de Fertilización." or "Listo. He creado el lote La Pradera."
-    5.  When interpreting dates like "mañana", "viernes", or relative dates, use the 'currentDate' from the context data as the reference point. Today is {{JSON.parse(contextData).currentDate}}.
+    **STRICT INSTRUCTIONS:**
+    1.  **ANALYZE** the user's command.
+    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any entities mentioned by name (e.g., lot names, staff names, productive unit names).
+    3.  **CONSTRUCT** one of the allowed JSON actions (\`addLot\`, \`addTask\`, \`addStaff\`).
+    4.  **IF** the command is unclear, missing information (e.g., creating a task without specifying a lot), or refers to an entity not found in the context, you MUST respond with the \`error\` action. The error message must be specific and in Spanish.
+    5.  **THE \`explanation\` FIELD** must be a single, short, past-tense sentence in Spanish confirming the action, like "Listo, he creado el lote La Pradera."
+    6.  **NEVER** generate conversational text. Your entire output must be only the JSON object.
+    7.  Use the \`currentDate\` from the context to resolve relative dates like "mañana" or "el viernes". Today's date is: {{JSON.parse(contextData).currentDate}}.
 
     **User Command:** \`{{{command}}}\`
 
-    **JSON Context Data:** \`{{{contextData}}}\`
+    **JSON Context Data (available entities and IDs):** \`{{{contextData}}}\`
   `,
 });
 

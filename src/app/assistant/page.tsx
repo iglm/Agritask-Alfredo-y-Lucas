@@ -26,13 +26,9 @@ export default function AssistantPage() {
     lots,
     staff,
     productiveUnits,
-    supplies,
-    transactions,
-    tasks,
     addLot,
     addTask,
     addStaff,
-    // Add other actions here as they are implemented in the assistant
     isLoading: isDataLoading,
   } = useAppData();
 
@@ -73,15 +69,15 @@ export default function AssistantPage() {
     setIsAssistantLoading(true);
 
     try {
-      const contextData = JSON.stringify({
-        lots,
-        staff,
-        productiveUnits,
-        supplies,
-        tasks,
-        transactions,
+      // Optimize context data to send only essential information
+      const slimContext = {
+        lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId })),
+        staff: staff?.map(s => ({ id: s.id, name: s.name })),
+        productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
         currentDate: format(new Date(), 'yyyy-MM-dd')
-      });
+      };
+      
+      const contextData = JSON.stringify(slimContext);
       
       const result: AssistantOutput = await runAssistant({
         command: input,
@@ -102,15 +98,15 @@ export default function AssistantPage() {
           case 'addLot':
             // The payload from AI is almost right, but we ensure userId is not there
             // and other server-managed fields.
-            const { id, userId, ...lotPayload } = result.action.payload;
+            const { id, userId, ...lotPayload } = result.action.payload as any;
             await addLot(lotPayload as any); // Cast because AI payload might differ slightly
             break;
           case 'addTask':
-            const { id: taskId, userId: taskUserId, ...taskPayload } = result.action.payload;
+            const { id: taskId, userId: taskUserId, ...taskPayload } = result.action.payload as any;
             await addTask(taskPayload as any);
             break;
           case 'addStaff':
-            const { id: staffId, userId: staffUserId, ...staffPayload } = result.action.payload;
+            const { id: staffId, userId: staffUserId, ...staffPayload } = result.action.payload as any;
              await addStaff(staffPayload as any);
             break;
           // Add cases for other actions here
