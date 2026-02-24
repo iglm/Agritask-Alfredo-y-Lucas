@@ -7,6 +7,7 @@ export type UserProfile = {
 export type Lot = {
   id: string;
   userId?: string;
+  productiveUnitId: string;
   name: string;
   areaHectares: number;
   location?: string;

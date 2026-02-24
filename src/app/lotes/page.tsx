@@ -17,7 +17,7 @@ import { SubLotForm } from "@/components/lots/sub-lot-form";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
+  const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -48,8 +48,15 @@ export default function LotsPage() {
 
   // --- Lot Handlers ---
   const handleAddLot = async () => {
+    if (!allUnits || allUnits.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Primero crea una Unidad Productiva",
+            description: "Necesitas registrar al menos una unidad productiva antes de poder añadir un lote.",
+        });
+        return;
+    }
     setEditingLot(undefined);
-    // The limit check is now in addLot, so we just open the sheet
     setIsLotSheetOpen(true);
   };
   
@@ -276,7 +283,7 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} />
+          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnits={allUnits || []} />
         </SheetContent>
       </Sheet>
       
@@ -317,7 +324,7 @@ export default function LotsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el sub-lote
+              Esta acción eliminará permanentemente el sub-lote
               <span className="font-bold"> {subLotToDelete?.name}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -8,9 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { type Transaction, type Lot, transactionTypes, incomeCategories, expenseCategories } from "@/lib/types"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { type Transaction, type Lot, transactionTypes, incomeCategories, expenseCategories, type ProductiveUnit } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
@@ -32,6 +32,7 @@ type TransactionFormProps = {
   transaction?: Partial<Transaction>;
   onSubmit: (values: Omit<Transaction, 'id' | 'userId'>) => void;
   lots: Lot[];
+  productiveUnits: ProductiveUnit[];
 };
 
 // This robustly handles dates that might be strings or Firestore Timestamps
@@ -51,7 +52,7 @@ const getInitialDate = (dateValue: any): Date | undefined => {
   return undefined;
 };
 
-export function TransactionForm({ transaction, onSubmit, lots }: TransactionFormProps) {
+export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
@@ -75,6 +76,19 @@ export function TransactionForm({ transaction, onSubmit, lots }: TransactionForm
   function handleFormSubmit(values: TransactionFormValues) {
     onSubmit(values);
   }
+
+  const { lotsByUnit, unassignedLots } = useMemo(() => {
+    const lotsByUnit = productiveUnits
+        .map(unit => ({
+            unit,
+            lots: lots.filter(lot => lot.productiveUnitId === unit.id),
+        }))
+        .filter(group => group.lots.length > 0);
+    
+    const unassignedLots = lots.filter(lot => !lot.productiveUnitId);
+
+    return { lotsByUnit, unassignedLots };
+  }, [lots, productiveUnits]);
 
   return (
     <Form {...form}>
@@ -193,7 +207,25 @@ export function TransactionForm({ transaction, onSubmit, lots }: TransactionForm
                     <FormControl><SelectTrigger><SelectValue placeholder="Ninguno" /></SelectTrigger></FormControl>
                     <SelectContent>
                         <SelectItem value="">Ninguno</SelectItem>
-                        {lots.map(lot => <SelectItem key={lot.id} value={lot.id}>{lot.name}</SelectItem>)}
+                        {lotsByUnit.map(group => (
+                            <SelectGroup key={group.unit.id}>
+                                <SelectLabel>{group.unit.farmName}</SelectLabel>
+                                {group.lots.map(lot => (
+                                    <SelectItem key={lot.id} value={lot.id}>{lot.name}</SelectItem>
+                                ))}
+                            </SelectGroup>
+                        ))}
+                        {unassignedLots.length > 0 && (
+                            <>
+                                <SelectSeparator />
+                                <SelectGroup>
+                                    <SelectLabel>Lotes Sin Unidad Asignada</SelectLabel>
+                                    {unassignedLots.map(lot => (
+                                        <SelectItem key={lot.id} value={lot.id}>{lot.name}</SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </>
+                        )}
                     </SelectContent>
                     </Select>
                     <FormMessage />

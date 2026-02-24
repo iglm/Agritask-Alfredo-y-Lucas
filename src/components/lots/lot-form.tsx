@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { Lot } from "@/lib/types"
+import type { Lot, ProductiveUnit } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -15,8 +15,10 @@ import { es } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 
 const lotFormSchema = z.object({
+  productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   location: z.string().optional(),
@@ -42,6 +44,7 @@ type LotFormValues = z.infer<typeof lotFormSchema>;
 type LotFormProps = {
   lot?: Lot;
   onSubmit: (values: Omit<Lot, 'id' | 'userId'>) => void;
+  productiveUnits: ProductiveUnit[];
 };
 
 // This robustly handles dates that might be strings or Firestore Timestamps
@@ -66,10 +69,11 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 };
 
 
-export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
+export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotFormProps) {
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: {
+      productiveUnitId: lot?.productiveUnitId ?? "",
       name: lot?.name ?? "",
       areaHectares: lot?.areaHectares ?? undefined,
       location: lot?.location ?? "",
@@ -109,6 +113,28 @@ export function LotForm({ lot, onSubmit: handleOnSubmit }: LotFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 max-h-[80vh] overflow-y-auto pr-4">
+        <FormField
+          control={form.control}
+          name="productiveUnitId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unidad Productiva</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona la unidad a la que pertenece este lote" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {productiveUnits.map(unit => (
+                    <SelectItem key={unit.id} value={unit.id}>{unit.farmName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="name"

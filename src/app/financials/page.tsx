@@ -16,7 +16,7 @@ import { TransactionForm } from "@/components/financials/transaction-form";
 import { format } from "date-fns";
 
 export default function FinancialsPage() {
-  const { transactions: allTransactions, lots, isLoading, addTransaction, updateTransaction, deleteTransaction } = useAppData();
+  const { transactions: allTransactions, lots, productiveUnits, isLoading, addTransaction, updateTransaction, deleteTransaction } = useAppData();
   const { toast } = useToast();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -121,6 +121,7 @@ export default function FinancialsPage() {
           <TransactionForm 
             transaction={editingTransaction}
             lots={lots || []}
+            productiveUnits={productiveUnits || []}
             onSubmit={handleFormSubmit}
           />
         </SheetContent>
