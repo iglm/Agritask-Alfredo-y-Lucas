@@ -20,27 +20,27 @@ interface DataContextState {
   user: User | null;
   isLoading: boolean;
   firestore: ReturnType<typeof useFirebase>['firestore'];
-  addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
+  addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<Lot>;
   updateLot: (data: Lot) => Promise<void>;
   deleteLot: (id: string) => Promise<void>;
-  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => Promise<void>;
+  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => Promise<SubLot>;
   updateSubLot: (subLot: SubLot) => Promise<void>;
   deleteSubLot: (lotId: string, subLotId: string) => Promise<void>;
-  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => Promise<void>;
+  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => Promise<Staff>;
   updateStaff: (data: Staff) => Promise<void>;
   deleteStaff: (id: string) => Promise<void>;
-  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<void>;
+  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<Task>;
   updateTask: (data: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
-  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
+  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<Supply>;
   updateSupply: (data: Supply) => Promise<void>;
   deleteSupply: (id: string) => Promise<void>;
-  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<void>;
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<SupplyUsage>;
   deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
-  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<void>;
+  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<ProductiveUnit>;
   updateProductiveUnit: (data: ProductiveUnit) => Promise<void>;
   deleteProductiveUnit: (id: string) => Promise<void>;
-  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
+  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => Promise<Transaction>;
   updateTransaction: (data: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
 }
@@ -79,13 +79,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
   };
 
-  const addLot = async (data: Omit<Lot, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+  const addLot = async (data: Omit<Lot, 'id' | 'userId'>): Promise<Lot> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'lots'));
+    const newLot: Lot = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-        await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+        await setDoc(newDocRef, newLot);
+        return newLot;
     } catch (error) {
-        handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+        handleWriteError(error, newDocRef.path, 'create', newLot);
+        throw error;
     }
   };
 
@@ -151,13 +154,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addStaff = async (data: Omit<Staff, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+  const addStaff = async (data: Omit<Staff, 'id' | 'userId'>): Promise<Staff> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'staff'));
+    const newStaff: Staff = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-        await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+        await setDoc(newDocRef, newStaff);
+        return newStaff;
     } catch (error) {
-        handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+        handleWriteError(error, newDocRef.path, 'create', newStaff);
+        throw error;
     }
   };
 
@@ -185,13 +191,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addTask = async (data: Omit<Task, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'tasks'));
+    const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-        await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+        await setDoc(newDocRef, newTask);
+        return newTask;
     } catch (error) {
-        handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+        handleWriteError(error, newDocRef.path, 'create', newTask);
+        throw error;
     }
   };
 
@@ -294,13 +303,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>): Promise<Supply> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'supplies'));
+    const newSupply: Supply = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-        await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+        await setDoc(newDocRef, newSupply);
+        return newSupply;
     } catch (error) {
-        handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+        handleWriteError(error, newDocRef.path, 'create', newSupply);
+        throw error;
     }
   };
 
@@ -324,13 +336,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
-    if (!ensureAuth()) return;
+  const addSubLot = async (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>): Promise<SubLot> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const subLotRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
+    const newSubLot: SubLot = { ...data, id: subLotRef.id, lotId, userId: user.uid };
     try {
-        await setDoc(subLotRef, { ...data, id: subLotRef.id, userId: user.uid, lotId });
+        await setDoc(subLotRef, newSubLot);
+        return newSubLot;
     } catch (error) {
-        handleWriteError(error, subLotRef.path, 'create', { ...data, id: subLotRef.id, userId: user.uid, lotId });
+        handleWriteError(error, subLotRef.path, 'create', newSubLot);
+        throw error;
     }
   };
 
@@ -354,8 +369,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number, date: string) => {
-    if (!ensureAuth()) return;
+  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number, date: string): Promise<SupplyUsage> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
 
     const taskRef = doc(firestore, 'tasks', taskId);
     const supplyRef = doc(firestore, 'supplies', supplyId);
@@ -399,6 +414,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         batch.update(supplyRef, { currentStock: newCurrentStock });
 
         await batch.commit();
+        return newUsage;
 
     } catch (error: any) {
         handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed, date });
@@ -445,13 +461,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-    const addProductiveUnit = async (data: Omit<ProductiveUnit, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+    const addProductiveUnit = async (data: Omit<ProductiveUnit, 'id' | 'userId'>): Promise<ProductiveUnit> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'productiveUnits'));
+    const newUnit: ProductiveUnit = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-      await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+      await setDoc(newDocRef, newUnit);
+      return newUnit;
     } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+      handleWriteError(error, newDocRef.path, 'create', newUnit);
+      throw error;
     }
   };
 
@@ -492,13 +511,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>) => {
-    if (!ensureAuth()) return;
+  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> => {
+    if (!ensureAuth()) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'transactions'));
+    const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
     try {
-      await setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+      await setDoc(newDocRef, newTransaction);
+      return newTransaction;
     } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', { ...data, id: newDocRef.id, userId: user.uid });
+      handleWriteError(error, newDocRef.path, 'create', newTransaction);
+      throw error;
     }
   };
 

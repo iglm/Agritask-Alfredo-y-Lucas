@@ -42,7 +42,7 @@ export default function AssistantPage() {
     {
       id: 'initial',
       role: 'assistant',
-      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza", "Marca la labor de fumigación como Finalizada" o preguntarme "¿Cuántos lotes tengo?".',
+      content: 'Hola, ¿en qué puedo ayudarte? Puedes darme órdenes como "Crea una finca llamada La Esperanza", "Marca la labor de fumigación como Finalizada" o "Crea un lote y luego una tarea de siembra en él".',
     },
   ]);
   const [input, setInput] = useState('');
@@ -91,81 +91,100 @@ export default function AssistantPage() {
         currentDate: format(new Date(), 'yyyy-MM-dd'),
       });
 
+      // Handle response message immediately
       let responseMessage: Message = {
         id: Date.now().toString() + '-res',
         role: 'assistant',
-        content: result.explanation,
+        content: result.explanation, // Use the summary explanation
       };
 
-      if (result.action.action === 'error') {
-        responseMessage.content = result.action.payload.message;
-      } else if (result.action.action === 'answer') {
-        responseMessage.content = result.action.payload.text;
+      const singleAction = result.actions[0];
+      if (result.actions.length === 1 && (singleAction.action === 'error' || singleAction.action === 'answer')) {
+        if(singleAction.action === 'error') {
+            responseMessage.content = singleAction.payload.message;
+        }
+        if(singleAction.action === 'answer') {
+            responseMessage.content = singleAction.payload.text;
+        }
       } else {
-        // Execute the action
-        switch (result.action.action) {
-          case 'addProductiveUnit':
-            const { id: unitId, userId: unitUserId, ...unitPayload } = result.action.payload as any;
-            await addProductiveUnit(unitPayload as any);
-            break;
-          case 'addLot':
-            const { id, userId, ...lotPayload } = result.action.payload as any;
-            await addLot(lotPayload as any);
-            break;
-          case 'addTask':
-            const { id: taskId, userId: taskUserId, ...taskPayload } = result.action.payload as any;
-            await addTask(taskPayload as any);
-            break;
-          case 'addStaff':
-            const { id: staffId, userId: staffUserId, ...staffPayload } = result.action.payload as any;
-             await addStaff(staffPayload as any);
-            break;
-          case 'updateTaskStatus': {
-            const { taskId, status, progress } = result.action.payload;
-            const taskToUpdate = tasks?.find(t => t.id === taskId);
-            if (taskToUpdate) {
-                await updateTask({ ...taskToUpdate, status, progress: progress ?? taskToUpdate.progress });
-            } else {
-                responseMessage.content = "Error: No pude encontrar la labor para actualizar.";
+        // Execute the action sequence
+        const newIdMap: { [key: string]: string } = {};
+
+        // Helper function to recursively replace placeholders in an object
+        const replacePlaceholders = (obj: any): any => {
+          if (typeof obj !== 'object' || obj === null) return obj;
+
+          for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+              if (typeof obj[key] === 'string' && obj[key].startsWith('__ID_')) {
+                const placeholderId = obj[key];
+                if (newIdMap[placeholderId]) {
+                  obj[key] = newIdMap[placeholderId];
+                } else {
+                  console.warn(`Unresolved placeholder ID: ${placeholderId}`);
+                }
+              } else if (typeof obj[key] === 'object') {
+                replacePlaceholders(obj[key]); // Recurse for nested objects
+              }
             }
-            break;
           }
-          case 'updateStaffRate': {
-            const { staffId: sId, newRate } = result.action.payload;
-            const staffToUpdate = staff?.find(s => s.id === sId);
-            if (staffToUpdate) {
-                await updateStaff({ ...staffToUpdate, baseDailyRate: newRate });
-            } else {
-                responseMessage.content = "Error: No pude encontrar al trabajador para actualizar.";
+          return obj;
+        };
+
+        let actionIndex = 0;
+        for (const actionItem of result.actions) {
+          const payloadWithIds = replacePlaceholders(JSON.parse(JSON.stringify(actionItem.payload)));
+          let newEntity: any = null;
+
+          switch (actionItem.action) {
+            case 'addProductiveUnit':
+              newEntity = await addProductiveUnit(payloadWithIds as any);
+              break;
+            case 'addLot':
+              newEntity = await addLot(payloadWithIds as any);
+              break;
+            case 'addTask':
+              newEntity = await addTask(payloadWithIds as any);
+              break;
+            case 'addStaff':
+              newEntity = await addStaff(payloadWithIds as any);
+              break;
+            case 'updateTaskStatus': {
+                const { taskId, status, progress } = payloadWithIds;
+                const taskToUpdate = tasks?.find(t => t.id === taskId);
+                if (taskToUpdate) {
+                    await updateTask({ ...taskToUpdate, status, progress: progress ?? taskToUpdate.progress });
+                } else {
+                    console.error("Task to update not found:", taskId);
+                }
+                break;
             }
-            break;
-          }
-          case 'deleteTask': {
-            const { taskId } = result.action.payload;
-            const taskToDelete = tasks?.find(t => t.id === taskId);
-            if (taskToDelete) {
+            case 'updateStaffRate': {
+                const { staffId, newRate } = payloadWithIds;
+                const staffToUpdate = staff?.find(s => s.id === staffId);
+                if (staffToUpdate) {
+                    await updateStaff({ ...staffToUpdate, baseDailyRate: newRate });
+                } else {
+                     console.error("Staff to update not found:", staffId);
+                }
+                break;
+            }
+            case 'deleteTask': {
+                const { taskId } = payloadWithIds;
                 await deleteTask(taskId);
-            } else {
-                responseMessage.content = "Error: No pude encontrar la labor para eliminar.";
+                break;
             }
-            break;
-          }
-          case 'deleteStaff': {
-            const { staffId } = result.action.payload;
-            const staffToDelete = staff?.find(s => s.id === staffId);
-            if (staffToDelete) {
+            case 'deleteStaff': {
+                const { staffId } = payloadWithIds;
                 await deleteStaff(staffId);
-            } else {
-                responseMessage.content = "Error: No pude encontrar al trabajador para eliminar.";
+                break;
             }
-            break;
           }
-          case 'answer':
-            // The content is already set in the 'answer' block above
-            break;
-          default:
-            responseMessage.content = "No entendí esa acción, pero la he registrado.";
-            console.warn("Unknown action from AI:", result.action);
+
+          if (newEntity && newEntity.id) {
+            newIdMap[`__ID_${actionIndex}__`] = newEntity.id;
+          }
+          actionIndex++;
         }
       }
       

@@ -38,7 +38,7 @@ const AddStaffPayloadSchema = z.object({
     name: z.string().describe("Name of the staff member."),
     contact: z.string().describe("Contact information for the staff member."),
     employmentType: z.enum(["Permanente", "Temporal", "Contratista"]).describe("Type of employment."),
-    baseDailyRate: z.number().describe("Base daily rate for the staff member."),
+    baseDailyRate: z.number().describe("The new, positive daily rate for the staff member. It must be greater than zero."),
 });
 
 const UpdateTaskStatusPayloadSchema = z.object({
@@ -93,8 +93,8 @@ export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 
 // Define the output schema for the flow
 const AssistantOutputSchema = z.object({
-    action: AssistantActionSchema,
-    explanation: z.string().describe("A single, brief confirmation sentence for the UI, e.g., 'OK. He programado la labor.', 'Aquí tienes la información que pediste.', or 'Disculpa, necesito un dato más.'"),
+    actions: z.array(AssistantActionSchema),
+    explanation: z.string().describe("A single, brief confirmation sentence for the UI, covering all actions performed. e.g., 'OK. He creado la finca y el lote.', 'Aquí tienes la información que pediste.', or 'Disculpa, necesito un dato más.'"),
 });
 export type AssistantOutput = z.infer<typeof AssistantOutputSchema>;
 
@@ -114,25 +114,26 @@ const assistantPrompt = ai.definePrompt({
   input: { schema: AssistantInputSchema },
   output: { schema: AssistantOutputSchema },
   prompt: `
-    You are an intelligent assistant AI for a farm management app. Your primary jobs are: 1. Translate user commands into structured JSON actions. 2. Answer questions based on the provided context data. You must be efficient and precise. You are forbidden from having long conversations. Your output MUST ONLY be the final JSON object.
+    You are an intelligent assistant AI for a farm management app. Your primary jobs are: 1. Translate user commands into a **sequence of one or more structured JSON actions**. 2. Answer questions based on the provided context data. You must be efficient and precise. Your output MUST ONLY be the final JSON object.
 
     **CRITICAL INSTRUCTIONS:**
-    1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating, deleting, or asking a question.
-    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any existing entities mentioned (e.g., lots, staff, productive units, tasks).
-    3.  **EXECUTING COMMANDS:**
-        *   For creating, updating, or deleting, construct one of the allowed JSON actions: \`addProductiveUnit\`, \`addLot\`, \`addTask\`, \`addStaff\`, \`updateTaskStatus\`, \`updateStaffRate\`, \`deleteTask\`, \`deleteStaff\`.
-        *   When a user asks to change a task's status (e.g., "mark as done"), use the \`updateTaskStatus\` action. If the new status is 'Finalizado', you MUST set the progress to 100.
-        *   Use \`{{currentDate}}\` to resolve relative dates like "mañana" or "el próximo lunes".
-    4.  **ANSWERING QUESTIONS:**
-        *   If the user asks a question (e.g., "cuántos lotes tengo?", "cuál es la tarifa de Juan?"), you MUST use the \`answer\` action.
-        *   Formulate a direct, concise answer based *only* on the provided \`contextData\` and place it in the \`payload.text\`.
-    5.  **HANDLING AMBIGUITY (VERY IMPORTANT):**
-        *   If a command is ambiguous or missing critical information (e.g., "crea una labor" without a name or lot, or "elimina la tarea" without specifying which one), you MUST use the \`error\` action.
-        *   The \`payload.message\` for the \`error\` action MUST be a **clear and direct question in Spanish** asking the user for the missing piece of information (e.g., "¿Para qué lote es la labor?" or "¿Qué labor deseas eliminar?"). Do NOT just state that information is missing.
-    6.  **THE \`explanation\` FIELD:**
-        *   For successful **actions** (create/update/delete), this must be a single, brief, confirmation sentence in Spanish (past tense), e.g., "OK. He programado la labor." or "Listo. He eliminado al trabajador."
-        *   For **answers**, this should be a simple transition like "Aquí tienes la información que pediste."
-        *   For **errors**, this should be an apologetic phrase like "Disculpa, necesito un dato más."
+    1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating, deleting, asking a question, or a sequence of these.
+    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any **existing** entities mentioned.
+    3.  **COMMAND SEQUENCING:**
+        *   If the user gives multiple commands (e.g., "crea una finca y añádele un lote"), you MUST generate an array of actions in the \`actions\` field, in the correct logical order.
+        *   For a single command, the \`actions\` array will have only one element.
+    4.  **HANDLING DEPENDENCIES (VERY IMPORTANT):**
+        *   If an action in the sequence depends on an item created in a *previous* action within the same command (e.g., adding a lot to a newly created farm), you MUST use a placeholder for the ID.
+        *   Use the placeholder \`__ID_0__\` for the ID of the item created by the first action in the array, \`__ID_1__\` for the second, and so on.
+        *   Example: For "crea una finca 'La Perla' y un lote 'Norte' dentro de ella", the \`addLot\` payload MUST use \`"productiveUnitId": "__ID_0__"\`.
+    5.  **EXECUTING ACTIONS:**
+        *   For creating, updating, or deleting, construct the appropriate JSON actions.
+        *   When a user asks to change a task's status, use \`updateTaskStatus\`. If the new status is 'Finalizado', you MUST set the progress to 100.
+    6.  **ANSWERING & ERRORS:**
+        *   If the user asks a question, the \`actions\` array MUST contain a single \`answer\` action.
+        *   If a command is ambiguous or missing information, the \`actions\` array MUST contain a single \`error\` action with a clear question for the user.
+    7.  **THE \`explanation\` FIELD:**
+        *   This must be a single, brief confirmation sentence in Spanish that summarizes ALL actions performed, e.g., "OK. He creado la finca y el lote." or "Listo. He eliminado la labor y actualizado al trabajador."
 
     **User Command:** \`{{{command}}}\`
 
@@ -151,7 +152,7 @@ const assistantFlow = ai.defineFlow(
   async (input) => {
     const { output } = await assistantPrompt(input);
     if (!output) {
-      throw new Error("The AI assistant did not return a valid action.");
+      throw new Error("The AI assistant did not return a valid action sequence.");
     }
     return output;
   }
