@@ -1,8 +1,8 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot } from "lucide-react";
-import { Lot, SubLot, Task } from "@/lib/types";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot, BarChart } from "lucide-react";
+import { Lot, SubLot, Task, Transaction } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
@@ -13,10 +13,12 @@ import { es } from 'date-fns/locale';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { TaskPlanner } from './task-planner';
+import { ProfitabilityReportDialog } from '../reports/profitability-report-dialog';
 
 type LotsTableProps = {
   lots: Lot[];
   tasks: Task[];
+  transactions: Transaction[];
   onEditLot: (lot: Lot) => void;
   onDeleteLot: (lot: Lot) => void;
   onAddLot: () => void;
@@ -96,7 +98,7 @@ const SubLotsList: React.FC<{
 };
 
 
-export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
+export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -117,6 +119,7 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
             {lots.length > 0 ? (
               lots.map((lot) => {
                 const lotTasks = tasks.filter(task => task.lotId === lot.id);
+                const lotTransactions = transactions.filter(t => t.lotId === lot.id);
                 const averageProgress = lotTasks.length > 0
                     ? lotTasks.reduce((sum, task) => sum + task.progress, 0) / lotTasks.length
                     : 0;
@@ -151,6 +154,12 @@ export function LotsTable({ lots, tasks, onEditLot, onDeleteLot, onAddLot, onAdd
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <ProfitabilityReportDialog lot={lot} tasks={lotTasks} transactions={lotTransactions}>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <BarChart className="mr-2 h-4 w-4" />
+                                        Reporte de Rentabilidad
+                                    </DropdownMenuItem>
+                                </ProfitabilityReportDialog>
                                 <TaskPlanner lot={lot}>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                         <Bot className="mr-2 h-4 w-4" />

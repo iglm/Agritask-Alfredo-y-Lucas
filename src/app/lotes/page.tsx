@@ -18,7 +18,7 @@ import { collection, getDocs, query, where, collectionGroup } from "firebase/fir
 import { format } from "date-fns";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore, user } = useAppData();
+  const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore, user } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -277,7 +277,8 @@ export default function LotsPage() {
       ) : (
         <LotsTable 
           lots={filteredLots} 
-          tasks={allTasks || []} 
+          tasks={allTasks || []}
+          transactions={allTransactions || []}
           onEditLot={handleEditLot} 
           onDeleteLot={handleDeleteLotRequest}
           onAddLot={handleAddLot}

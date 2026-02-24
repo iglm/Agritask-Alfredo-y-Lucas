@@ -67,6 +67,7 @@ export type Task = {
   supplyCost: number;
   actualCost: number;
   downtimeMinutes?: number;
+  harvestedQuantity?: number;
   observations?: string;
 };
 

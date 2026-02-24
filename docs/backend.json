@@ -345,6 +345,10 @@
           "type": "number",
           "description": "Tiempo de inactividad de la labor en minutos."
         },
+        "harvestedQuantity": {
+          "type": "number",
+          "description": "Cantidad cosechada (ej. en Kg) para labores de tipo 'Cosecha'."
+        },
         "observations": {
           "type": "string",
           "description": "Observaciones adicionales sobre la labor."

@@ -31,6 +31,7 @@ const taskFormSchema = z.object({
   progress: z.coerce.number().min(0).max(100),
   plannedJournals: z.coerce.number().min(0, "No puede ser negativo."),
   downtimeMinutes: z.coerce.number().optional(),
+  harvestedQuantity: z.coerce.number().optional(),
   observations: z.string().optional(),
   isRecurring: z.boolean().optional(),
   recurrenceInterval: z.coerce.number().optional(),
@@ -92,6 +93,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
       downtimeMinutes: task?.downtimeMinutes ?? 0,
+      harvestedQuantity: task?.harvestedQuantity ?? undefined,
       observations: task?.observations ?? "",
       isRecurring: task?.isRecurring ?? false,
       recurrenceInterval: task?.recurrenceInterval ?? undefined,
@@ -102,6 +104,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
   const availableDependencies = tasks.filter(t => t.id !== task?.id);
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'Lote no encontrado';
   const isRecurring = form.watch('isRecurring');
+  const taskCategory = form.watch('category');
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
@@ -134,6 +137,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       plannedCost,
       supplyCost: task?.supplyCost || 0, // This is now managed by SupplyUsageManager
       actualCost,
+      harvestedQuantity: values.harvestedQuantity,
     };
     onSubmit(fullTaskData);
   }
@@ -389,6 +393,26 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
               </div>
           </div>
       )}
+
+      {taskCategory === 'Cosecha' && (
+        <div className="space-y-4 rounded-lg border p-4">
+          <h3 className="font-medium">Datos de Cosecha</h3>
+            <FormField
+                control={form.control}
+                name="harvestedQuantity"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cantidad Cosechada (Kg)</FormLabel>
+                    <FormControl>
+                    <Input type="number" step="any" placeholder="Ej: 1500" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormDescription>La cantidad total cosechada en esta labor. Se usa para reportes de rentabilidad.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
+       )}
 
         <div className="space-y-4 rounded-lg border p-4">
             <h3 className="font-medium">Costos y Tiempos</h3>
