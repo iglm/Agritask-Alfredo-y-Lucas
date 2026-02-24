@@ -13,10 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { Staff, StaffAttendance } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Loader2, CalendarIcon, FileText } from 'lucide-react';
+import { Loader2, CalendarIcon, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '../ui/empty-state';
 import { useToast } from '@/hooks/use-toast';
+import { exportToCsv } from '@/lib/csv';
 
 interface Props {
   staff: Staff[];
@@ -71,6 +72,26 @@ export function AttendanceReportGenerator({ staff }: Props) {
     setReportData(null); // Clear old data before fetching new
     setShouldFetch(true);
   };
+  
+  const handleExportReport = () => {
+    if (!reportData || reportData.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No hay datos para exportar",
+        description: "Genera un reporte primero.",
+      });
+      return;
+    }
+
+    const dataToExport = reportData.map(record => ({
+      fecha: format(new Date(record.date.replace(/-/g, '\/')), 'yyyy-MM-dd'),
+      nombre_empleado: selectedStaffName,
+      estado: record.status,
+      motivo_ausencia: record.reason || 'N/A',
+    }));
+    
+    exportToCsv(`reporte-asistencia-${selectedStaffName}-${format(dateRange!.from!, 'yyyy-MM-dd')}-a-${format(dateRange!.to!, 'yyyy-MM-dd')}.csv`, dataToExport);
+  }
 
   const totalDays = dateRange?.from && dateRange?.to ? differenceInDays(dateRange.to, dateRange.from) + 1 : 0;
   const presentDays = reportData?.filter(r => r.status === 'Presente').length || 0;
@@ -151,10 +172,19 @@ export function AttendanceReportGenerator({ staff }: Props) {
         {reportData && (
           <Card>
             <CardHeader>
-              <CardTitle>Reporte para {selectedStaffName}</CardTitle>
-              <CardDescription>
-                Mostrando resultados para el periodo del {format(dateRange!.from!, 'PPP', { locale: es })} al {format(dateRange!.to!, 'PPP', { locale: es })}.
-              </CardDescription>
+               <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Reporte para {selectedStaffName}</CardTitle>
+                    <CardDescription>
+                      Mostrando resultados para el periodo del {format(dateRange!.from!, 'PPP', { locale: es })} al {format(dateRange!.to!, 'PPP', { locale: es })}.
+                    </CardDescription>
+                  </div>
+                  {reportData.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={handleExportReport}>
+                      <Download className="mr-2 h-4 w-4" /> Exportar
+                    </Button>
+                  )}
+                </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-4 text-sm font-medium">
                   <p>Días en rango: <span className="font-semibold">{totalDays}</span></p>
                   <p className="text-green-700 dark:text-green-400">Presente: <span className="font-semibold">{presentDays}</span></p>
