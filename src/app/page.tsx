@@ -105,7 +105,7 @@ export default function DashboardPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingTasks tasks={tasks || []} lots={lots || []} />
-        <AnomalyDetector lots={lots || []} tasks={tasks || []} />
+        <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
       </div>
     </div>
   );

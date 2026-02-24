@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 import { detectAnomalies, AnomalyDetectionOutput } from '@/ai/flows/anomaly-detection-flow';
-import { Lot, Task } from '@/lib/types';
+import { Lot, Task, Transaction } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
@@ -13,6 +13,7 @@ import { Badge } from '../ui/badge';
 interface AnomalyDetectorProps {
   lots: Lot[];
   tasks: Task[];
+  transactions: Transaction[];
 }
 
 const severityConfig = {
@@ -30,7 +31,7 @@ const severityConfig = {
   },
 };
 
-export function AnomalyDetector({ lots, tasks }: AnomalyDetectorProps) {
+export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function AnomalyDetector({ lots, tasks }: AnomalyDetectorProps) {
 
     try {
       const response = await detectAnomalies({
-        jsonData: JSON.stringify({ lots, tasks }),
+        jsonData: JSON.stringify({ lots, tasks, transactions }),
       });
       setResult(response);
     } catch (e: any) {

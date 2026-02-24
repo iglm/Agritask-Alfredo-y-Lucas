@@ -19,7 +19,7 @@ const AnomalySchema = z.object({
 
 // Define the input schema for the flow
 const AnomalyDetectionInputSchema = z.object({
-  jsonData: z.string().describe("A JSON string containing arrays of 'lots' and 'tasks' from the farm management system."),
+  jsonData: z.string().describe("A JSON string containing arrays of 'lots', 'tasks', and 'transactions' from the farm management system."),
 });
 export type AnomalyDetectionInput = z.infer<typeof AnomalyDetectionInputSchema>;
 
@@ -45,14 +45,14 @@ const anomalyPrompt = ai.definePrompt({
   input: {schema: AnomalyDetectionInputSchema},
   output: {schema: AnomalyDetectionOutputSchema},
   prompt: `
-    Eres un analista de datos experto en gestión agrícola. Tu misión es analizar los siguientes datos de una finca, proporcionados en formato JSON, y detectar únicamente las anomalías, inconsistencias o riesgos más significativos.
+    Eres un analista de datos experto en gestión agrícola y finanzas. Tu misión es analizar los siguientes datos de una finca, proporcionados en formato JSON, y detectar únicamente las anomalías, inconsistencias o riesgos más significativos.
 
     Tu análisis debe centrarse en:
-    1.  **Sobre costos:** Labores donde el 'actualCost' (costo real) supera significativamente el 'plannedCost' (costo planificado). Ignora desviaciones menores al 15%.
-    2.  **Retrasos Críticos:** Labores importantes ('status' no es 'Finalizado') cuya 'startDate' (fecha de inicio) ya pasó. Presta especial atención a categorías como 'Cosecha' y 'Siembra'.
-    3.  **Bajo Progreso:** Labores 'En Proceso' con un 'progress' (progreso) muy bajo en relación al tiempo transcurrido desde su 'startDate'.
-    4.  **Concentración de Problemas:** Lotes que acumulan múltiples labores con problemas (retrasadas, sobre costo, etc.).
-    5.  **Coherencia de Datos:** Inconsistencias obvias, como una fecha de finalización ('endDate') anterior a la de inicio ('startDate').
+    1.  **Sobre costos en Labores:** Labores donde el 'actualCost' (costo real) supera significativamente el 'plannedCost' (costo planificado). Ignora desviaciones menores al 15%.
+    2.  **Gastos Inesperados (Egresos):** Transacciones de tipo 'Egreso' con montos inusualmente altos o en categorías que no suelen tener gastos elevados. Compara los egresos con los costos de las labores para encontrar discrepancias.
+    3.  **Retrasos Críticos:** Labores importantes ('status' no es 'Finalizado') cuya 'startDate' (fecha de inicio) ya pasó. Presta especial atención a categorías como 'Cosecha' y 'Siembra'.
+    4.  **Concentración de Problemas:** Lotes que acumulan múltiples labores con problemas (retrasadas, sobre costo, etc.) o tienen una concentración alta de egresos.
+    5.  **Coherencia de Datos:** Inconsistencias obvias, como una fecha de finalización ('endDate') anterior a la de inicio ('startDate') en una labor.
 
     Sé conciso y directo. No inventes problemas si no existen. Si no encuentras anomalías significativas, devuelve un array vacío.
 
