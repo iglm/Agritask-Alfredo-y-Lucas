@@ -85,14 +85,14 @@ const optimizerPrompt = ai.definePrompt({
     INSTRUCCIONES CLAVE:
     1.  **Análisis de Tiempos Muertos (Acción: \`informational\`):**
         -   Analiza el campo \`downtimeMinutes\` en las labores. Busca patrones: si un tipo de labor específico (ej: 'Fumigación') o un colaborador acumulan consistentemente tiempos muertos significativos.
-        -   Si encuentras un patrón, genera una sugerencia informativa.
+        -   Si encuentras un patrón, genera una sugerencia informativa con severidad 'Media'.
         -   **Payload Requerido:** \`details\` con un mensaje como "Se ha detectado un promedio de 60 minutos de tiempo muerto en las labores de 'Fumigación'. Sugerencia: Revisar logística de preparación de mezclas o el estado de los equipos para mejorar la eficiencia."
         -   **\`explanation\`:** "Patrón de tiempo muerto detectado en labores de Fumigación. Se sugiere revisión logística."
         -   Prioriza este análisis.
 
     2.  **Análisis de Carga de Trabajo (Acción: \`reassignTask\`):**
         -   Suma los \`plannedJournals\` de las labores asignadas a cada colaborador.
-        -   Si encuentras un desbalance significativo, genera una acción \`reassignTask\`.
+        -   Si encuentras un desbalance significativo, genera una acción \`reassignTask\` con severidad 'Baja'.
         -   **Payload Requerido:** \`taskId\`, \`fromStaffId\` (el sobrecargado), \`toStaffId\` (el disponible).
         -   **\`explanation\`:** Debe ser clara. Ej: "Reasignar la labor 'Poda de Crecimiento' de Juan Pérez (sobrecargado) a María López (disponible) para balancear la carga."
 
@@ -105,7 +105,7 @@ const optimizerPrompt = ai.definePrompt({
 
     4.  **Análisis de Desviación de Costos (Acción: \`informational\`):**
         -   Compara el \`actualCost\` con el \`plannedCost\` de las tareas.
-        -   Si encuentras una desviación mayor al 15%, genera una sugerencia informativa.
+        -   Si encuentras una desviación mayor al 20% en una tarea finalizada, genera una sugerencia informativa con severidad 'Media'.
         -   **Payload Requerido:** \`details\` con un mensaje como "La labor '...' tuvo un sobrecosto del X%. Analizar si fue por jornales adicionales o gasto de insumos no planificado."
     
     5.  **Si todo está bien:** Si la carga de trabajo está balanceada y el inventario es suficiente, devuelve un array de sugerencias vacío.

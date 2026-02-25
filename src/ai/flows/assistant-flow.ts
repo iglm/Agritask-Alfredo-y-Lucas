@@ -117,7 +117,7 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains essential fields. Use this to find IDs and apply business logic."),
+  contextData: z.any().describe("A JSON object containing arrays of 'lots', 'staff', 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains essential fields for context. Use this to find IDs and apply business logic."),
   currentDate: z.string().describe("Today's date in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
@@ -136,13 +136,24 @@ export type AssistantOutput = z.infer<typeof AssistantOutputSchema>;
  * @returns A promise that resolves to the structured action.
  */
 export async function runAssistant(input: AssistantInput): Promise<AssistantOutput> {
-  return assistantFlow(input);
+  // Convert contextData to JSON string if it's an object
+  const processedInput = {
+    ...input,
+    contextData: typeof input.contextData === 'object' ? JSON.stringify(input.contextData) : input.contextData,
+  };
+  return assistantFlow(processedInput);
 }
+
 
 // Define the AI prompt for the assistant
 const assistantPrompt = ai.definePrompt({
   name: 'assistantPrompt',
-  input: { schema: AssistantInputSchema },
+  input: { schema: z.object({ // Use a more specific schema for the prompt itself
+      command: z.string(),
+      contextData: z.string(),
+      currentDate: z.string(),
+    })
+  },
   output: { schema: AssistantOutputSchema },
   prompt: `
     You are an expert agronomist AI assistant for a farm management app. Your primary jobs are: 1. Translate user commands into a sequence of structured JSON actions. 2. Answer questions. 3. Act as a critical agricultural consultant, validating user requests against business rules. You must be efficient and precise.
@@ -211,7 +222,11 @@ const assistantPrompt = ai.definePrompt({
 const assistantFlow = ai.defineFlow(
   {
     name: 'assistantFlow',
-    inputSchema: AssistantInputSchema,
+    inputSchema: z.object({ // Corresponds to the prompt's input schema
+      command: z.string(),
+      contextData: z.string(),
+      currentDate: z.string(),
+    }),
     outputSchema: AssistantOutputSchema,
   },
   async (input) => {

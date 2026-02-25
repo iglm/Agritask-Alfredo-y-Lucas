@@ -79,7 +79,7 @@ export default function AssistantPage() {
 
     try {
       // Optimize context data to send only essential information
-       const contextForAI: AssistantInput['contextData'] = {
+       const contextForAI = {
         lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId, areaHectares: l.areaHectares, totalTrees: l.totalTrees, sowingDensity: l.sowingDensity })),
         staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate, employmentType: s.employmentType })),
         productiveUnits: productiveUnits?.map(u => ({ id: u.id, farmName: u.farmName })),
