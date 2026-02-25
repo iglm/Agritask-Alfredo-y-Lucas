@@ -96,8 +96,8 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       responsibleId: task?.responsibleId ?? "",
       dependsOn: task?.dependsOn ?? "",
       category: task?.category ?? "Mantenimiento",
-      startDate: undefined,
-      endDate: undefined,
+      startDate: getInitialDate(task?.startDate),
+      endDate: getInitialDate(task?.endDate),
       status: task?.status ?? 'Por realizar',
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
@@ -113,27 +113,11 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
 
   useEffect(() => {
     // This effect runs only on the client, preventing hydration mismatches.
-    form.reset({
-      type: task?.type ?? "",
-      lotId: task?.lotId ?? "",
-      responsibleId: task?.responsibleId ?? "",
-      dependsOn: task?.dependsOn ?? "",
-      category: task?.category ?? "Mantenimiento",
-      // Safely set the date for new or existing tasks.
-      startDate: getInitialDate(task?.startDate) ?? new Date(),
-      endDate: getInitialDate(task?.endDate),
-      status: task?.status ?? 'Por realizar',
-      progress: task?.progress ?? 0,
-      plannedJournals: task?.plannedJournals ?? 0,
-      plannedSupplies: task?.plannedSupplies ?? [],
-      downtimeMinutes: task?.downtimeMinutes ?? 0,
-      harvestedQuantity: task?.harvestedQuantity ?? undefined,
-      observations: task?.observations ?? "",
-      isRecurring: task?.isRecurring ?? false,
-      recurrenceInterval: task?.recurrenceInterval ?? undefined,
-      recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
-    });
-  }, [task, form.reset]);
+    // Set date for new tasks only if it's not already set.
+    if (!form.getValues('startDate')) {
+      form.setValue('startDate', getInitialDate(task?.startDate) ?? new Date());
+    }
+  }, [task, form]);
   
   const { fields: plannedSuppliesFields, append: appendPlannedSupply, remove: removePlannedSupply } = useFieldArray({
     control: form.control,
