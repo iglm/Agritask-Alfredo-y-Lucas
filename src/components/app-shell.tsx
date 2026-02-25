@@ -28,7 +28,7 @@ const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Product
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
 const managementNavItems = [
   { href: '/lotes', label: 'Lotes', icon: Tractor },
-  { href: '/staff', label: 'Personal', icon: Users },
+  { href: '/staff', label: 'Colaboradores', icon: Users },
   { href: '/tasks', label: 'Labores', icon: CheckSquare },
   { href: '/supplies', label: 'Insumos', icon: SprayCan },
   { href: '/financials', label: 'Finanzas', icon: Banknote },

@@ -66,7 +66,7 @@ export function AttendanceReportGenerator({ staff }: Props) {
         toast({
             variant: "destructive",
             title: "Faltan datos",
-            description: "Por favor, selecciona un empleado y un rango de fechas.",
+            description: "Por favor, selecciona un colaborador y un rango de fechas.",
         });
         return;
     }
@@ -113,14 +113,14 @@ export function AttendanceReportGenerator({ staff }: Props) {
             <CardHeader>
                 <CardTitle>Generador de Reportes</CardTitle>
                 <CardDescription>
-                Selecciona un empleado y un rango de fechas para ver su historial de asistencia.
+                Selecciona un colaborador y un rango de fechas para ver su historial de asistencia.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <EmptyState
                     icon={<Users className="h-10 w-10" />}
-                    title="Añade personal primero"
-                    description="Necesitas registrar miembros del personal para poder generar reportes de asistencia."
+                    title="Añade colaboradores primero"
+                    description="Necesitas registrar colaboradores para poder generar reportes de asistencia."
                     className='py-10'
                 />
             </CardContent>
@@ -133,16 +133,16 @@ export function AttendanceReportGenerator({ staff }: Props) {
       <CardHeader>
         <CardTitle>Generador de Reportes</CardTitle>
         <CardDescription>
-          Selecciona un empleado y un rango de fechas para ver su historial de asistencia.
+          Selecciona un colaborador y un rango de fechas para ver su historial de asistencia.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Empleado</label>
+            <label className="text-sm font-medium">Colaborador</label>
             <Select onValueChange={setSelectedStaffId} disabled={staff.length === 0}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un empleado" />
+                <SelectValue placeholder="Selecciona un colaborador" />
               </SelectTrigger>
               <SelectContent>
                 {staff.map(person => (
@@ -253,7 +253,7 @@ export function AttendanceReportGenerator({ staff }: Props) {
                  <EmptyState
                     icon={<FileText className="h-10 w-10" />}
                     title="Sin registros"
-                    description="No se encontraron registros de asistencia para este empleado en el rango de fechas seleccionado."
+                    description="No se encontraron registros de asistencia para este colaborador en el rango de fechas seleccionado."
                     className="py-10"
                 />
               )}

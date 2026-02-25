@@ -13,7 +13,7 @@ import {z} from 'genkit';
 // Define the structure for a single detected audit observation
 const AuditObservationSchema = z.object({
   description: z.string().describe("A clear, concise description of the logical inconsistency or observation found in the data."),
-  category: z.string().describe("A category for the observation, e.g., 'Planificación a Largo Plazo', 'Gestión de Personal', 'Coherencia de Datos'."),
+  category: z.string().describe("A category for the observation, e.g., 'Planificación a Largo Plazo', 'Gestión de Colaboradores', 'Coherencia de Datos'."),
   suggestion: z.string().describe("A brief, actionable suggestion to resolve the observation."),
 });
 
@@ -50,7 +50,7 @@ const dataAuditPrompt = ai.definePrompt({
 
     Tu análisis debe centrarse en:
     1.  **Omisiones en Cosechas:** Identifica lotes cuya fecha de siembra ('sowingDate') sea de hace varios años pero que no tengan labores de 'Cosecha' registradas en el último año. Los cultivos perennes como café o aguacate deberían tener cosechas anuales.
-    2.  **Personal Inactivo:** Encuentra personal ('staff') que no ha tenido ninguna labor ('tasks') asignada en los últimos 60-90 días. Podrían ser trabajadores inactivos.
+    2.  **Colaboradores Inactivos:** Encuentra colaboradores ('staff') que no han tenido ninguna labor ('tasks') asignada en los últimos 60-90 días. Podrían ser colaboradores inactivos.
     3.  **Planificación Incompleta:** Detecta lotes recién sembrados (últimos 6 meses) que no tengan ninguna labor de 'Mantenimiento' o 'Fertilización' programada para el futuro.
     4.  **Uso de Lotes:** Identifica lotes que existen desde hace mucho tiempo pero no tienen ninguna labor asignada, ni pasada ni futura. ¿Están abandonados?
 

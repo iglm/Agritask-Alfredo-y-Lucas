@@ -50,11 +50,11 @@ const optimizerPrompt = ai.definePrompt({
 
     DATOS A ANALIZAR:
     - Listas de 'staff', 'tasks' programadas, y 'supplies' (insumos).
-    - La semana laboral estándar es de {{workWeekJournals}} jornales por trabajador.
+    - La semana laboral estándar es de {{workWeekJournals}} jornales por colaborador.
 
     INSTRUCCIONES:
     1.  **Análisis de Carga de Trabajo:**
-        - Para cada miembro del personal, suma los 'plannedJournals' de todas las labores que tiene asignadas.
+        - Para cada colaborador, suma los 'plannedJournals' de todas las labores que tiene asignadas.
         - Identifica quiénes están sobrecargados (muy por encima del estándar) y quiénes tienen poca carga (muy por debajo).
         - Si encuentras un desbalance significativo, crea una sugerencia de categoría 'Carga de Trabajo'. La sugerencia debe proponer reasignar una labor específica de una persona sobrecargada a una con poca carga.
 
@@ -64,7 +64,7 @@ const optimizerPrompt = ai.definePrompt({
         - Compara este total requerido con el 'currentStock' del insumo correspondiente en la lista de 'supplies'.
         - Si la cantidad requerida es mayor que el stock, genera una sugerencia de categoría 'Inventario' con severidad 'Alta'. Sé específico: "Alerta de stock: Se necesitan [Total Requerido] [Unidad] de [Nombre del Insumo], pero solo hay [Stock Actual] en inventario."
 
-    3.  **Priorizar:** Asigna una severidad 'Alta' a los desbalances críticos y a cualquier faltante de inventario. 'Media' o 'Baja' a los desbalances menores de personal.
+    3.  **Priorizar:** Asigna una severidad 'Alta' a los desbalances críticos y a cualquier faltante de inventario. 'Media' o 'Baja' a los desbalances menores de colaboradores.
 
     4.  **Si todo está bien:** Si la carga de trabajo está balanceada y el inventario es suficiente, devuelve un array de sugerencias vacío.
 

@@ -25,7 +25,7 @@ const AddTaskPayloadSchema = z.object({
     lotId: z.string().describe("The ID of the lot where the task takes place."),
     category: z.enum(["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha", "Otro"]).describe("Category of the task."),
     type: z.string().describe("Specific type of task (e.g., 'Fumigación', 'Fertilización')."),
-    responsibleId: z.string().describe("The ID of the staff member responsible for the task."),
+    responsibleId: z.string().describe("The ID of the collaborator responsible for the task."),
     startDate: z.string().describe("The start date of the task in 'yyyy-MM-dd' format."),
     status: z.enum(['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado']).default('Por realizar'),
     progress: z.number().default(0),
@@ -42,10 +42,10 @@ const AddTaskPayloadSchema = z.object({
 });
 
 const AddStaffPayloadSchema = z.object({
-    name: z.string().describe("Name of the staff member."),
-    contact: z.string().describe("Contact information for the staff member."),
+    name: z.string().describe("Name of the collaborator."),
+    contact: z.string().describe("Contact information for the collaborator."),
     employmentType: z.enum(["Permanente", "Temporal", "Contratista"]).describe("Type of employment."),
-    baseDailyRate: z.number().describe("The new, positive daily rate for the staff member. It must be greater than zero."),
+    baseDailyRate: z.number().describe("The new, positive daily rate for the collaborator. It must be greater than zero."),
 });
 
 const UpdateTaskStatusPayloadSchema = z.object({
@@ -55,8 +55,8 @@ const UpdateTaskStatusPayloadSchema = z.object({
 });
 
 const UpdateStaffRatePayloadSchema = z.object({
-    staffId: z.string().describe("The ID of the staff member to update."),
-    newRate: z.number().describe("The new, positive daily rate for the staff member. It must be greater than zero."),
+    staffId: z.string().describe("The ID of the collaborator to update."),
+    newRate: z.number().describe("The new, positive daily rate for the collaborator. It must be greater than zero."),
 });
 
 const DeleteTaskPayloadSchema = z.object({
@@ -64,7 +64,7 @@ const DeleteTaskPayloadSchema = z.object({
 });
 
 const DeleteStaffPayloadSchema = z.object({
-  staffId: z.string().describe("The ID of the staff member to delete."),
+  staffId: z.string().describe("The ID of the collaborator to delete."),
 });
 
 const AnswerPayloadSchema = z.object({
@@ -93,7 +93,7 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains the 'id' and 'name' (or 'type' for tasks). Use this to find IDs for existing items."),
+  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff' (collaborators), 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains the 'id' and 'name' (or 'type' for tasks). Use this to find IDs for existing items."),
   currentDate: z.string().describe("Today's date in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
@@ -125,7 +125,7 @@ const assistantPrompt = ai.definePrompt({
 
     **CRITICAL INSTRUCTIONS:**
     1.  **ANALYZE** the user's input to understand their intent. This can be creating new items, updating, deleting, asking a question, or a sequence of these.
-    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any **existing** entities mentioned (lots, staff, supplies, etc.).
+    2.  **USE** the provided \`contextData\` JSON to find the exact \`id\` for any **existing** entities mentioned (lots, staff (collaborators), supplies, etc.).
     3.  **COMMAND SEQUENCING:**
         *   If the user gives multiple commands (e.g., "crea una finca y añádele un lote"), you MUST generate an array of actions in the \`actions\` field, in the correct logical order.
         *   For a single command, the \`actions\` array will have only one element.
@@ -139,9 +139,9 @@ const assistantPrompt = ai.definePrompt({
         *   When creating a task, if the user mentions using supplies (e.g., "usando 100kg de abono"), you MUST identify the supply in the \`contextData\` and include it in the \`plannedSupplies\` array of the \`addTask\` payload.
     6.  **ANSWERING & ERRORS:**
         *   If the user asks a question, the \`actions\` array MUST contain a single \`answer\` action.
-        *   If a command is ambiguous or missing information (like a responsible person for a new task), the \`actions\` array MUST contain a single \`error\` action with a clear question for the user. Do not try to guess missing information.
+        *   If a command is ambiguous or missing information (like a responsible collaborator for a new task), the \`actions\` array MUST contain a single \`error\` action with a clear question for the user. Do not try to guess missing information.
     7.  **THE \`explanation\` FIELD:**
-        *   This must be a single, brief confirmation sentence in Spanish that summarizes ALL actions performed, e.g., "OK. He creado la finca y el lote." or "Listo. He eliminado la labor y actualizado al trabajador."
+        *   This must be a single, brief confirmation sentence in Spanish that summarizes ALL actions performed, e.g., "OK. He creado la finca y el lote." or "Listo. He eliminado la labor y actualizado al colaborador."
 
     **User Command:** \`{{{command}}}\`
 

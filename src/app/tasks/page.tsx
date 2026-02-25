@@ -60,8 +60,8 @@ export default function TasksPage() {
     if (!staff || staff.length === 0) {
       toast({
         variant: "destructive",
-        title: "Primero crea personal",
-        description: "Necesitas registrar al menos un miembro del personal para poder asignar una labor.",
+        title: "Primero crea un colaborador",
+        description: "Necesitas registrar al menos un colaborador para poder asignar una labor.",
       });
       return;
     }

@@ -164,7 +164,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Staff",
       "type": "object",
-      "description": "Represents a staff member.",
+      "description": "Represents a collaborator (staff member).",
       "properties": {
         "id": {
           "type": "string",
@@ -172,19 +172,19 @@
         },
         "userId": {
           "type": "string",
-          "description": "The ID of the user who owns this staff data."
+          "description": "The ID of the user who owns this collaborator data."
         },
         "name": {
           "type": "string",
-          "description": "Name of the staff member."
+          "description": "Name of the collaborator."
         },
         "contact": {
           "type": "string",
-          "description": "Contact information for the staff member."
+          "description": "Contact information for the collaborator."
         },
         "eps": {
           "type": "string",
-          "description": "Health insurance provider (EPS) for the staff member."
+          "description": "Health insurance provider (EPS) for the collaborator."
         },
         "employmentType": {
           "type": "string",
@@ -192,7 +192,7 @@
         },
         "baseDailyRate": {
           "type": "number",
-          "description": "Base daily rate for the staff member."
+          "description": "Base daily rate for the collaborator."
         },
         "certifications": {
           "type": "string",
@@ -210,7 +210,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Staff Attendance",
       "type": "object",
-      "description": "Represents a daily attendance record for a staff member.",
+      "description": "Represents a daily attendance record for a collaborator.",
       "properties": {
         "id": {
           "type": "string",
@@ -222,7 +222,7 @@
         },
         "staffId": {
           "type": "string",
-          "description": "Reference to the Staff member."
+          "description": "Reference to the Collaborator (Staff)."
         },
         "date": {
           "type": "string",
@@ -614,13 +614,13 @@
       "schema": {
         "$ref": "#/entities/Staff"
       },
-      "description": "Collection for storing Staff entities. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+      "description": "Collection for storing collaborator (Staff) entities. Each document is owned by a single user, enforced by security rules on the 'userId' field."
     },
     "/staffAttendance/{attendanceId}": {
       "schema": {
         "$ref": "#/entities/StaffAttendance"
       },
-      "description": "Collection for storing daily staff attendance records. Each document is owned by a single user, enforced by security rules on the 'userId' field."
+      "description": "Collection for storing daily collaborator attendance records. Each document is owned by a single user, enforced by security rules on the 'userId' field."
     },
     "/tasks/{taskId}": {
       "schema": {

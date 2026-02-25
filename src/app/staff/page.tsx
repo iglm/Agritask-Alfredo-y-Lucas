@@ -68,14 +68,14 @@ export default function StaffPage() {
     try {
       await deleteStaff(staffToDelete.id);
       toast({
-        title: "Personal eliminado",
-        description: `El miembro del personal "${staffToDelete.name}" ha sido eliminado.`,
+        title: "Colaborador eliminado",
+        description: `El colaborador "${staffToDelete.name}" ha sido eliminado.`,
       });
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'No se puede eliminar al personal',
-        description: error.message || 'Ocurrió un error al intentar eliminar al miembro del personal.',
+        title: 'No se puede eliminar al colaborador',
+        description: error.message || 'Ocurrió un error al intentar eliminar al colaborador.',
         duration: 6000,
       });
     } finally {
@@ -93,8 +93,8 @@ export default function StaffPage() {
     if (isDuplicated) {
       toast({
         variant: "destructive",
-        title: "Personal duplicado",
-        description: "Ya existe un miembro del personal con este nombre o contacto.",
+        title: "Colaborador duplicado",
+        description: "Ya existe un colaborador con este nombre o contacto.",
       });
       return;
     }
@@ -102,14 +102,14 @@ export default function StaffPage() {
     if (editingStaff) {
       updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
       toast({
-        title: "¡Personal actualizado!",
-        description: "Los detalles del miembro del personal han sido actualizados.",
+        title: "¡Colaborador actualizado!",
+        description: "Los detalles del colaborador han sido actualizados.",
       });
     } else {
       addStaff(values);
       toast({
-        title: "¡Personal creado!",
-        description: "El nuevo miembro del personal ha sido agregado.",
+        title: "¡Colaborador creado!",
+        description: "El nuevo colaborador ha sido agregado.",
       });
     }
     setIsSheetOpen(false);
@@ -118,7 +118,7 @@ export default function StaffPage() {
 
   const handleExport = () => {
     if (filteredStaff.length > 0) {
-      exportToCsv(`personal-${new Date().toISOString()}.csv`, filteredStaff);
+      exportToCsv(`colaboradores-${new Date().toISOString()}.csv`, filteredStaff);
     } else {
       toast({
         title: "No hay datos para exportar",
@@ -129,7 +129,7 @@ export default function StaffPage() {
 
   return (
     <div>
-      <PageHeader title="Manejo de Personal" actionButtonText="Agregar Personal" onActionButtonClick={handleAddStaff}>
+      <PageHeader title="Manejo de Colaboradores" actionButtonText="Agregar Colaborador" onActionButtonClick={handleAddStaff}>
         <div className="flex items-center gap-2">
             <Input 
               placeholder="Buscar por nombre..."
@@ -165,9 +165,9 @@ export default function StaffPage() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{editingStaff ? 'Editar Personal' : 'Crear Nuevo Personal'}</SheetTitle>
+            <SheetTitle>{editingStaff ? 'Editar Colaborador' : 'Crear Nuevo Colaborador'}</SheetTitle>
             <SheetDescription>
-              {editingStaff ? 'Actualiza los detalles de este miembro del personal.' : 'Rellena los detalles para el nuevo miembro del personal.'}
+              {editingStaff ? 'Actualiza los detalles de este colaborador.' : 'Rellena los detalles para el nuevo colaborador.'}
             </SheetDescription>
           </SheetHeader>
           <StaffForm staffMember={editingStaff} onSubmit={handleFormSubmit} />
@@ -179,7 +179,7 @@ export default function StaffPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente al miembro del personal <span className="font-bold">{staffToDelete?.name}</span>.
+              Esta acción eliminará permanentemente al colaborador <span className="font-bold">{staffToDelete?.name}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

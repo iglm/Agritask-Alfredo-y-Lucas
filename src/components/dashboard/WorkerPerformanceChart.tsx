@@ -31,8 +31,8 @@ export function WorkerPerformanceChart({ staff, tasks }: WorkerPerformanceChartP
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Desempeño del Personal</CardTitle>
-                <CardDescription>Número de labores finalizadas por cada trabajador.</CardDescription>
+                <CardTitle>Desempeño de Colaboradores</CardTitle>
+                <CardDescription>Número de labores finalizadas por cada colaborador.</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center items-center h-[300px]">
                 <p className="text-muted-foreground">No hay labores finalizadas para mostrar.</p>
@@ -44,8 +44,8 @@ export function WorkerPerformanceChart({ staff, tasks }: WorkerPerformanceChartP
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Desempeño del Personal</CardTitle>
-        <CardDescription>Número de labores finalizadas por cada trabajador.</CardDescription>
+        <CardTitle>Desempeño de Colaboradores</CardTitle>
+        <CardDescription>Número de labores finalizadas por cada colaborador.</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

@@ -32,7 +32,7 @@ export function PrintableAttendanceSheet({ staff, date, productiveUnit }: Printa
         <table className="w-full border-collapse border border-gray-400 text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-400 p-2 w-1/3 text-left">Nombre del Trabajador</th>
+              <th className="border border-gray-400 p-2 w-1/3 text-left">Nombre del Colaborador</th>
               <th className="border border-gray-400 p-2 w-[100px]">Presente (P)</th>
               <th className="border border-gray-400 p-2 w-[100px]">Ausente (A)</th>
               <th className="border border-gray-400 p-2 text-left">Motivo / Observaciones</th>

@@ -148,13 +148,13 @@ export function TasksTable({ tasks, allTasks, lots, staff, onEdit, onDelete, onA
                    ) : staff.length === 0 ? (
                       <EmptyState
                         icon={<Users className="h-10 w-10" />}
-                        title="Primero necesitas personal"
-                        description="Para poder asignar una labor, primero debes registrar al menos un miembro del personal."
+                        title="Primero necesitas un colaborador"
+                        description="Para poder asignar una labor, primero debes registrar al menos un colaborador."
                         action={
                           <Button asChild>
                             <Link href="/staff">
                               <PlusCircle className="mr-2 h-4 w-4" />
-                              Agregar Personal
+                              Agregar Colaborador
                             </Link>
                           </Button>
                         }

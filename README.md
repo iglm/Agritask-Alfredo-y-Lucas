@@ -30,12 +30,12 @@ Su objetivo principal es centralizar la información de la finca, facilitar la p
     - **Validación de Capacidad:** El sistema valida que el número de árboles no supere la capacidad máxima teórica del lote (Área x Densidad).
     - **Visualización y Búsqueda:** La tabla principal muestra datos clave y permite al usuario buscar lotes por su nombre.
 
-### Gestión de Personal
-- **Función:** Administra la información de los empleados de la finca.
+### Gestión de Colaboradores
+- **Función:** Administra la información de los colaboradores de la finca.
 - **Detalle de Funcionalidades:**
-    - **Registro y Edición de Personal:** Permite añadir o actualizar información de los trabajadores (nombre, contacto, tipo de empleo, tarifa diaria).
-    - **Detección de Duplicados:** El sistema previene la duplicidad de datos al verificar si ya existe un empleado con el mismo nombre o contacto.
-    - **Filtro:** Permite filtrar la lista de personal por su tipo de empleo.
+    - **Registro y Edición de Colaboradores:** Permite añadir o actualizar información de los colaboradores (nombre, contacto, tipo de empleo, tarifa diaria).
+    - **Detección de Duplicados:** El sistema previene la duplicidad de datos al verificar si ya existe un colaborador con el mismo nombre o contacto.
+    - **Filtro:** Permite filtrar la lista de colaboradores por su tipo de empleo.
 
 ### Gestión de Labores (Tareas)
 - **Función:** Módulo para planificar, asignar y seguir el progreso de todas las actividades agrícolas.

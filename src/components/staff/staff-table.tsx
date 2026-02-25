@@ -76,12 +76,12 @@ export function StaffTable({ staff, onEdit, onDelete, onAdd }: StaffTableProps) 
                 <TableCell colSpan={6} className="h-96 p-0">
                   <EmptyState
                     icon={<Users className="h-10 w-10" />}
-                    title="Añade tu primer miembro del personal"
-                    description="Registra a tus trabajadores para poder asignarles labores y llevar un control de costos."
+                    title="Añade tu primer colaborador"
+                    description="Registra a tus colaboradores para poder asignarles labores y llevar un control de costos."
                     action={
                       <Button onClick={onAdd}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Agregar Personal
+                        Agregar Colaborador
                       </Button>
                     }
                   />

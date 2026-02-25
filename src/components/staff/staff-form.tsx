@@ -133,7 +133,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">{staffMember ? "Actualizar Personal" : "Crear Personal"}</Button>
+        <Button type="submit" className="w-full">{staffMember ? "Actualizar Colaborador" : "Crear Colaborador"}</Button>
       </form>
     </Form>
   )

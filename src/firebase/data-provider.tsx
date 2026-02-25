@@ -181,7 +181,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!ensureAuth()) return;
     const tasksSnapshot = await getDocs(query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('responsibleId', '==', id), where('status', '!=', 'Finalizado')));
     if (!tasksSnapshot.empty) {
-        throw new Error(`Este miembro del personal está asignado a ${tasksSnapshot.size} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`);
+        throw new Error(`Este colaborador está asignado a ${tasksSnapshot.size} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`);
     }
     const docRef = doc(firestore, 'staff', id);
     try {
@@ -380,7 +380,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     try {
         // We must get the latest data from the server to avoid race conditions.
-        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyRef)]);
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyDoc)]);
 
         if (!taskDoc.exists() || !supplyDoc.exists()) {
             throw new Error('La labor o el insumo no existen.');

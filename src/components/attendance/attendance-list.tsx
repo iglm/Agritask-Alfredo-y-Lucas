@@ -126,8 +126,8 @@ export function AttendanceList({ staff, selectedDate }: AttendanceListProps) {
     return (
         <EmptyState
             icon={<Users className="h-10 w-10" />}
-            title="Añade personal primero"
-            description="Necesitas registrar miembros del personal para poder tomar asistencia."
+            title="Añade colaboradores primero"
+            description="Necesitas registrar colaboradores para poder tomar asistencia."
         />
     )
   }
