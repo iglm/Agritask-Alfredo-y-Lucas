@@ -52,15 +52,9 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
   useEffect(() => {
     // This effect runs only on the client after mount.
     // It safely sets the date for new transactions without causing a hydration mismatch.
-    form.reset({
-      type: transaction?.type ?? "Ingreso",
-      // Set date safely. If editing, use existing date. If new, use a fresh Date object.
-      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date(),
-      description: transaction?.description ?? "",
-      amount: transaction?.amount ?? undefined,
-      category: transaction?.category ?? "",
-      lotId: transaction?.lotId ?? "none",
-    });
+    if (!form.getValues('date')) {
+      form.setValue('date', transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date());
+    }
   }, [transaction, form]);
 
 

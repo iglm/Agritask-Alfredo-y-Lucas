@@ -133,7 +133,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       recurrenceInterval: task?.recurrenceInterval ?? undefined,
       recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
     });
-  }, [task, form]);
+  }, [task, form.reset]);
   
   const { fields: plannedSuppliesFields, append: appendPlannedSupply, remove: removePlannedSupply } = useFieldArray({
     control: form.control,

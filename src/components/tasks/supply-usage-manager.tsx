@@ -40,23 +40,21 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
   
   const [isAdding, setIsAdding] = useState(false);
 
-  const { control, handleSubmit, reset, watch } = useForm<AddSupplyFormValues>({
+  const { control, handleSubmit, reset, watch, setValue } = useForm<AddSupplyFormValues>({
     resolver: zodResolver(addSupplySchema),
     defaultValues: {
       supplyId: '',
-      quantityUsed: 0,
+      quantityUsed: undefined,
       date: undefined, // Initialize as undefined to prevent hydration error
     },
   });
 
   useEffect(() => {
     // Safely set the date on the client side after the initial render
-    reset({
-      supplyId: '',
-      quantityUsed: 0,
-      date: new Date(),
-    });
-  }, [reset]);
+    if (!watch('date')) {
+        setValue('date', new Date());
+    }
+  }, [watch, setValue]);
 
   const usagesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks', taskId, 'supplyUsages')) : null, [firestore, taskId]);
   const { data: supplyUsages, isLoading: isLoadingUsages } = useCollection<SupplyUsage>(usagesQuery);
@@ -76,7 +74,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
         return;
       }
       await addSupplyUsage(taskId, values.supplyId, values.quantityUsed, format(values.date, 'yyyy-MM-dd'));
-      reset({ supplyId: '', quantityUsed: 0, date: new Date() });
+      reset({ supplyId: '', quantityUsed: undefined, date: new Date() });
       toast({ title: 'Insumo añadido', description: 'El costo de la labor y el inventario han sido actualizados.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error al añadir insumo', description: error.message });
