@@ -1,34 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, SlidersHorizontal, AlertTriangle } from 'lucide-react';
+import { Loader2, ShieldCheck, SlidersHorizontal, AlertTriangle, Check, Info } from 'lucide-react';
 import { optimizeResources, ResourceOptimizerOutput } from '@/ai/flows/resource-optimizer-flow';
 import { Task, Staff, Supply } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { addDays, startOfToday, isWithinInterval } from 'date-fns';
+import { useAppData } from '@/firebase';
 
-interface ResourceOptimizerProps {
-  tasks: Task[];
-  staff: Staff[];
-  supplies: Supply[];
-}
-
-const categoryConfig = {
-  'Carga de Trabajo': {
+// Re-map the configuration to the new action types
+const actionConfig = {
+  reassignTask: {
     icon: <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-500" />,
-    badgeClass: 'border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-400',
   },
-  'Inventario': {
+  createPurchaseOrder: {
     icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
-    badgeClass: 'border-destructive/50 bg-destructive/10 text-destructive',
   },
-  'Planificación': {
-    icon: <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />,
-    badgeClass: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+  informational: {
+    icon: <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />,
   }
 };
 
@@ -38,11 +32,36 @@ const severityConfig = {
   Baja: 'border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-400',
 };
 
+// Define the payload types for type safety in the component
+type ReassignTaskPayload = {
+  taskId: string;
+  fromStaffId: string;
+  toStaffId: string;
+};
+
+type CreatePurchaseOrderPayload = {
+    supplyId: string;
+    supplyName: string;
+    requiredQuantity: number;
+    currentStock: number;
+};
+
+interface ResourceOptimizerProps {
+  tasks: Task[];
+  staff: Staff[];
+  supplies: Supply[];
+}
+
 export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ResourceOptimizerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [completedActions, setCompletedActions] = useState<string[]>([]);
+
   const { toast } = useToast();
+  const router = useRouter();
+  const { updateTask } = useAppData();
+
 
   const handleOptimization = async () => {
     if (staff.length === 0) {
@@ -74,11 +93,12 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setCompletedActions([]);
 
     try {
       const response = await optimizeResources({
         jsonData: JSON.stringify({ tasks: upcomingTasks, staff, supplies }),
-        workWeekJournals: 5, // Standard 5-day work week
+        workWeekJournals: 5,
       });
       setResult(response);
     } catch (e: any) {
@@ -93,6 +113,30 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleReassignTask = async (payload: ReassignTaskPayload) => {
+    const taskToUpdate = tasks.find(t => t.id === payload.taskId);
+    if (!taskToUpdate) {
+      toast({ variant: 'destructive', title: 'Error', description: 'La labor a reasignar no fue encontrada.' });
+      return;
+    }
+    
+    try {
+      await updateTask({ ...taskToUpdate, responsibleId: payload.toStaffId });
+      toast({ title: '¡Labor reasignada!', description: `La labor '${taskToUpdate.type}' ha sido asignada correctamente.` });
+      setCompletedActions(prev => [...prev, payload.taskId]);
+    } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message || 'No se pudo reasignar la labor.' });
+    }
+  };
+
+  const handleCreatePurchaseOrder = (payload: CreatePurchaseOrderPayload) => {
+      router.push('/financials');
+      toast({
+          title: 'Redirigiendo a Finanzas',
+          description: `Registra un egreso para comprar ${payload.supplyName}.`,
+      });
   };
 
   return (
@@ -125,8 +169,17 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
             {result.suggestions.length > 0 ? (
               <ul className="space-y-2">
                 {result.suggestions.map((suggestion, index) => {
-                  const catConfig = categoryConfig[suggestion.category] || categoryConfig['Planificación'];
+                  const config = actionConfig[suggestion.action.type];
                   const sevConfig = severityConfig[suggestion.severity];
+                  
+                  const uniqueActionId = suggestion.action.type === 'reassignTask' 
+                    ? suggestion.action.payload.taskId 
+                    : suggestion.action.type === 'createPurchaseOrder'
+                    ? suggestion.action.payload.supplyId
+                    : `${index}`; // Fallback for informational
+                    
+                  const isActionCompleted = completedActions.includes(uniqueActionId);
+
                   return (
                     <li
                       key={index}
@@ -135,11 +188,42 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
                         sevConfig
                       )}
                     >
-                      <div className="mt-0.5">{catConfig.icon}</div>
+                      <div className="mt-0.5">{config.icon}</div>
                       <div className="flex-1">
-                        <p className="font-semibold">{suggestion.category}</p>
-                        <p>{suggestion.suggestion}</p>
-                        <Badge variant="outline" className={cn("mt-2", sevConfig)}>{suggestion.severity}</Badge>
+                        <p>{suggestion.explanation}</p>
+                        <div className="flex items-center justify-between mt-2">
+                            <Badge variant="outline" className={cn(sevConfig)}>{suggestion.severity}</Badge>
+                            
+                            {suggestion.action.type === 'reassignTask' && (
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="text-primary hover:bg-primary/10 hover:text-primary h-auto py-1 px-2"
+                                    onClick={() => handleReassignTask(suggestion.action.payload)}
+                                    disabled={isActionCompleted}
+                                >
+                                    {isActionCompleted ? (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Hecho
+                                        </>
+                                    ) : (
+                                        'Hacerlo por mí'
+                                    )}
+                                </Button>
+                            )}
+
+                            {suggestion.action.type === 'createPurchaseOrder' && (
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    className="text-primary hover:bg-primary/10 hover:text-primary h-auto py-1 px-2"
+                                    onClick={() => handleCreatePurchaseOrder(suggestion.action.payload)}
+                                >
+                                    Crear Egreso
+                                </Button>
+                            )}
+                        </div>
                       </div>
                     </li>
                   );
