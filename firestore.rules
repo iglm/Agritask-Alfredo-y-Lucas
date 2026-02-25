@@ -40,14 +40,16 @@ service cloud.firestore {
     match /{path=**}/sublots/{sublotId} {
       // Rules for ALL read operations on any 'sublots' collection.
       // This covers collection group queries and direct document gets.
+      // By only having a 'get' rule, queries on this group are only allowed if they
+      // include a constraint that the rules can verify (e.g., where('userId', '==', request.auth.uid)).
       allow get: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn(); // Allows the query to run, while 'get' secures each document.
     }
 
     match /{path=**}/supplyUsages/{usageId} {
       // Rules for ALL read operations on any 'supplyUsages' collection.
+      // By only having a 'get' rule, queries on this group are only allowed if they
+      // include a constraint that the rules can verify (e.g., where('userId', '==', request.auth.uid)).
       allow get: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn();
     }
 
     // ----------------------------------------------------------------------
