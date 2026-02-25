@@ -88,15 +88,38 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
+    // Initialize dates as undefined to prevent hydration errors.
+    // They will be set safely in the useEffect hook.
+    defaultValues: {
+      type: task?.type ?? "",
+      lotId: task?.lotId ?? "",
+      responsibleId: task?.responsibleId ?? "",
+      dependsOn: task?.dependsOn ?? "",
+      category: task?.category ?? "Mantenimiento",
+      startDate: undefined,
+      endDate: undefined,
+      status: task?.status ?? 'Por realizar',
+      progress: task?.progress ?? 0,
+      plannedJournals: task?.plannedJournals ?? 0,
+      plannedSupplies: task?.plannedSupplies ?? [],
+      downtimeMinutes: task?.downtimeMinutes ?? 0,
+      harvestedQuantity: task?.harvestedQuantity ?? undefined,
+      observations: task?.observations ?? "",
+      isRecurring: task?.isRecurring ?? false,
+      recurrenceInterval: task?.recurrenceInterval ?? undefined,
+      recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
+    }
   });
 
   useEffect(() => {
+    // This effect runs only on the client, preventing hydration mismatches.
     form.reset({
       type: task?.type ?? "",
       lotId: task?.lotId ?? "",
       responsibleId: task?.responsibleId ?? "",
       dependsOn: task?.dependsOn ?? "",
       category: task?.category ?? "Mantenimiento",
+      // Safely set the date for new or existing tasks.
       startDate: getInitialDate(task?.startDate) ?? new Date(),
       endDate: getInitialDate(task?.endDate),
       status: task?.status ?? 'Por realizar',
@@ -197,7 +220,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
             name="responsibleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Responsable(s)</FormLabel>
+                <FormLabel>Responsable</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una persona" /></SelectTrigger></FormControl>
                   <SelectContent><SelectContent>

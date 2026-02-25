@@ -42,11 +42,15 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
 
   const { control, handleSubmit, reset, watch } = useForm<AddSupplyFormValues>({
     resolver: zodResolver(addSupplySchema),
-    // Default values are set in useEffect to prevent hydration errors
+    defaultValues: {
+      supplyId: '',
+      quantityUsed: 0,
+      date: undefined, // Initialize as undefined to prevent hydration error
+    },
   });
 
   useEffect(() => {
-    // Set default values on the client side after initial render
+    // Safely set the date on the client side after the initial render
     reset({
       supplyId: '',
       quantityUsed: 0,

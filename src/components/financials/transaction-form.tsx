@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -38,15 +38,31 @@ type TransactionFormProps = {
 export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
+    // Initialize with static or prop-based values only. NO new Date() here.
     defaultValues: {
       type: transaction?.type ?? "Ingreso",
-      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date(),
+      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : undefined,
       description: transaction?.description ?? "",
       amount: transaction?.amount ?? undefined,
       category: transaction?.category ?? "",
       lotId: transaction?.lotId ?? "none",
     },
   });
+
+  useEffect(() => {
+    // This effect runs only on the client after mount.
+    // It safely sets the date for new transactions without causing a hydration mismatch.
+    form.reset({
+      type: transaction?.type ?? "Ingreso",
+      // Set date safely. If editing, use existing date. If new, use a fresh Date object.
+      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date(),
+      description: transaction?.description ?? "",
+      amount: transaction?.amount ?? undefined,
+      category: transaction?.category ?? "",
+      lotId: transaction?.lotId ?? "none",
+    });
+  }, [transaction, form]);
+
 
   const transactionType = form.watch("type");
   const categories = transactionType === 'Ingreso' ? incomeCategories : expenseCategories;

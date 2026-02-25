@@ -81,7 +81,7 @@ const ToastClose = React.forwardRef<
       className
     )}
     toast-close=""
-    onPointerDown={(e) => e.preventDefault()}
+    onPointerDown={(e) => e.stopPropagation()}
     {...props}
   >
     <X className="h-4 w-4" />
