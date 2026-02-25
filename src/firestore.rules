@@ -44,6 +44,12 @@ service cloud.firestore {
       allow list: if isSignedIn(); // Allows the query to run, while 'get' secures each document.
     }
 
+    match /{path=**}/supplyUsages/{usageId} {
+      // Rules for ALL read operations on any 'supplyUsages' collection.
+      allow get: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
+    }
+
     // ----------------------------------------------------------------------
     // Data Collection Rules (Lots, Staff, Tasks, ProductiveUnit)
     // ----------------------------------------------------------------------
@@ -88,10 +94,10 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       
       match /supplyUsages/{usageId} {
-        allow get, delete: if isSignedIn() && isExistingDocOwner();
-        allow list: if isSignedIn();
+        // Read access is handled by the collection group rule above. This avoids rule conflicts.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+        allow delete: if isSignedIn() && isExistingDocOwner();
       }
     }
 
