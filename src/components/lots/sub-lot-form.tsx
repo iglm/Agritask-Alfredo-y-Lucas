@@ -118,7 +118,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
             <FormItem>
               <FormLabel>Nombre del Sub-lote</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Resiembra 2026" {...field} />
+                <Input placeholder="Ej: Resiembra 2026" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -161,7 +161,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
               <FormItem>
                 <FormLabel>Distancia entre Plantas (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} />
+                  <Input type="number" step="any" placeholder="Ej: 1.5" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -174,7 +174,7 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
               <FormItem>
                 <FormLabel>Distancia entre Surcos (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} />
+                  <Input type="number" step="any" placeholder="Ej: 2.5" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

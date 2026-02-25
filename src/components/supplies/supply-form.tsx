@@ -12,7 +12,7 @@ import { supplyUnits, type Supply } from "@/lib/types"
 const supplyFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   unitOfMeasure: z.enum(supplyUnits, { required_error: "Selecciona una unidad de medida." }),
-  costPerUnit: z.coerce.number().positive({ message: "El costo debe ser un número positivo." }),
+  costPerUnit: z.coerce.number().min(0, { message: "El costo no puede ser negativo." }).default(0),
   currentStock: z.coerce.number().min(0, "El stock no puede ser negativo."),
   supplier: z.string().optional(),
 });
@@ -56,7 +56,7 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
             <FormItem>
               <FormLabel>Nombre del Insumo</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Fertilizante NPK" {...field} />
+                <Input placeholder="Ej: Fertilizante NPK" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -90,7 +90,7 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
             name="costPerUnit"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Costo por Unidad ($)</FormLabel>
+                <FormLabel>Costo por Unidad</FormLabel>
                 <FormControl>
                     <Input type="number" {...field} />
                 </FormControl>
@@ -120,7 +120,7 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
                 <FormItem>
                 <FormLabel>Proveedor (Opcional)</FormLabel>
                 <FormControl>
-                    <Input placeholder="e.g., Agro-insumos SAS" {...field} />
+                    <Input placeholder="Ej: Agro-insumos SAS" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

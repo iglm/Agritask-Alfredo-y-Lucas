@@ -148,7 +148,7 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Monto ($)</FormLabel>
+                <FormLabel>Monto</FormLabel>
                 <FormControl>
                   <Input type="number" step="any" {...field} />
                 </FormControl>

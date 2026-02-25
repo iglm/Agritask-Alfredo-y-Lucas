@@ -48,7 +48,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             <FormItem>
               <FormLabel>Nombre Completo</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Carlos Perez" {...field} />
+                <Input placeholder="Ej: Carlos Perez" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -62,7 +62,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
               <FormItem>
                 <FormLabel>Número de Contacto</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., 3101234567" {...field} />
+                  <Input placeholder="Ej: 3101234567" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -75,7 +75,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
               <FormItem>
                 <FormLabel>EPS (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Sura" {...field} />
+                  <Input placeholder="Ej: Sura" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,7 +110,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             name="baseDailyRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tarifa Diaria ($)</FormLabel>
+                <FormLabel>Tarifa Diaria</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -126,7 +126,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
             <FormItem>
               <FormLabel>Certificaciones (Opcional)</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., BPA, Orgánica" {...field} value={field.value ?? ''} />
+                <Input placeholder="Ej: BPA, Orgánica" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormDescription>Separa las certificaciones por comas.</FormDescription>
               <FormMessage />

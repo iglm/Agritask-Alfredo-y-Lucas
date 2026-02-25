@@ -154,7 +154,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                     <FormItem>
                     <FormLabel>Nombre del Lote</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g., El Manantial" {...field} />
+                        <Input placeholder="Ej: El Manantial" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -196,7 +196,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Ubicación (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Vereda El Placer" {...field} />
+                  <Input placeholder="Ej: Vereda El Placer" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -211,7 +211,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Franco-arcilloso" {...field} value={field.value ?? ''} />
+                  <Input placeholder="Ej: Franco-arcilloso" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -224,7 +224,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>pH Promedio (Opcional)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.1" placeholder="e.g., 5.5" {...field} value={field.value ?? ''} />
+                  <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -272,7 +272,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Distancia entre Plantas (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 1.5" {...field} value={field.value ?? ''} />
+                  <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -285,7 +285,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Distancia entre Surcos (m)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="any" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} />
+                  <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

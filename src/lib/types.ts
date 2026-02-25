@@ -107,7 +107,7 @@ export type Supply = {
   id: string;
   userId?: string;
   name: string;
-  unitOfMeasure: 'Kg' | 'Lt' | 'Unidad' | 'Bulto' | 'Galón' | 'Caja';
+  unitOfMeasure: 'Kg' | 'gr' | 'Lt' | 'ml / cc' | 'Unidad' | 'Bulto' | 'Galón' | 'Caja';
   costPerUnit: number;
   initialStock: number;
   currentStock: number;
@@ -140,7 +140,7 @@ export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "M
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
 export const staffAttendanceStatuses: StaffAttendance['status'][] = ['Presente', 'Ausente'];
-export const supplyUnits: Supply['unitOfMeasure'][] = ['Kg', 'Lt', 'Unidad', 'Bulto', 'Galón', 'Caja'];
+export const supplyUnits: Supply['unitOfMeasure'][] = ['Kg', 'gr', 'Lt', 'ml / cc', 'Unidad', 'Bulto', 'Galón', 'Caja'];
 export const recurrenceFrequencies: NonNullable<Task['recurrenceFrequency']>[] = ['días', 'semanas', 'meses'];
 export const transactionTypes: Transaction['type'][] = ['Ingreso', 'Egreso'];
 export const incomeCategories = [
