@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InteractiveCalendar } from "@/components/calendar/interactive-calendar";
 import { TaskForm } from "@/components/tasks/task-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,13 +16,17 @@ export default function CalendarPage() {
   const { tasks: allTasks, lots, staff, supplies, isLoading, addTask, updateTask } = useAppData();
   const { toast } = useToast();
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
 
-  const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  useEffect(() => {
+    setCurrentMonth(new Date());
+  }, []);
+
+  const goToNextMonth = () => currentMonth && setCurrentMonth(addMonths(currentMonth, 1));
+  const goToPreviousMonth = () => currentMonth && setCurrentMonth(subMonths(currentMonth, 1));
   const goToToday = () => setCurrentMonth(new Date());
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -118,7 +122,7 @@ export default function CalendarPage() {
     status: 'Por realizar',
   } : undefined);
 
-  if (isLoading) {
+  if (isLoading || !currentMonth) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

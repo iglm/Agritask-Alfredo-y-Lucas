@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -55,15 +55,23 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues: {
+  });
+
+  useEffect(() => {
+    // This effect runs on the client after hydration and when the transaction prop changes.
+    // This solves both hydration errors with `new Date()` and stale form data.
+    const initialDate = getInitialDate(transaction?.date);
+    form.reset({
       type: transaction?.type ?? "Ingreso",
-      date: getInitialDate(transaction?.date) ?? new Date(),
+      // If it's a new transaction, date is undefined here, so we set it to new Date()
+      date: initialDate ?? new Date(),
       description: transaction?.description ?? "",
       amount: transaction?.amount ?? 0,
       category: transaction?.category ?? "",
       lotId: transaction?.lotId ?? "none",
-    }
-  });
+    });
+  }, [transaction, form]);
+
 
   const transactionType = form.watch("type");
   const categories = transactionType === 'Ingreso' ? incomeCategories : expenseCategories;

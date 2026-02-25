@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useAppData } from "@/firebase";
 import { Loader2, Printer } from "lucide-react";
@@ -18,7 +18,11 @@ import { PrintableAttendanceSheet } from "@/components/attendance/printable-atte
 
 export default function AttendancePage() {
   const { staff, productiveUnits, isLoading: isAppLoading } = useAppData();
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date>();
+
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -27,7 +31,7 @@ export default function AttendancePage() {
   const defaultUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : null;
 
 
-  if (isAppLoading) {
+  if (isAppLoading || !date) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

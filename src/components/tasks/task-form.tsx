@@ -18,6 +18,7 @@ import { es } from "date-fns/locale"
 import { Slider } from "../ui/slider"
 import { SupplyUsageManager } from "./supply-usage-manager"
 import { Switch } from "../ui/switch"
+import { useEffect } from "react"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
@@ -87,7 +88,10 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
-    defaultValues: {
+  });
+
+  useEffect(() => {
+    form.reset({
       type: task?.type ?? "",
       lotId: task?.lotId ?? "",
       responsibleId: task?.responsibleId ?? "",
@@ -105,8 +109,8 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       isRecurring: task?.isRecurring ?? false,
       recurrenceInterval: task?.recurrenceInterval ?? undefined,
       recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
-    }
-  });
+    });
+  }, [task, form]);
   
   const { fields: plannedSuppliesFields, append: appendPlannedSupply, remove: removePlannedSupply } = useFieldArray({
     control: form.control,
