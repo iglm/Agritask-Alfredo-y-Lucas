@@ -50,11 +50,11 @@ export function TaskPlanner({ lot, children }: TaskPlannerProps) {
         return;
     }
     if (!staff || staff.length === 0) {
-        setError("Debes tener personal registrado para generar un plan.");
+        setError("Debes tener colaboradores registrados para generar un plan.");
         toast({
             variant: "destructive",
-            title: "No hay Personal",
-            description: "Por favor, añade al menos un trabajador en la sección de Personal.",
+            title: "No hay Colaboradores",
+            description: "Por favor, añade al menos un colaborador en la sección de Colaboradores.",
         });
         return;
     }
@@ -72,11 +72,12 @@ export function TaskPlanner({ lot, children }: TaskPlannerProps) {
         setPlan(response.plannedTasks);
     } catch (e: any) {
         console.error("Error generating task plan:", e);
-        setError("No se pudo generar el plan. El asistente de IA puede estar ocupado. Inténtalo de nuevo más tarde.");
+        const errorMessage = e.message || 'No se pudo obtener una respuesta del asistente de IA.';
+        setError(`No se pudo generar el plan. ${errorMessage}`);
         toast({
             variant: 'destructive',
             title: 'Error del Agente Planificador',
-            description: 'No se pudo obtener una respuesta del asistente de IA.',
+            description: errorMessage,
         });
     } finally {
         setIsLoading(false);

@@ -8,7 +8,7 @@ import { auditData, DataAuditOutput } from '@/ai/flows/data-audit-flow';
 import { Lot, Task, Staff } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
-import { format } from 'date-fns';
+import { format, startOfToday } from 'date-fns';
 
 interface DataAuditorProps {
   lots: Lot[];
@@ -26,7 +26,7 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
     if (lots.length === 0 && tasks.length === 0 && staff.length === 0) {
       toast({
         title: 'No hay datos suficientes para auditar',
-        description: 'Registra lotes, labores y personal para que el auditor pueda trabajar.',
+        description: 'Registra lotes, labores y colaboradores para que el auditor pueda trabajar.',
       });
       return;
     }
@@ -38,16 +38,17 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
     try {
       const response = await auditData({
         jsonData: JSON.stringify({ lots, tasks, staff }),
-        currentDate: format(new Date(), 'yyyy-MM-dd'),
+        currentDate: format(startOfToday(), 'yyyy-MM-dd'),
       });
       setResult(response);
     } catch (e: any) {
       console.error('Error auditing data:', e);
-      setError('No se pudo completar la auditoría. Inténtalo de nuevo más tarde.');
+      const errorMessage = e.message || 'El servicio de auditoría no está disponible en este momento.';
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Error del Agente Auditor',
-        description: 'El servicio de auditoría no está disponible en este momento.',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);

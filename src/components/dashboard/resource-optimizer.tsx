@@ -48,7 +48,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
     if (staff.length === 0) {
       toast({
         title: 'Personal insuficiente',
-        description: 'Se necesita al menos 1 miembro del personal para optimizar.',
+        description: 'Se necesita al menos 1 colaborador para optimizar.',
       });
       return;
     }
@@ -83,11 +83,12 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
       setResult(response);
     } catch (e: any) {
       console.error('Error optimizing resources:', e);
-      setError('No se pudo completar la optimización. Inténtalo de nuevo más tarde.');
+      const errorMessage = e.message || 'El servicio de optimización no está disponible en este momento.';
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Error del Agente Optimizador',
-        description: 'El servicio de optimización no está disponible en este momento.',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);

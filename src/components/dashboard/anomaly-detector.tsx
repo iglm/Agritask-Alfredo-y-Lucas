@@ -57,11 +57,12 @@ export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorPr
       setResult(response);
     } catch (e: any) {
       console.error('Error detecting anomalies:', e);
-      setError('No se pudieron detectar anomalías. Inténtalo de nuevo más tarde.');
+      const errorMessage = e.message || 'El servicio de IA no está disponible en este momento.';
+      setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: 'Error de IA',
-        description: 'El servicio de detección de anomalías no está disponible en este momento.',
+        title: 'Error del Agente de Detección',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);

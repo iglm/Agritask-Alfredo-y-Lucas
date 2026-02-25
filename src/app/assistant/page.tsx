@@ -11,7 +11,7 @@ import { useAppData } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { runAssistant, AssistantOutput } from '@/ai/flows/assistant-flow';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, startOfToday } from 'date-fns';
 
 type Message = {
   id: string;
@@ -90,7 +90,7 @@ export default function AssistantPage() {
       const result: AssistantOutput = await runAssistant({
         command: input,
         contextData: contextData,
-        currentDate: format(new Date(), 'yyyy-MM-dd'),
+        currentDate: format(startOfToday(), 'yyyy-MM-dd'),
       });
 
       // Handle response message immediately
@@ -194,16 +194,17 @@ export default function AssistantPage() {
 
     } catch (error: any) {
       console.error("Error running assistant:", error);
+      const errorDescription = error.message || 'No se pudo obtener una respuesta del asistente.';
       const errorMessage: Message = {
         id: Date.now().toString() + '-err',
         role: 'system',
-        content: 'Hubo un error al procesar tu solicitud. Revisa la consola para más detalles.',
+        content: `Hubo un error al procesar tu solicitud. ${errorDescription}`,
       };
       setMessages(prev => prev.filter(m => m.id !== 'pending').concat(errorMessage));
       toast({
         variant: 'destructive',
         title: 'Error del Asistente de IA',
-        description: error.message || 'No se pudo obtener una respuesta del asistente.',
+        description: errorDescription,
       });
     } finally {
       setIsAssistantLoading(false);
@@ -228,6 +229,8 @@ export default function AssistantPage() {
                     'max-w-md rounded-lg p-3 text-sm',
                     m.role === 'user'
                       ? 'bg-primary text-primary-foreground'
+                      : m.role === 'system'
+                      ? 'bg-destructive/10 border border-destructive/20 text-destructive'
                       : 'bg-muted'
                   )}
                 >
