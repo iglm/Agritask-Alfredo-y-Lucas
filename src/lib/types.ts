@@ -85,9 +85,6 @@ export type ProductiveUnit = {
   department?: string;
   municipality?: string;
   vereda?: string;
-  shareGps?: boolean;
-  latitude?: number;
-  longitude?: number;
   crops?: string[];
   varieties?: string[];
   altitudeRange?: string;

@@ -415,17 +415,6 @@
         "vereda": {
           "type": "string"
         },
-        "shareGps": {
-          "type": "boolean"
-        },
-        "latitude": {
-          "type": "number",
-          "description": "Latitud de la unidad productiva."
-        },
-        "longitude": {
-          "type": "number",
-          "description": "Longitud de la unidad productiva."
-        },
         "crops": {
           "type": "array",
           "items": {
