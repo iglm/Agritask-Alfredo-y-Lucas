@@ -3,18 +3,34 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, SearchCheck, ShieldCheck, FileQuestion } from 'lucide-react';
+import { Loader2, SearchCheck, ShieldCheck, FileQuestion, AlertTriangle } from 'lucide-react';
 import { auditData, DataAuditOutput } from '@/ai/flows/data-audit-flow';
 import { Lot, Task, Staff } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 import { format, startOfToday } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface DataAuditorProps {
   lots: Lot[];
   tasks: Task[];
   staff: Staff[];
 }
+
+const severityConfig = {
+  Alta: {
+    icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
+    badgeClass: 'border-destructive/50 bg-destructive/10 text-destructive',
+  },
+  Media: {
+    icon: <FileQuestion className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />,
+    badgeClass: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+  },
+  Bajo: {
+    icon: <FileQuestion className="h-4 w-4 text-blue-600 dark:text-blue-500" />,
+    badgeClass: 'border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+};
 
 export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,8 +52,13 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
     setResult(null);
 
     try {
+      // Include EPS in the staff context for the audit
+      const staffWithEps = staff.map(s => ({ id: s.id, eps: s.eps }));
+      const tasksForAudit = tasks.map(t => ({ responsibleId: t.responsibleId, category: t.category }));
+      const lotsForAudit = lots.map(l => ({ id: l.id, sowingDate: l.sowingDate }));
+
       const response = await auditData({
-        jsonData: JSON.stringify({ lots, tasks, staff }),
+        jsonData: JSON.stringify({ lots: lotsForAudit, tasks: tasksForAudit, staff: staffWithEps }),
         currentDate: format(startOfToday(), 'yyyy-MM-dd'),
       });
       setResult(response);
@@ -84,19 +105,25 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
           <div className="space-y-3 pt-4">
             {result.observations.length > 0 ? (
               <ul className="space-y-2">
-                {result.observations.map((obs, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-3 rounded-lg border border-blue-500/50 bg-blue-500/10 p-3 text-sm"
-                  >
-                    <div className="mt-0.5"><FileQuestion className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-800 dark:text-blue-300">{obs.category}</p>
-                      <p className="text-blue-700 dark:text-blue-400">{obs.description}</p>
-                      <p className="mt-2 text-xs italic text-muted-foreground">Sugerencia: {obs.suggestion}</p>
-                    </div>
-                  </li>
-                ))}
+                {result.observations.map((obs, index) => {
+                  const config = severityConfig[obs.severity];
+                  return (
+                    <li
+                      key={index}
+                      className={cn(
+                        'flex items-start gap-3 rounded-lg border p-3 text-sm',
+                        config.badgeClass
+                      )}
+                    >
+                      <div className="mt-0.5">{config.icon}</div>
+                      <div className="flex-1">
+                        <p className="font-semibold">{obs.category}</p>
+                        <p>{obs.description}</p>
+                        <p className="mt-2 text-xs italic text-muted-foreground">Sugerencia: {obs.suggestion}</p>
+                         <Badge variant="outline" className={cn("mt-2", config.badgeClass)}>{obs.severity}</Badge>
+                      </div>
+                    </li>
+                )})}
               </ul>
             ) : (
               <div className="flex flex-col items-center justify-center text-center p-4 rounded-lg bg-muted/50">

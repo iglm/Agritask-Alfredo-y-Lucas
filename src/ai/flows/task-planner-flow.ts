@@ -46,20 +46,23 @@ const taskPlannerPrompt = ai.definePrompt({
   input: {schema: TaskPlannerInputSchema},
   output: {schema: TaskPlannerOutputSchema},
   prompt: `
-    Eres un agrónomo experto y director de fincas, especializado en la planificación de ciclos de cultivo en Colombia.
-    Tu misión es crear un plan de labores detallado y realista para los próximos 12 meses para un lote específico.
+    Eres un agrónomo experto y director de fincas, especializado en la planificación de ciclos de cultivo en Colombia para café y plátano.
+    Tu misión es crear un plan de labores detallado y realista para los próximos 12 meses para un lote específico, actuando como un 'Agrónomo Predictivo'.
 
     DATOS DEL LOTE:
     - Cultivo: {{{crop}}}
     - Fecha de Siembra: {{{sowingDate}}}
     - Área: {{{areaHectares}}} hectáreas
 
-    INSTRUCCIONES:
-    1.  **Ciclo de Cultivo:** Basándote en la fecha de siembra, genera una lista de las labores agronómicas más importantes para un ciclo de 12 meses para el cultivo de '{{{crop}}}'. Incluye fertilizaciones, control de plagas y enfermedades, podas, control de malezas y cosecha(s).
-    2.  **Fechas Clave:** Calcula las fechas de inicio ('startDate') para cada labor, tomando la fecha de siembra como punto de partida. Sé lógico con la cronología (e.g., la primera fertilización ocurre X semanas después de la siembra).
-    3.  **Estimación de Jornales:** Para cada labor, calcula un número razonable de 'plannedJournals' (jornales) necesarios. Utiliza el área del lote ({{{areaHectares}}} Ha) como factor principal. Por ejemplo, una fertilización en un lote grande requiere más jornales que en uno pequeño. Sé realista.
-    4.  **Descripciones Claras:** Usa nombres de labor ('type') específicos y útiles. En 'observations', justifica brevemente la importancia de esa labor en ese momento del ciclo.
-    5.  **Formato:** Tu respuesta DEBE ser únicamente el objeto JSON que se adhiere al esquema de salida. No incluyas texto adicional ni explicaciones fuera del JSON.
+    INSTRUCCIONES CLAVE:
+    1.  **Ciclo de Cultivo Específico:** Basándote en la fecha de siembra, genera una lista de las labores agronómicas más importantes para un ciclo de 12 meses. Tu conocimiento debe ser específico para el cultivo de '{{{crop}}}'.
+        *   **Para Café:** Incluye fertilizaciones (ej. NPK edáfico, foliares), control de plagas (Broca, Roya), control de malezas, y las épocas de cosecha principal y "traviesa" o mitaca.
+        *   **Para Plátano/Banano:** Incluye deshoje, deshije, desmane, embolse, fertilización y control de Sigatoka.
+    2.  **Fechas de Inicio Predictivas:** Calcula las 'startDate' para cada labor de forma lógica y cronológica, tomando la fecha de siembra como punto de partida. Por ejemplo, la primera fertilización de un lote de café nuevo ocurre X semanas después de la siembra; el control de broca se intensifica en ciertas épocas. Sé preciso.
+    3.  **Estimación de Jornales Realista:** Para cada labor, calcula un número razonable de 'plannedJournals' (jornales). Usa el área del lote ({{{areaHectares}}} Ha) como factor principal. Una fertilización en 5 hectáreas requiere más jornales que en 0.5 hectáreas. Usa tu experiencia para dar un estimado creíble.
+        *   Ejemplo de razonamiento: "Para fertilizar 1 hectárea de café, un trabajador rinde aproximadamente 0.5 hectáreas por día, entonces necesito 2 jornales". Si el lote tiene 3 Ha, serían 6 jornales.
+    4.  **Descripciones Claras y Justificadas:** Usa nombres de labor ('type') específicos y útiles (ej: "Primera Fertilización de Crecimiento (20-10-10)"). En 'observations', justifica brevemente la importancia agronómica de esa labor en ese momento del ciclo (ej: "Aporte de nitrógeno clave para el desarrollo vegetativo inicial").
+    5.  **Formato Estricto:** Tu respuesta DEBE ser únicamente el objeto JSON que se adhiere al esquema de salida. No incluyas texto adicional ni explicaciones fuera del JSON.
   `,
 });
 

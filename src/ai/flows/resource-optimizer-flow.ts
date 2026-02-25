@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 // Define schemas for the specific action payloads
 const ReassignTaskPayloadSchema = z.object({
@@ -39,7 +39,9 @@ const OptimizationSuggestionSchema = z.object({
         }),
         z.object({
             type: z.literal('informational'),
-            payload: z.object({}), // No payload needed for purely informational suggestions
+            payload: z.object({
+                details: z.string().optional().describe("Any extra detail for the informational suggestion.")
+            }),
         })
     ]).describe("The specific, machine-readable action to be taken.")
 });
@@ -93,8 +95,11 @@ const optimizerPrompt = ai.definePrompt({
         -   Si el stock es insuficiente, genera una acción \`createPurchaseOrder\` con severidad 'Alta'.
         -   **Payload Requerido:** \`supplyId\`, \`supplyName\`, \`requiredQuantity\`, \`currentStock\`.
         -   **\`explanation\`:** Sé específico. Ej: "Alerta de stock: Se necesitan 150 Kg de Abono 15-15-15, pero solo hay 50 Kg en inventario."
-    4.  **Sugerencias Informativas (Acción: \`informational\`):**
-        -   Si encuentras una oportunidad de mejora que no es directamente accionable por los otros tipos (ej. un desbalance menor que no justifica una reasignación), usa el tipo \`informational\` con un payload vacío \`{}\`.
+    4.  **Análisis de Desviación de Costos (Acción: \`informational\`):**
+        -   Compara el \`actualCost\` con el \`plannedCost\` de las tareas.
+        -   Si encuentras una desviación mayor al 15%, genera una sugerencia informativa.
+        -   **Payload Requerido:** \`details\` con un mensaje como "La labor '...' tuvo un sobrecosto del X%. Analizar si fue por jornales adicionales o gasto de insumos no planificado."
+        -   Esto ayuda a identificar problemas de eficiencia o planificación.
     5.  **Si todo está bien:** Si la carga de trabajo está balanceada y el inventario es suficiente, devuelve un array de sugerencias vacío.
 
     Datos a analizar:

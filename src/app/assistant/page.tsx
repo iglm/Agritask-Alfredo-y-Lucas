@@ -28,6 +28,8 @@ export default function AssistantPage() {
     productiveUnits,
     tasks,
     supplies,
+    addTransaction, // Added for financial tracking
+    addSupplyUsage, // Added for inventory management
     addProductiveUnit,
     addLot,
     addTask,
@@ -81,8 +83,8 @@ export default function AssistantPage() {
         lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId })),
         staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate })),
         productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
-        tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId })),
-        supplies: supplies?.map(s => ({ id: s.id, name: s.name, unitOfMeasure: s.unitOfMeasure })),
+        tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId, plannedSupplies: t.plannedSupplies, supplyCost: t.supplyCost })),
+        supplies: supplies?.map(s => ({ id: s.id, name: s.name, unitOfMeasure: s.unitOfMeasure, currentStock: s.currentStock })),
       };
       
       const contextData = JSON.stringify(slimContext);
@@ -151,6 +153,14 @@ export default function AssistantPage() {
             case 'addStaff':
               newEntity = await addStaff(payloadWithIds as any);
               break;
+            case 'addTransaction':
+              newEntity = await addTransaction(payloadWithIds as any);
+              break;
+            case 'recordSupplyUsage': {
+                const { taskId, supplyId, quantityUsed, date } = payloadWithIds;
+                newEntity = await addSupplyUsage(taskId, supplyId, quantityUsed, date);
+                break;
+            }
             case 'updateTaskStatus': {
                 const { taskId, status, progress } = payloadWithIds;
                 const taskToUpdate = tasks?.find(t => t.id === taskId);

@@ -117,7 +117,7 @@ const AssistantActionSchema = z.union([
 // Define the input schema for the flow
 const AssistantInputSchema = z.object({
   command: z.string().describe("The user's natural language command."),
-  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff' (collaborators), 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains essential fields like 'id', 'name', 'type', 'employmentType', etc. Use this to find IDs and apply business logic."),
+  contextData: z.string().describe("A JSON string containing arrays of 'lots', 'staff', 'productiveUnits', 'tasks', and 'supplies' from the farm management system. Each object only contains essential fields. Use this to find IDs and apply business logic."),
   currentDate: z.string().describe("Today's date in yyyy-MM-dd format."),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
@@ -170,7 +170,12 @@ const assistantPrompt = ai.definePrompt({
         *   **Caso 3 (Sin Coincidencias):** Si no encuentras una tarea activa lógica, devuelve un \`error\` preguntando a qué labor se debe asociar el gasto.
         *   En todos los casos, busca el \`supplyId\` en \`contextData.supplies\`.
 
-    5.  **TRANSACCIONES FINANCIERAS (RENTABILIDAD):**
+    5.  **WORKFLOW DE TAREAS (VALIDACIÓN DE CIERRE):**
+        *   Al recibir un comando para finalizar una tarea (ej: "marca la fumigación como finalizada"), debes validar.
+        *   Busca la tarea en \`contextData\`. Si la tarea tiene un array \`plannedSupplies\` con insumos planificados, DEBES verificar que el campo \`supplyCost\` de esa tarea sea mayor que 0.
+        *   Si \`plannedSupplies\` existe y \`supplyCost\` es 0, significa que no se ha registrado el uso de insumos. NO finalices la tarea. Devuelve una acción \`error\` con el mensaje: "Para finalizar esta labor, primero debes registrar el uso de los insumos planificados en el gestor de insumos de la tarea."
+
+    6.  **TRANSACCIONES FINANCIERAS (RENTABILIDAD):**
         *   Maneja ingresos y egresos generando una acción \`addTransaction\`. Es crucial para la rentabilidad que vincules las transacciones a un \`lotId\` siempre que sea posible.
         *   Categoriza automáticamente. Las categorías válidas son:
             *   **Ingresos:** "Venta de Cosecha", "Venta de Subproductos", "Servicios a Terceros", "Subsidios/Apoyos", "Otro Ingreso".
@@ -183,16 +188,16 @@ const assistantPrompt = ai.definePrompt({
         *   Si un gasto es para 'Mano de Obra' o 'Insumos', prioriza asociarlo a un \`lotId\` si se menciona. Esto es clave para el cálculo de costos reales.
         *   Si falta el monto, devuelve un \`error\`.
 
-    6.  **"MEMORIA" DE COLABORADORES (ASIGNACIÓN INTELIGENTE):**
+    7.  **"MEMORIA" DE COLABORADORES (ASIGNACIÓN INTELIGENTE):**
         *   Al crear una tarea (\`addTask\`) sin responsable, debes sugerir al más idóneo.
         *   Busca en \`contextData.tasks\` y cuenta qué colaborador ha **finalizado** más tareas de esa misma \`category\`. Ese es el experto.
         *   Devuelve una acción \`error\` con este mensaje exacto: "¿Quieres que asigne a [Nombre del Experto Sugerido], ya que es quien más experiencia tiene en esta actividad?".
 
-    7.  **COMMAND SEQUENCING & DEPENDENCIES:**
+    8.  **COMMAND SEQUENCING & DEPENDENCIES:**
         *   If the user gives multiple commands (e.g., "crea una finca y añádele un lote"), generate an array of actions in the correct logical order.
         *   If an action depends on an item created in a previous action in the same command, use placeholders: \`__ID_0__\` for the ID of the item from the first action, \`__ID_1__\` for the second, and so on.
 
-    8.  **GENERAL EXECUTION:**
+    9.  **GENERAL EXECUTION:**
         *   Use \`contextData\` to find IDs for existing entities. Do not guess IDs.
         *   The \`explanation\` field must be a single, brief confirmation sentence in Spanish summarizing ALL successful actions.
 
