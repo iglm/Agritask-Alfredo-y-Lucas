@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { type Transaction, type Lot, transactionTypes, incomeCategories, expenseCategories, type ProductiveUnit } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { format, isValid, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 
@@ -38,10 +38,10 @@ type TransactionFormProps = {
 export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    // Initialize with static or prop-based values only. NO new Date() here.
+    // Initialize with static or prop-based values only.
     defaultValues: {
       type: transaction?.type ?? "Ingreso",
-      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : undefined,
+      date: transaction?.date ? parseISO(transaction.date) : undefined,
       description: transaction?.description ?? "",
       amount: transaction?.amount ?? undefined,
       category: transaction?.category ?? "",

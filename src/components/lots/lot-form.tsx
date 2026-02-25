@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Lot, ProductiveUnit } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, isValid, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
@@ -50,23 +50,21 @@ type LotFormProps = {
   productiveUnits: ProductiveUnit[];
 };
 
-// This robustly handles dates that might be strings or Firestore Timestamps
 const getInitialDate = (dateValue: any): Date | undefined => {
   if (!dateValue) {
     return undefined;
   }
-  if (dateValue instanceof Date) {
+  if (dateValue instanceof Date && isValid(dateValue)) {
     return dateValue;
   }
-  // Firestore Timestamps have a toDate() method
-  if (typeof dateValue.toDate === 'function') {
+  if (typeof dateValue.toDate === 'function') { // Firestore Timestamp
     return dateValue.toDate();
   }
   if (typeof dateValue === 'string') {
-    // Important: Prevents timezone issues.
-    // '2023-10-25' is parsed as UTC midnight, which can be the day before in local time.
-    // '2023/10/25' is parsed as local midnight.
-    return new Date(dateValue.replace(/-/g, '/'));
+    const parsedDate = parseISO(dateValue);
+    if (isValid(parsedDate)) {
+      return parsedDate;
+    }
   }
   return undefined;
 };
