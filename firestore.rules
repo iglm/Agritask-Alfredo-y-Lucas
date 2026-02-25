@@ -35,6 +35,22 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
+    // Collection Group Rules for Cross-Collection Queries
+    // ----------------------------------------------------------------------
+    match /{path=**}/sublots/{sublotId} {
+      // This rule allows collection group queries on 'sublots'.
+      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
+      allow get, list: if isSignedIn();
+    }
+
+    match /{path=**}/supplyUsages/{usageId} {
+      // This rule allows collection group queries on 'supplyUsages'.
+      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
+      allow get, list: if isSignedIn();
+    }
+
+
+    // ----------------------------------------------------------------------
     // Data Collection Rules (Lots, Staff, Tasks, ProductiveUnit)
     // ----------------------------------------------------------------------
     
@@ -49,10 +65,9 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
 
       match /sublots/{sublotId} {
-        // Allow reads for collection group queries.
-        // The client query MUST filter by userId for this to be secure.
-        allow read: if isSignedIn() && isExistingDocOwner();
-        // Writes
+        // This rule is for direct GET requests, not for collection group queries.
+        allow get: if isSignedIn() && isExistingDocOwner();
+        // WRITE permissions for this specific path.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
@@ -80,10 +95,9 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       
       match /supplyUsages/{usageId} {
-        // Allow reads for collection group queries.
-        // The client query MUST filter by userId for this to be secure.
-        allow read: if isSignedIn() && isExistingDocOwner();
-        // Writes
+        // This rule is for direct GET requests, not for collection group queries.
+        allow get: if isSignedIn() && isExistingDocOwner();
+        // WRITE permissions for this specific path.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
