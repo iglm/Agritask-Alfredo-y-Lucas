@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,12 +42,17 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
 
   const { control, handleSubmit, reset, watch } = useForm<AddSupplyFormValues>({
     resolver: zodResolver(addSupplySchema),
-    defaultValues: { 
-      supplyId: '', 
+    // Default values are set in useEffect to prevent hydration errors
+  });
+
+  useEffect(() => {
+    // Set default values on the client side after initial render
+    reset({
+      supplyId: '',
       quantityUsed: 0,
       date: new Date(),
-    },
-  });
+    });
+  }, [reset]);
 
   const usagesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks', taskId, 'supplyUsages')) : null, [firestore, taskId]);
   const { data: supplyUsages, isLoading: isLoadingUsages } = useCollection<SupplyUsage>(usagesQuery);
@@ -193,5 +198,3 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
     </div>
   );
 }
-
-    

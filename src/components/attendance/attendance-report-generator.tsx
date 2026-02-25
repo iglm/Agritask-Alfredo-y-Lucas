@@ -28,14 +28,19 @@ export function AttendanceReportGenerator({ staff }: Props) {
   const { toast } = useToast();
   
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfDay(addDays(new Date(), -30)),
-    to: startOfDay(new Date()),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   
   const [shouldFetch, setShouldFetch] = useState(false);
   const [reportData, setReportData] = useState<StaffAttendance[] | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    // Set initial date range on the client to avoid hydration errors
+    setDateRange({
+      from: startOfDay(addDays(new Date(), -30)),
+      to: startOfDay(new Date()),
+    });
+  }, []);
 
   const reportQuery = useMemoFirebase(() => {
     if (!shouldFetch || !firestore || !user || !selectedStaffId || !dateRange?.from || !dateRange?.to) {
