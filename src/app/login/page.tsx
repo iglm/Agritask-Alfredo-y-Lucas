@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,11 +22,6 @@ export default function LoginPage() {
   const auth = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
   
   const loginImage = PlaceHolderImages.find(img => img.id === 'farm-landscape') || 
                      (PlaceHolderImages.length > 0 ? PlaceHolderImages[0] : null);
@@ -118,7 +113,7 @@ export default function LoginPage() {
                         Una aplicación desarrollada por <span className="font-semibold">Lucas Mateo Tabares</span> y <span className="font-semibold">Alfredo García Llano</span>.
                     </p>
                     <p>Ofrecemos asesoría especializada para optimizar tu gestión agrícola.</p>
-                    {year && <p className="mt-2">&copy; {year} Todos los derechos reservados.</p>}
+                    <p className="mt-2">&copy; 2024 Todos los derechos reservados.</p>
                 </div>
               </CardFooter>
           </Card>

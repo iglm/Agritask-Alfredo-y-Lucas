@@ -1,16 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LegalPage() {
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
-
   return (
     <div>
       <PageHeader title="Información Legal y Contacto" />
@@ -117,7 +110,7 @@ export default function LegalPage() {
               Queda estrictamente prohibida la reproducción, copia, distribución, modificación, transformación, ingeniería inversa, descompilación o cualquier otra forma de explotación total o parcial de esta aplicación, con o sin fines de lucro, sin la autorización previa, expresa y por escrito de los titulares. El uso no autorizado constituirá una violación a los derechos de propiedad intelectual y dará lugar a las acciones civiles y penales correspondientes.
             </p>
             <p className="font-semibold">
-              &copy; {year} Lucas Mateo Tabares Franco & Alfredo García Llano. Todos los derechos reservados.
+              &copy; 2024 Lucas Mateo Tabares Franco & Alfredo García Llano. Todos los derechos reservados.
             </p>
           </CardContent>
         </Card>
