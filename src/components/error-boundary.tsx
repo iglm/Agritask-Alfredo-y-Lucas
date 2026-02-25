@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { AlertTriangle } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -23,8 +24,10 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // You can also log the error to an error reporting service
+    // Log the error to an error reporting service
     console.error("Uncaught error:", error, errorInfo);
+    // Emit a generic client-side exception event
+    errorEmitter.emit('client-exception', { error });
   }
 
   handleReset = async () => {

@@ -587,45 +587,55 @@
     },
     "SystemLog": {
       "title": "System Log",
-      "type": "object",
       "description": "Records a client-side or security rule error for monitoring.",
+      "type": "object",
       "properties": {
-        "id": {
-          "type": "string"
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "lastOccurrence": { "type": "string", "format": "date-time" },
+        "severity": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "fingerprint": { "type": "string" },
+        "occurrences": { "type": "number" },
+        "errorDetail": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string" },
+            "stack": { "type": "string" }
+          },
+          "required": ["message"]
         },
-        "userId": {
-          "type": "string"
+        "contextSnapshot": {
+          "type": "object",
+          "properties": {
+            "userAgent": { "type": "string" },
+            "requestPath": { "type": "string" },
+            "requestOperation": { "type": "string" },
+            "requestData": { "type": "string" }
+          },
+          "required": ["userAgent"]
         },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "errorMessage": {
-          "type": "string"
-        },
-        "errorStack": {
-          "type": "string"
-        },
-        "userAgent": {
-          "type": "string"
-        },
-        "requestPath": {
-          "type": "string"
-        },
-        "requestOperation": {
-          "type": "string"
-        },
-        "requestData": {
-          "type": "string",
-          "description": "JSON string of the request payload."
+        "resolution": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["pending", "diagnosed", "resolved"] },
+            "aiDiagnosis": { "type": "string" },
+            "rescueTriggered": { "type": "boolean" }
+          },
+          "required": ["status", "rescueTriggered"]
         }
       },
       "required": [
         "id",
         "userId",
         "timestamp",
-        "errorMessage",
-        "userAgent"
+        "lastOccurrence",
+        "severity",
+        "fingerprint",
+        "occurrences",
+        "errorDetail",
+        "contextSnapshot",
+        "resolution"
       ]
     }
   },

@@ -139,13 +139,29 @@ export type Transaction = {
 export type SystemLog = {
   id: string;
   userId: string;
-  timestamp: string; // ISO 8601 format
-  errorMessage: string;
-  errorStack?: string;
-  userAgent: string;
-  requestPath?: string;
-  requestOperation?: string;
-  requestData?: string; // JSON string of the request data
+  timestamp: string; // ISO 8601 format of first occurrence
+  lastOccurrence: string; // ISO 8601 format of last occurrence
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  fingerprint: string;
+  occurrences: number;
+
+  errorDetail: {
+    message: string;
+    stack?: string;
+  };
+  
+  contextSnapshot: {
+    userAgent: string;
+    requestPath?: string;
+    requestOperation?: string;
+    requestData?: string;
+  };
+
+  resolution: {
+    status: 'pending' | 'diagnosed' | 'resolved';
+    aiDiagnosis?: string;
+    rescueTriggered: boolean;
+  };
 };
 
 
