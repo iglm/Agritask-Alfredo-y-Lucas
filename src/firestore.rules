@@ -38,15 +38,18 @@ service cloud.firestore {
     // Collection Group Rules
     // ----------------------------------------------------------------------
     match /{path=**}/sublots/{sublotId} {
-      // Rules for ALL read operations on any 'sublots' collection.
-      // This covers collection group queries and direct document gets.
+      // 'get' allows direct document reads if the user is the owner.
       allow get: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn(); // Allows the query to run, while 'get' secures each document.
+      // 'list' allows queries across the collection group.
+      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
+      allow list: if isSignedIn();
     }
 
     match /{path=**}/supplyUsages/{usageId} {
-      // Rules for ALL read operations on any 'supplyUsages' collection.
+      // 'get' allows direct document reads if the user is the owner.
       allow get: if isSignedIn() && isExistingDocOwner();
+      // 'list' allows queries across the collection group.
+      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
       allow list: if isSignedIn();
     }
 
