@@ -151,6 +151,8 @@ export const incomeCategories = [
   "Otro Ingreso"
 ];
 export const expenseCategories = [
+  "Mano de Obra",
+  "Insumos",
   "Arrendamiento",
   "Servicios Públicos",
   "Transporte",
