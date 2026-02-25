@@ -124,5 +124,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
+
+    match /system_logs/{logId} {
+      // Users can only create their own logs. No one can read, update, or delete them.
+      allow create: if isSignedIn() && isNewDocOwner();
+      allow read, update, delete: if false;
+    }
   }
 }

@@ -584,6 +584,49 @@
         "amount",
         "category"
       ]
+    },
+    "SystemLog": {
+      "title": "System Log",
+      "type": "object",
+      "description": "Records a client-side or security rule error for monitoring.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "errorStack": {
+          "type": "string"
+        },
+        "userAgent": {
+          "type": "string"
+        },
+        "requestPath": {
+          "type": "string"
+        },
+        "requestOperation": {
+          "type": "string"
+        },
+        "requestData": {
+          "type": "string",
+          "description": "JSON string of the request payload."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "timestamp",
+        "errorMessage",
+        "userAgent"
+      ]
     }
   },
   "auth": {
@@ -652,6 +695,12 @@
         "$ref": "#/entities/Transaction"
       },
       "description": "Collection for storing financial transactions (income/expense). Each document is owned by a single user."
+    },
+    "/system_logs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/SystemLog"
+      },
+      "description": "Collection for storing client-side errors for diagnostics. Users can only write their own logs."
     }
   }
 }

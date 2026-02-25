@@ -136,6 +136,19 @@ export type Transaction = {
   lotId?: string;
 };
 
+export type SystemLog = {
+  id: string;
+  userId: string;
+  timestamp: string; // ISO 8601 format
+  errorMessage: string;
+  errorStack?: string;
+  userAgent: string;
+  requestPath?: string;
+  requestOperation?: string;
+  requestData?: string; // JSON string of the request data
+};
+
+
 export const taskCategories: Task['category'][] = ["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha", "Otro"];
 export const employmentTypes: Staff['employmentType'][] = ["Permanente", "Temporal", "Contratista"];
 export const taskStatuses: Task['status'][] = ['Por realizar', 'En Proceso', 'Pendiente', 'Finalizado'];
