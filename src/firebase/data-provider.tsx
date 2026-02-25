@@ -17,6 +17,7 @@ interface DataContextState {
   supplies: Supply[] | null;
   productiveUnits: ProductiveUnit[] | null;
   transactions: Transaction[] | null;
+  supplyUsages: SupplyUsage[] | null;
   user: User | null;
   isLoading: boolean;
   firestore: ReturnType<typeof useFirebase>['firestore'];
@@ -57,6 +58,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const transactionsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const supplyUsagesQuery = useMemoFirebase(() => user && firestore ? query(collectionGroup(firestore, 'supplyUsages'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
@@ -64,6 +66,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
   const { data: productiveUnits, isLoading: productiveUnitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+  const { data: supplyUsages, isLoading: supplyUsagesLoading } = useCollection<SupplyUsage>(supplyUsagesQuery);
 
 
   const ensureAuth = () => {
@@ -544,7 +547,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitsLoading || transactionsLoading;
+  const isLoading = isUserLoading || lotsLoading || staffLoading || tasksLoading || suppliesLoading || productiveUnitsLoading || transactionsLoading || supplyUsagesLoading;
 
   const value: DataContextState = {
     lots,
@@ -553,6 +556,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     supplies,
     productiveUnits,
     transactions,
+    supplyUsages,
     user,
     isLoading,
     firestore,

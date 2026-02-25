@@ -8,9 +8,11 @@ import { WorkerPerformanceChart } from "@/components/dashboard/WorkerPerformance
 import { InvestmentChart } from "@/components/dashboard/investment-chart";
 import { TasksDistributionChart } from "@/components/dashboard/tasks-distribution-chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SupplyConsumptionChart } from "@/components/dashboard/SupplyConsumptionChart";
+import { SupplyUsageByLotReport } from "@/components/reports/SupplyUsageByLotReport";
 
 export default function ReportsPage() {
-  const { lots, tasks, transactions, staff, isLoading } = useAppData();
+  const { lots, tasks, transactions, staff, supplies, supplyUsages, isLoading } = useAppData();
 
   if (isLoading) {
     return (
@@ -21,6 +23,9 @@ export default function ReportsPage() {
           <Skeleton className="h-[380px]" />
           <Skeleton className="h-[380px]" />
           <Skeleton className="h-[380px]" />
+          <Skeleton className="h-[380px]" />
+          <Skeleton className="h-[380px]" />
+          <Skeleton className="h-[380px] lg:col-span-2" />
         </div>
       </div>
     );
@@ -35,6 +40,8 @@ export default function ReportsPage() {
         <WorkerPerformanceChart staff={staff || []} tasks={tasks || []} />
         <InvestmentChart lots={lots || []} tasks={tasks || []} />
         <TasksDistributionChart tasks={tasks || []} />
+        <SupplyConsumptionChart supplies={supplies || []} supplyUsages={supplyUsages || []} />
+        <SupplyUsageByLotReport lots={lots || []} tasks={tasks || []} supplies={supplies || []} supplyUsages={supplyUsages || []} />
       </div>
     </div>
   );
