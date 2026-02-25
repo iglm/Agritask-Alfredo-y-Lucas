@@ -38,19 +38,17 @@ service cloud.firestore {
     // Collection Group Rules
     // ----------------------------------------------------------------------
     match /{path=**}/sublots/{sublotId} {
-      // 'get' allows direct document reads if the user is the owner.
-      allow get: if isSignedIn() && isExistingDocOwner();
-      // 'list' allows queries across the collection group.
-      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
-      allow list: if isSignedIn();
+      // This rule allows a user to query across all 'sublots' collections (collection group query),
+      // but ONLY if the query includes a "where('userId', '==', request.auth.uid)" filter.
+      // It also allows direct GET requests for a user's own documents.
+      allow get, list: if isSignedIn() && isExistingDocOwner();
     }
 
     match /{path=**}/supplyUsages/{usageId} {
-      // 'get' allows direct document reads if the user is the owner.
-      allow get: if isSignedIn() && isExistingDocOwner();
-      // 'list' allows queries across the collection group.
-      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
-      allow list: if isSignedIn();
+      // This rule allows a user to query across all 'supplyUsages' collections (collection group query),
+      // but ONLY if the query includes a "where('userId', '==', request.auth.uid)" filter.
+      // It also allows direct GET requests for a user's own documents.
+      allow get, list: if isSignedIn() && isExistingDocOwner();
     }
 
     // ----------------------------------------------------------------------
@@ -59,7 +57,7 @@ service cloud.firestore {
     
     match /lots/{lotId} {
       // Allow read/delete only if the user is the owner of the document.
-      // List operation is allowed, but client-side queries MUST filter by userId.
+      // List operation is allowed for this single collection; client-side queries MUST filter by userId.
       allow get, delete: if isSignedIn() && isExistingDocOwner();
       allow list: if isSignedIn();
       // Allow create if the new document has the creator's userId.
@@ -68,8 +66,8 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
 
       match /sublots/{sublotId} {
-        // This block now ONLY handles writes for sublots, as all reads are
-        // handled by the more general collection group rule above. This avoids rule conflicts.
+        // This block now ONLY handles writes for sublots. All read operations (get, list)
+        // are securely handled by the more general collection group rule above, avoiding conflicts.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
@@ -97,7 +95,8 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       
       match /supplyUsages/{usageId} {
-        // Read access is handled by the collection group rule above. This avoids rule conflicts.
+        // This block now ONLY handles writes for supply usages. All read operations (get, list)
+        // are securely handled by the more general collection group rule above, avoiding conflicts.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
