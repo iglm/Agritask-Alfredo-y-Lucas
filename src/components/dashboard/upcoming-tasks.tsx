@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Task, Lot } from '@/lib/types';
 import { CalendarClock, CheckSquare } from 'lucide-react';
@@ -16,13 +16,18 @@ interface UpcomingTasksProps {
 }
 
 export function UpcomingTasks({ tasks, lots }: UpcomingTasksProps) {
-  const upcomingTasks = useMemo(() => {
+  const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    // This calculation is now safely running only on the client-side,
+    // after the initial server render, preventing any hydration mismatch.
     const today = startOfToday();
     const nextSevenDays = {
       start: today,
       end: addDays(today, 7),
     };
-    return tasks
+    
+    const filteredTasks = (tasks || [])
       .filter(task => {
         // Parse date as local to avoid timezone issues
         const taskDate = new Date(task.startDate.replace(/-/g, '\/'));
@@ -30,7 +35,10 @@ export function UpcomingTasks({ tasks, lots }: UpcomingTasksProps) {
       })
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, 5); // Limit to 5 tasks to not clutter the dashboard
+      
+    setUpcomingTasks(filteredTasks);
   }, [tasks]);
+
 
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'N/A';
 
