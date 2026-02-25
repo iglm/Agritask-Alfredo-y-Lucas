@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot, BarChart } from "lucide-react";
@@ -7,13 +8,13 @@ import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
 import { Progress } from "../ui/progress";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { TaskPlanner } from './task-planner';
 import { ProfitabilityReportDialog } from '../reports/profitability-report-dialog';
+import { cn } from '@/lib/utils';
 
 type LotsTableProps = {
   lots: Lot[];
@@ -99,6 +100,12 @@ const SubLotsList: React.FC<{
 
 
 export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
+  const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
+
+  const toggleRow = (lotId: string) => {
+    setOpenRows(prev => ({ ...prev, [lotId]: !prev[lotId] }));
+  };
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -118,6 +125,7 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
           <TableBody>
             {lots.length > 0 ? (
               lots.map((lot) => {
+                const isOpen = openRows[lot.id] || false;
                 const lotTasks = tasks.filter(task => task.lotId === lot.id);
                 const lotTransactions = transactions.filter(t => t.lotId === lot.id);
                 const averageProgress = lotTasks.length > 0
@@ -125,62 +133,59 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                     : 0;
                 
                 return (
-                  <Collapsible asChild key={lot.id}>
-                    <>
-                      <CollapsibleTrigger asChild>
-                        <TableRow className="cursor-pointer">
-                          <TableCell className="p-2">
-                             <ChevronDown className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                          </TableCell>
-                          <TableCell className="font-medium">{lot.name}</TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                              {lot.sowingDate ? format(new Date(lot.sowingDate.replace(/-/g, '\/')), "dd MMM yyyy", { locale: es }) : 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Progress value={averageProgress} className="h-2 flex-1 bg-secondary" />
-                                <span className="text-xs font-medium text-muted-foreground w-10 text-right">{averageProgress.toFixed(0)}%</span>
-                              </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-right">{lot.areaHectares}</TableCell>
-                          <TableCell className="text-right">{lot.totalTrees || 0}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                  <span className="sr-only">Abrir menú</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <ProfitabilityReportDialog lot={lot} tasks={lotTasks} transactions={lotTransactions}>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <BarChart className="mr-2 h-4 w-4" />
-                                        Reporte de Rentabilidad
-                                    </DropdownMenuItem>
-                                </ProfitabilityReportDialog>
-                                <TaskPlanner lot={lot}>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <Bot className="mr-2 h-4 w-4" />
-                                        Agente Planificador
-                                    </DropdownMenuItem>
-                                </TaskPlanner>
-                                <DropdownMenuItem onClick={() => onEditLot(lot)}>
-                                  <SquarePen className="mr-2 h-4 w-4" />
-                                  Editar Lote
+                  <React.Fragment key={lot.id}>
+                    <TableRow onClick={() => toggleRow(lot.id)} className="cursor-pointer">
+                      <TableCell className="p-2">
+                         <ChevronDown className={cn("h-5 w-5 transition-transform duration-200", isOpen && "rotate-180")} />
+                      </TableCell>
+                      <TableCell className="font-medium">{lot.name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {lot.sowingDate ? format(new Date(lot.sowingDate.replace(/-/g, '\/')), "dd MMM yyyy", { locale: es }) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={averageProgress} className="h-2 flex-1 bg-secondary" />
+                            <span className="text-xs font-medium text-muted-foreground w-10 text-right">{averageProgress.toFixed(0)}%</span>
+                          </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-right">{lot.areaHectares}</TableCell>
+                      <TableCell className="text-right">{lot.totalTrees || 0}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <ProfitabilityReportDialog lot={lot} tasks={lotTasks} transactions={lotTransactions}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <BarChart className="mr-2 h-4 w-4" />
+                                    Reporte de Rentabilidad
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeleteLot(lot)}>
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Eliminar Lote
+                            </ProfitabilityReportDialog>
+                            <TaskPlanner lot={lot}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Bot className="mr-2 h-4 w-4" />
+                                    Agente Planificador
                                 </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent asChild>
-                        <TableRow>
+                            </TaskPlanner>
+                            <DropdownMenuItem onClick={() => onEditLot(lot)}>
+                              <SquarePen className="mr-2 h-4 w-4" />
+                              Editar Lote
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeleteLot(lot)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar Lote
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                    {isOpen && (
+                       <TableRow>
                           <TableCell colSpan={8} className="p-0 border-b-0">
                             <div className="bg-muted/50">
                               <div className="p-4 border-b">
@@ -209,9 +214,8 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                             </div>
                           </TableCell>
                         </TableRow>
-                      </CollapsibleContent>
-                    </>
-                  </Collapsible>
+                    )}
+                  </React.Fragment>
                 )
               })
             ) : (
