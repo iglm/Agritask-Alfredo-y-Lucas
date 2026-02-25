@@ -115,7 +115,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
     // This effect runs only on the client, preventing hydration mismatches.
     // Set date for new tasks only if it's not already set.
     if (!form.getValues('startDate')) {
-      form.setValue('startDate', getInitialDate(task?.startDate) ?? new Date());
+      form.setValue('startDate', new Date());
     }
   }, [task, form]);
   

@@ -53,7 +53,7 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
     // This effect runs only on the client after mount.
     // It safely sets the date for new transactions without causing a hydration mismatch.
     if (!form.getValues('date')) {
-      form.setValue('date', transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date());
+      form.setValue('date', new Date());
     }
   }, [transaction, form]);
 
