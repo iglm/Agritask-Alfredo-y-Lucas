@@ -35,23 +35,20 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
-    // Collection Group Rules
+    // Collection Group Rules for Cross-Collection Queries
     // ----------------------------------------------------------------------
     match /{path=**}/sublots/{sublotId} {
-      // 'get' allows direct document reads if the user is the owner.
-      allow get: if isSignedIn() && isExistingDocOwner();
-      // 'list' allows queries across the collection group.
-      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
+      // This rule allows collection group queries on 'sublots'.
+      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
       allow list: if isSignedIn();
     }
 
     match /{path=**}/supplyUsages/{usageId} {
-      // 'get' allows direct document reads if the user is the owner.
-      allow get: if isSignedIn() && isExistingDocOwner();
-      // 'list' allows queries across the collection group.
-      // Client-side code MUST use a 'where("userId", "==", auth.uid)' clause to enforce security.
+      // This rule allows collection group queries on 'supplyUsages'.
+      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
       allow list: if isSignedIn();
     }
+
 
     // ----------------------------------------------------------------------
     // Data Collection Rules (Lots, Staff, Tasks, ProductiveUnit)
@@ -68,8 +65,9 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
 
       match /sublots/{sublotId} {
-        // This block now ONLY handles writes for sublots, as all reads are
-        // handled by the more general collection group rule above. This avoids rule conflicts.
+        // This rule is for direct GET requests, not for collection group queries.
+        allow get: if isSignedIn() && isExistingDocOwner();
+        // WRITE permissions for this specific path.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
@@ -97,7 +95,9 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       
       match /supplyUsages/{usageId} {
-        // Read access is handled by the collection group rule above. This avoids rule conflicts.
+        // This rule is for direct GET requests, not for collection group queries.
+        allow get: if isSignedIn() && isExistingDocOwner();
+        // WRITE permissions for this specific path.
         allow create: if isSignedIn() && isNewDocOwner();
         allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
         allow delete: if isSignedIn() && isExistingDocOwner();
