@@ -36,8 +36,9 @@ const managementNavItems = [
   { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
 ];
 const assistantNavItem = { href: '/assistant', label: 'Asistente IA', icon: Bot };
+const reportsNavItem = { href: '/reports', label: 'Reportes', icon: LayoutDashboard };
 const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
-const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, assistantNavItem, legalNavItem];
+const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, assistantNavItem, reportsNavItem, legalNavItem];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -144,6 +145,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href={assistantNavItem.href}>
                       <assistantNavItem.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{assistantNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+             <SidebarMenu>
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(reportsNavItem.href)}
+                    tooltip={{ children: reportsNavItem.label }}
+                  >
+                    <Link href={reportsNavItem.href}>
+                      <reportsNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{reportsNavItem.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

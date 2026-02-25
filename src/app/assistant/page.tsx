@@ -158,6 +158,7 @@ export default function AssistantPage() {
                     await updateTask({ ...taskToUpdate, status, progress: progress ?? taskToUpdate.progress });
                 } else {
                     console.error("Task to update not found:", taskId);
+                    toast({ variant: 'destructive', title: 'Error', description: `La labor con ID ${taskId} no fue encontrada.`});
                 }
                 break;
             }
@@ -168,6 +169,7 @@ export default function AssistantPage() {
                     await updateStaff({ ...staffToUpdate, baseDailyRate: newRate });
                 } else {
                      console.error("Staff to update not found:", staffId);
+                     toast({ variant: 'destructive', title: 'Error', description: `El colaborador con ID ${staffId} no fue encontrado.`});
                 }
                 break;
             }
