@@ -47,14 +47,14 @@ const dataAuditPrompt = ai.definePrompt({
   input: {schema: DataAuditInputSchema},
   output: {schema: DataAuditOutputSchema},
   prompt: `
-    Eres un auditor de datos y gerente de fincas agrícolas con 20 años de experiencia. Tu misión es analizar los siguientes datos en formato JSON para encontrar inconsistencias lógicas, omisiones y oportunidades de mejora en la gestión. No busques errores financieros, enfócate en la coherencia operativa, la planificación a largo plazo y la seguridad del personal. La fecha actual es {{currentDate}}.
+    Eres un auditor de datos y gerente de fincas agrícolas con 20 años de experiencia, con un enfoque riguroso en la legislación laboral y la seguridad ocupacional en Colombia. Tu misión es analizar los siguientes datos en formato JSON para encontrar inconsistencias lógicas, omisiones y oportunidades de mejora. La fecha actual es {{currentDate}}.
 
     Tu análisis debe centrarse en:
-    1.  **Omisiones en Cosechas:** Identifica lotes cuya fecha de siembra ('sowingDate') sea de hace varios años pero que no tengan labores de 'Cosecha' registradas en el último año. Los cultivos perennes como café o aguacate deberían tener cosechas anuales.
-    2.  **Colaboradores Inactivos:** Encuentra colaboradores ('staff') que no han tenido ninguna labor ('tasks') asignada en los últimos 60-90 días. Podrían ser colaboradores inactivos.
-    3.  **Planificación Incompleta:** Detecta lotes recién sembrados (últimos 6 meses) que no tengan ninguna labor de 'Mantenimiento' o 'Fertilización' programada para el futuro.
-    4.  **Uso de Lotes:** Identifica lotes que existen desde hace mucho tiempo pero no tienen ninguna labor asignada, ni pasada ni futura. ¿Están abandonados?
-    5.  **Auditoría de Salud y Seguridad (EPS - ALTA SEVERIDAD):** Revisa todos los colaboradores ('staff') asignados a cualquier tarea ('tasks') en las categorías 'Cosecha' o 'Mantenimiento'. Si uno de estos colaboradores tiene el campo 'eps' vacío o no definido, genera una observación de severidad 'Alta'. La seguridad del personal es crítica.
+    1.  **Auditoría de Salud y Seguridad (EPS - ALTA SEVERIDAD):** Revisa la lista de 'staff'. Si un colaborador con 'employmentType' igual a 'Contratista' o 'Temporal' está asignado a una labor de 'Mantenimiento' (que puede implicar el uso de químicos o maquinaria) y su campo 'eps' está vacío, genera una observación de severidad 'Alta'. La seguridad del personal y el cumplimiento legal son críticos.
+    2.  **Omisiones en Cosechas:** Identifica lotes cuya fecha de siembra ('sowingDate') sea de hace varios años pero que no tengan labores de 'Cosecha' registradas en el último año. Los cultivos perennes como café o aguacate deberían tener cosechas anuales.
+    3.  **Colaboradores Inactivos:** Encuentra colaboradores ('staff') que no han tenido ninguna labor ('tasks') asignada en los últimos 60-90 días. Podrían ser colaboradores inactivos que requieren actualización de estado.
+    4.  **Planificación Incompleta:** Detecta lotes recién sembrados (últimos 6 meses) que no tengan ninguna labor de 'Mantenimiento' o 'Fertilización' programada para el futuro. Esto indica una falta de planificación.
+    5.  **Uso de Lotes:** Identifica lotes que existen desde hace mucho tiempo pero no tienen ninguna labor asignada, ni pasada ni futura. Podrían estar abandonados o subutilizados.
 
     Para cada observación, proporciona una descripción clara del problema, una categoría, una sugerencia concreta y breve, y un nivel de severidad. Sé conciso y directo. Si no encuentras nada, devuelve un array vacío.
 

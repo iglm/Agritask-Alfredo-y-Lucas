@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
-import { useUser, useFirebase, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -213,12 +213,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
         const originalTask = tasks?.find(t => t.id === data.id);
         
+        // This is a crucial check to prevent infinite loops.
+        // We only proceed if the status is changing TO 'Finalizado'.
+        const isNowFinalized = data.status === 'Finalizado' && originalTask?.status !== 'Finalizado';
+
         await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
 
-        // Check for recurrence creation
+        // --- Automated Financial Closing ---
+        if (isNowFinalized) {
+            const laborCost = data.actualCost - data.supplyCost;
+            if (laborCost > 0) {
+                const transactionData: Omit<Transaction, 'id' | 'userId'> = {
+                    type: 'Egreso',
+                    date: data.endDate || data.startDate, // Use end date if available, otherwise start date
+                    description: `Costo de mano de obra para la labor: ${data.type}`,
+                    amount: laborCost,
+                    category: 'Mano de Obra',
+                    lotId: data.lotId,
+                };
+                await addTransaction(transactionData);
+                toast({
+                    title: 'Cierre Financiero Automático',
+                    description: `Se creó un egreso de $${laborCost.toLocaleString()} por la mano de obra.`,
+                });
+            }
+        }
+        
+        // --- Automated Task Recurrence ---
         if (
-            data.status === 'Finalizado' &&
-            originalTask?.status !== 'Finalizado' &&
+            isNowFinalized &&
             data.isRecurring &&
             data.recurrenceFrequency &&
             data.recurrenceInterval &&
@@ -243,20 +266,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
 
             const nextTaskData: Omit<Task, 'id' | 'userId'> = {
-                lotId: data.lotId,
-                category: data.category,
-                type: data.type,
-                responsibleId: data.responsibleId,
+                ...data, // copy most properties
                 startDate: format(newStartDate, 'yyyy-MM-dd'),
                 status: 'Por realizar',
                 progress: 0,
-                plannedJournals: data.plannedJournals,
-                plannedCost: data.plannedCost,
                 supplyCost: 0,
                 actualCost: 0,
-                isRecurring: data.isRecurring,
-                recurrenceFrequency: data.recurrenceFrequency,
-                recurrenceInterval: data.recurrenceInterval,
+                downtimeMinutes: 0,
+                harvestedQuantity: 0,
+                observations: '',
+                dependsOn: undefined, // A recurrent task shouldn't depend on the previous one.
             };
 
             await addTask(nextTaskData);

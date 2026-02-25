@@ -52,13 +52,13 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
     setResult(null);
 
     try {
-      // Include EPS in the staff context for the audit
-      const staffWithEps = staff.map(s => ({ id: s.id, eps: s.eps }));
-      const tasksForAudit = tasks.map(t => ({ responsibleId: t.responsibleId, category: t.category }));
+      // Include all relevant fields for the audit
+      const staffForAudit = staff.map(s => ({ id: s.id, eps: s.eps, employmentType: s.employmentType }));
+      const tasksForAudit = tasks.map(t => ({ id: t.id, responsibleId: t.responsibleId, category: t.category, lotId: t.lotId }));
       const lotsForAudit = lots.map(l => ({ id: l.id, sowingDate: l.sowingDate }));
 
       const response = await auditData({
-        jsonData: JSON.stringify({ lots: lotsForAudit, tasks: tasksForAudit, staff: staffWithEps }),
+        jsonData: JSON.stringify({ lots: lotsForAudit, tasks: tasksForAudit, staff: staffForAudit }),
         currentDate: format(startOfToday(), 'yyyy-MM-dd'),
       });
       setResult(response);
@@ -84,7 +84,7 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
           <span>Agente Auditor de Datos</span>
         </CardTitle>
         <CardDescription>
-          Detecta inconsistencias lógicas y oportunidades de mejora en la planificación de tu finca.
+          Detecta inconsistencias lógicas, riesgos de cumplimiento y oportunidades de mejora en la planificación de tu finca.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

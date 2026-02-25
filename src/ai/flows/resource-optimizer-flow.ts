@@ -49,7 +49,7 @@ const OptimizationSuggestionSchema = z.object({
 
 // Define the input schema for the flow
 const ResourceOptimizerInputSchema = z.object({
-  jsonData: z.string().describe("A JSON string containing arrays of 'tasks' (for the upcoming period), 'staff', and 'supplies' from the farm management system."),
+  jsonData: z.string().describe("A JSON string containing arrays of 'tasks' (for the upcoming period), 'staff', and 'supplies' from the farm management system. Tasks may include 'downtimeMinutes'."),
   workWeekJournals: z.number().describe("The standard number of work-days (jornales) in a week for a single worker, e.g., 5."),
 });
 export type ResourceOptimizerInput = z.infer<typeof ResourceOptimizerInputSchema>;
@@ -76,30 +76,38 @@ const optimizerPrompt = ai.definePrompt({
   input: {schema: ResourceOptimizerInputSchema},
   output: {schema: ResourceOptimizerOutputSchema},
   prompt: `
-    Eres un jefe de operaciones experto en fincas agrícolas, especializado en optimizar la asignación de recursos. Tu misión es analizar la carga de trabajo y el inventario para proponer acciones **estructuradas y ejecutables** en formato JSON.
+    Eres un jefe de operaciones experto en fincas agrícolas, especializado en optimizar la asignación de recursos y analizar la eficiencia operativa. Tu misión es analizar la carga de trabajo, el inventario y los tiempos muertos para proponer acciones **estructuradas y ejecutables** en formato JSON.
 
     DATOS A ANALIZAR:
     - Listas de 'staff', 'tasks' programadas, y 'supplies' (insumos).
     - La semana laboral estándar es de {{workWeekJournals}} jornales por colaborador.
 
     INSTRUCCIONES CLAVE:
-    1.  **Salida Estructurada:** Tu respuesta DEBE ser un array de objetos JSON. Para cada sugerencia, debes determinar el \`action.type\` y rellenar el \`action.payload\` correspondiente.
+    1.  **Análisis de Tiempos Muertos (Acción: \`informational\`):**
+        -   Analiza el campo \`downtimeMinutes\` en las labores. Busca patrones: si un tipo de labor específico (ej: 'Fumigación') o un colaborador acumulan consistentemente tiempos muertos significativos.
+        -   Si encuentras un patrón, genera una sugerencia informativa.
+        -   **Payload Requerido:** \`details\` con un mensaje como "Se ha detectado un promedio de 60 minutos de tiempo muerto en las labores de 'Fumigación'. Sugerencia: Revisar logística de preparación de mezclas o el estado de los equipos para mejorar la eficiencia."
+        -   **\`explanation\`:** "Patrón de tiempo muerto detectado en labores de Fumigación. Se sugiere revisión logística."
+        -   Prioriza este análisis.
+
     2.  **Análisis de Carga de Trabajo (Acción: \`reassignTask\`):**
         -   Suma los \`plannedJournals\` de las labores asignadas a cada colaborador.
         -   Si encuentras un desbalance significativo, genera una acción \`reassignTask\`.
         -   **Payload Requerido:** \`taskId\`, \`fromStaffId\` (el sobrecargado), \`toStaffId\` (el disponible).
         -   **\`explanation\`:** Debe ser clara. Ej: "Reasignar la labor 'Poda de Crecimiento' de Juan Pérez (sobrecargado) a María López (disponible) para balancear la carga."
+
     3.  **Análisis de Inventario (Acción: \`createPurchaseOrder\`):**
         -   Suma las \`quantity\` de cada \`supplyId\` único en la propiedad \`plannedSupplies\` de todas las labores.
         -   Compara el total requerido con el \`currentStock\` del insumo.
         -   Si el stock es insuficiente, genera una acción \`createPurchaseOrder\` con severidad 'Alta'.
         -   **Payload Requerido:** \`supplyId\`, \`supplyName\`, \`requiredQuantity\`, \`currentStock\`.
         -   **\`explanation\`:** Sé específico. Ej: "Alerta de stock: Se necesitan 150 Kg de Abono 15-15-15, pero solo hay 50 Kg en inventario."
+
     4.  **Análisis de Desviación de Costos (Acción: \`informational\`):**
         -   Compara el \`actualCost\` con el \`plannedCost\` de las tareas.
         -   Si encuentras una desviación mayor al 15%, genera una sugerencia informativa.
         -   **Payload Requerido:** \`details\` con un mensaje como "La labor '...' tuvo un sobrecosto del X%. Analizar si fue por jornales adicionales o gasto de insumos no planificado."
-        -   Esto ayuda a identificar problemas de eficiencia o planificación.
+    
     5.  **Si todo está bien:** Si la carga de trabajo está balanceada y el inventario es suficiente, devuelve un array de sugerencias vacío.
 
     Datos a analizar:

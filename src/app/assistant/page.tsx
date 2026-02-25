@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bot, Loader2, Send, User as UserIcon } from 'lucide-react';
 import { useAppData } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { runAssistant, AssistantOutput } from '@/ai/flows/assistant-flow';
+import { runAssistant, AssistantOutput, AssistantInput } from '@/ai/flows/assistant-flow';
 import { cn } from '@/lib/utils';
 import { format, startOfToday } from 'date-fns';
 
@@ -79,19 +79,17 @@ export default function AssistantPage() {
 
     try {
       // Optimize context data to send only essential information
-      const slimContext = {
-        lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId })),
-        staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate })),
-        productiveUnits: productiveUnits?.map(u => ({ id: u.id, name: u.farmName })),
-        tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId, plannedSupplies: t.plannedSupplies, supplyCost: t.supplyCost })),
+       const contextForAI: AssistantInput['contextData'] = {
+        lots: lots?.map(l => ({ id: l.id, name: l.name, productiveUnitId: l.productiveUnitId, areaHectares: l.areaHectares, totalTrees: l.totalTrees, sowingDensity: l.sowingDensity })),
+        staff: staff?.map(s => ({ id: s.id, name: s.name, baseDailyRate: s.baseDailyRate, employmentType: s.employmentType })),
+        productiveUnits: productiveUnits?.map(u => ({ id: u.id, farmName: u.farmName })),
+        tasks: tasks?.map(t => ({ id: t.id, type: t.type, status: t.status, lotId: t.lotId, responsibleId: t.responsibleId, category: t.category, plannedSupplies: t.plannedSupplies, supplyCost: t.supplyCost })),
         supplies: supplies?.map(s => ({ id: s.id, name: s.name, unitOfMeasure: s.unitOfMeasure, currentStock: s.currentStock })),
       };
       
-      const contextData = JSON.stringify(slimContext);
-      
       const result: AssistantOutput = await runAssistant({
         command: input,
-        contextData: contextData,
+        contextData: contextForAI,
         currentDate: format(startOfToday(), 'yyyy-MM-dd'),
       });
 

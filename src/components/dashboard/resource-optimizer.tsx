@@ -78,8 +78,13 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
       end: addDays(today, 7),
     };
     const upcomingTasks = tasks.filter(task => {
-        const taskDate = new Date(task.startDate.replace(/-/g, '\/'));
-        return isWithinInterval(taskDate, nextSevenDays) && task.status !== 'Finalizado';
+        // Use a robust date parsing method
+        try {
+            const taskDate = new Date(task.startDate.replace(/-/g, '\/'));
+            return isWithinInterval(taskDate, nextSevenDays) && task.status !== 'Finalizado';
+        } catch {
+            return false;
+        }
     });
     
     if (upcomingTasks.length === 0) {
