@@ -468,7 +468,9 @@
           "type": "string",
           "enum": [
             "Kg",
+            "gr",
             "Lt",
+            "ml / cc",
             "Unidad",
             "Bulto",
             "Galón",
@@ -493,7 +495,6 @@
         "userId",
         "name",
         "unitOfMeasure",
-        "costPerUnit",
         "currentStock"
       ]
     },

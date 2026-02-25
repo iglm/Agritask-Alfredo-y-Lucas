@@ -436,7 +436,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const batch = writeBatch(firestore);
 
     try {
-        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyRef)]);
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyDoc)]);
         
         const taskData = taskDoc.exists() ? taskDoc.data() as Task : null;
         const supplyData = supplyDoc.exists() ? supplyDoc.data() as Supply : null;

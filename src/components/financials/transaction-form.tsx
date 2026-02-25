@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useEffect } from "react"
+import { useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -29,49 +29,24 @@ const transactionFormSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionFormSchema>
 
 type TransactionFormProps = {
-  transaction?: Partial<Transaction>;
+  transaction?: Transaction;
   onSubmit: (values: Omit<Transaction, 'id' | 'userId'>) => void;
   lots: Lot[];
   productiveUnits: ProductiveUnit[];
 };
 
-// This robustly handles dates that might be strings or Firestore Timestamps
-const getInitialDate = (dateValue: any): Date | undefined => {
-  if (!dateValue) {
-    return undefined;
-  }
-  if (dateValue instanceof Date) {
-    return dateValue;
-  }
-  if (typeof dateValue.toDate === 'function') {
-    return dateValue.toDate();
-  }
-  if (typeof dateValue === 'string') {
-    return new Date(dateValue.replace(/-/g, '/'));
-  }
-  return undefined;
-};
-
 export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-  });
-
-  useEffect(() => {
-    // This effect runs on the client after hydration and when the transaction prop changes.
-    // This solves both hydration errors with `new Date()` and stale form data.
-    const initialDate = getInitialDate(transaction?.date);
-    form.reset({
+    defaultValues: {
       type: transaction?.type ?? "Ingreso",
-      // If it's a new transaction, date is undefined here, so we set it to new Date()
-      date: initialDate ?? new Date(),
+      date: transaction?.date ? new Date(transaction.date.replace(/-/g, '/')) : new Date(),
       description: transaction?.description ?? "",
-      amount: transaction?.amount ?? 0,
+      amount: transaction?.amount ?? undefined,
       category: transaction?.category ?? "",
       lotId: transaction?.lotId ?? "none",
-    });
-  }, [transaction, form]);
-
+    },
+  });
 
   const transactionType = form.watch("type");
   const categories = transactionType === 'Ingreso' ? incomeCategories : expenseCategories;

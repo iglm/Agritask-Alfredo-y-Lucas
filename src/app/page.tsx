@@ -239,7 +239,7 @@ export default function DashboardPage() {
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
           <DataAuditor lots={lots || []} tasks={tasks || []} staff={staff || []} />
-          <ResourceOptimizer tasks={tasks || []} staff={staff || []} />
+          <ResourceOptimizer tasks={tasks || []} staff={staff || []} supplies={supplies || []} />
       </div>
     </div>
   );
