@@ -7,7 +7,7 @@ import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
 import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from "date-fns/locale";
 
 type TransactionsTableProps = {
@@ -39,7 +39,7 @@ export function TransactionsTable({ transactions, lots, onEdit, onDelete, onAdd 
             {transactions.length > 0 ? (
               transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell className="font-medium text-muted-foreground">{format(new Date(transaction.date.replace(/-/g, '/')), 'dd MMM yyyy', {locale: es})}</TableCell>
+                  <TableCell className="font-medium text-muted-foreground">{format(parseISO(transaction.date), 'dd MMM yyyy', {locale: es})}</TableCell>
                   <TableCell>{transaction.description}</TableCell>
                   <TableCell className="hidden md:table-cell"><Badge variant="outline">{transaction.category}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{transaction.lotId ? getLotName(transaction.lotId) : 'General'}</TableCell>

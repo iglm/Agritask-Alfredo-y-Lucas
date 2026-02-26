@@ -8,7 +8,7 @@ import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
 import { Progress } from "../ui/progress";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -141,7 +141,7 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                       <TableCell className="font-medium">{lot.name}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {lot.sowingDate ? format(new Date(lot.sowingDate.replace(/-/g, '\/')), "dd MMM yyyy", { locale: es }) : 'N/A'}
+                          {lot.sowingDate ? format(parseISO(lot.sowingDate), "dd MMM yyyy", { locale: es }) : 'N/A'}
                       </TableCell>
                       <TableCell>
                           <div className="flex items-center gap-2">

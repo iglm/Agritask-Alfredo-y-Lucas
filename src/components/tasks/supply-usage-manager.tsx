@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '../ui/calendar';
 
@@ -141,8 +141,8 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
                                     selected={field.value}
                                     onSelect={field.onChange}
                                     disabled={(date) =>
-                                        (task?.startDate && date < new Date(task.startDate.replace(/-/g, '\/'))) ||
-                                        (task?.endDate && date > new Date(task.endDate.replace(/-/g, '\/'))) ||
+                                        (task?.startDate && date < parseISO(task.startDate)) ||
+                                        (task?.endDate && date > parseISO(task.endDate)) ||
                                         date > new Date()
                                     }
                                     initialFocus
@@ -179,7 +179,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
                     <TableBody>
                         {supplyUsages.map(usage => (
                             <TableRow key={usage.id}>
-                                <TableCell>{format(new Date(usage.date.replace(/-/g, '\/')), "dd MMM yyyy", { locale: es })}</TableCell>
+                                <TableCell>{format(parseISO(usage.date), "dd MMM yyyy", { locale: es })}</TableCell>
                                 <TableCell>{usage.supplyName}</TableCell>
                                 <TableCell>{usage.quantityUsed}</TableCell>
                                 <TableCell>${usage.costAtTimeOfUse.toLocaleString()}</TableCell>

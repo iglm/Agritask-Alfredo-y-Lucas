@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "../ui/button";
 import { Bot, Check, ClipboardCopy, Loader2, Sparkles, X } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
@@ -189,7 +189,7 @@ export function TaskPlanner({ lot, children }: TaskPlannerProps) {
                                 <div key={index} className="p-3 bg-muted/50 rounded-lg">
                                     <div className="flex justify-between items-start">
                                         <p className="font-semibold text-foreground">{task.type}</p>
-                                        <Badge variant="secondary">{format(new Date(task.startDate.replace(/-/g, '/')), "dd MMM yyyy", { locale: es })}</Badge>
+                                        <Badge variant="secondary">{format(parseISO(task.startDate), "dd MMM yyyy", { locale: es })}</Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-1">{task.observations}</p>
                                     <div className="flex gap-4 text-xs mt-2">
