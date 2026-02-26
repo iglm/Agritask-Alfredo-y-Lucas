@@ -40,13 +40,13 @@ service cloud.firestore {
     match /{path=**}/sublots/{sublotId} {
       // This rule allows collection group queries on 'sublots'.
       // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
-      allow get, list: if isSignedIn();
+      allow list: if isSignedIn() && isExistingDocOwner();
     }
 
     match /{path=**}/supplyUsages/{usageId} {
       // This rule allows collection group queries on 'supplyUsages'.
       // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
-      allow get, list: if isSignedIn();
+      allow list: if isSignedIn() && isExistingDocOwner();
     }
 
 
