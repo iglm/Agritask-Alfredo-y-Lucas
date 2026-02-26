@@ -36,23 +36,23 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <FirebaseClientProvider>
-              <AuthProvider>
-                <DataProvider>
-                  <SafeHydrationWrapper>
+          <SafeHydrationWrapper>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <FirebaseClientProvider>
+                <AuthProvider>
+                  <DataProvider>
                     <AppShell>{children}</AppShell>
-                  </SafeHydrationWrapper>
-                </DataProvider>
-              </AuthProvider>
-            </FirebaseClientProvider>
-            <Toaster />
-          </ThemeProvider>
+                  </DataProvider>
+                </AuthProvider>
+              </FirebaseClientProvider>
+              <Toaster />
+            </ThemeProvider>
+          </SafeHydrationWrapper>
         </ErrorBoundary>
       </body>
     </html>
