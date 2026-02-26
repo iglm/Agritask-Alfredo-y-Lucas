@@ -317,9 +317,7 @@ export default function LotsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el lote
-              <span className="font-bold"> {lotToDelete?.name} </span>
-              y todos sus sub-lotes y labores asociados.
+              Esta acción es irreversible. Se eliminará permanentemente el lote "{lotToDelete?.name}", junto con todos sus sub-lotes, labores y registros financieros asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -337,7 +335,7 @@ export default function LotsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente el sub-lote
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el sub-lote
               <span className="font-bold"> {subLotToDelete?.name}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>

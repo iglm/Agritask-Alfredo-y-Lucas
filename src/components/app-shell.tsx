@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, Bot } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, Bot, WifiOff } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,8 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { ThemeToggle } from './theme-toggle';
+import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
 const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
 const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
@@ -39,6 +42,39 @@ const assistantNavItem = { href: '/assistant', label: 'Asistente IA', icon: Bot 
 const reportsNavItem = { href: '/reports', label: 'Reportes', icon: LayoutDashboard };
 const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
 const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, assistantNavItem, reportsNavItem, legalNavItem];
+
+function OfflineIndicator() {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    if (typeof window !== 'undefined' && typeof window.navigator !== 'undefined') {
+        setIsOnline(window.navigator.onLine);
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (isOnline) {
+    return null;
+  }
+
+  return (
+    <Badge variant="outline" className="flex items-center gap-2 border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+      <WifiOff className="h-4 w-4" />
+      <span>Sin Conexión</span>
+    </Badge>
+  );
+}
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -222,7 +258,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <h1 className="flex-1 text-lg font-semibold md:text-xl">
               {currentPage?.label || 'Optimizador de Labores'}
             </h1>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <OfflineIndicator />
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 p-4 sm:p-6 flex flex-col">{children}</main>
         </SidebarInset>

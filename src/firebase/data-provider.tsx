@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, serverTimestamp, collectionGroup, orderBy } from 'firebase/firestore';
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage, Transaction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
@@ -116,36 +116,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const sublotsSnapshot = await getDocs(sublotsQuery);
         sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
 
-        // 2. Process tasks for deletion and stock reversion
+        // 2. Process and delete tasks (and their subcollections)
         const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
         const tasksSnapshot = await getDocs(tasksQuery);
 
-        const stockUpdates = new Map<string, number>();
-
         for (const taskDoc of tasksSnapshot.docs) {
-            // Find supply usages for each task
             const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
             const usagesSnapshot = await getDocs(usagesQuery);
-            
             usagesSnapshot.forEach(usageDoc => {
-                const usageData = usageDoc.data() as SupplyUsage;
-                const currentStockUpdate = stockUpdates.get(usageData.supplyId) || 0;
-                stockUpdates.set(usageData.supplyId, currentStockUpdate + usageData.quantityUsed);
-                batch.delete(usageDoc.ref); // Delete the usage document
+                batch.delete(usageDoc.ref); // Delete supply usages
             });
-            
-            batch.delete(taskDoc.ref); // Delete the task document
+            batch.delete(taskDoc.ref); // Delete the task
         }
 
-        // 3. Apply all stock updates
-        for (const [supplyId, quantityToRevert] of stockUpdates.entries()) {
-            const supplyRef = doc(firestore, 'supplies', supplyId);
-            const supplyDoc = await getDoc(supplyRef);
-            if (supplyDoc.exists()) {
-                const supplyData = supplyDoc.data() as Supply;
-                batch.update(supplyRef, { currentStock: supplyData.currentStock + quantityToRevert });
-            }
-        }
+        // 3. Delete financial transactions associated with the lot
+        const transactionsQuery = query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', id));
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+        transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
 
         // 4. Delete the main lot
         batch.delete(lotRef);
