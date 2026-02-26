@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useAppData } from "@/firebase";
 import { Loader2, Trash2, Download } from "lucide-react";
@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TransactionsTable } from "@/components/financials/transactions-table";
 import { TransactionForm } from "@/components/financials/transaction-form";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function FinancialsPage() {
   const { transactions: allTransactions, lots, productiveUnits, isLoading, addTransaction, updateTransaction, deleteTransaction } = useAppData();
@@ -22,6 +22,18 @@ export default function FinancialsPage() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const sortedTransactions = useMemo(() => {
+    if (!allTransactions) return [];
+    // Sort transactions by date in descending order (most recent first)
+    return [...allTransactions].sort((a, b) => {
+        try {
+            return parseISO(b.date).getTime() - parseISO(a.date).getTime();
+        } catch (e) {
+            return 0; // Don't crash if dates are invalid
+        }
+    });
+  }, [allTransactions]);
 
   const handleAddTransaction = () => {
     setEditingTransaction(undefined);
@@ -72,8 +84,8 @@ export default function FinancialsPage() {
   };
 
   const handleExport = () => {
-    if (allTransactions && allTransactions.length > 0) {
-      const dataToExport = allTransactions.map(transaction => ({
+    if (sortedTransactions && sortedTransactions.length > 0) {
+      const dataToExport = sortedTransactions.map(transaction => ({
         ...transaction,
         lotName: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
       }));
@@ -101,7 +113,7 @@ export default function FinancialsPage() {
         </div>
       ) : (
         <TransactionsTable 
-            transactions={allTransactions || []}
+            transactions={sortedTransactions || []}
             lots={lots || []}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteRequest}

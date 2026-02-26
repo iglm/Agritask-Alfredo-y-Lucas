@@ -58,7 +58,7 @@ service cloud.firestore {
       // Allow read/delete only if the user is the owner of the document.
       // List operation is allowed only if the query filters by the owner's userId.
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       // Allow create if the new document has the creator's userId.
       allow create: if isSignedIn() && isNewDocOwner();
       // Allow update if the user owns the document and isn't changing the owner.
@@ -76,21 +76,21 @@ service cloud.firestore {
 
     match /staff/{staffId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
     
     match /staffAttendance/{attendanceId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
 
     match /tasks/{taskId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
       
@@ -106,21 +106,21 @@ service cloud.firestore {
 
     match /productiveUnits/{unitId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
 
     match /supplies/{supplyId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
 
     match /transactions/{transactionId} {
       allow get, delete: if isSignedIn() && isExistingDocOwner();
-      allow list: if isSignedIn() && isExistingDocOwner();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isNewDocOwner();
       allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
     }
