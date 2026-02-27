@@ -144,7 +144,7 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                     ? lotTasks.reduce((sum, task) => sum + task.progress, 0) / lotTasks.length
                     : 0;
                 
-                const config = lotTypeConfig[lot.type];
+                const config = lot.type ? lotTypeConfig[lot.type] : undefined;
                 
                 return (
                   <React.Fragment key={lot.id}>
