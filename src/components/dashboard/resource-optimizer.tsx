@@ -80,7 +80,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
     const upcomingTasks = tasks.filter(task => {
         // Use a robust date parsing method
         try {
-            const taskDate = new Date(task.startDate.replace(/-/g, '\/'));
+            const taskDate = new Date(task.startDate.replace(/-/g, '/'));
             return isWithinInterval(taskDate, nextSevenDays) && task.status !== 'Finalizado';
         } catch {
             return false;
