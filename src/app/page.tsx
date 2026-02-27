@@ -117,13 +117,13 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <UpcomingTasks tasks={tasks || []} lots={lots || []} />
+        <UpcomingTasks tasks={tasks} lots={lots} />
       </div>
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <AnomalyDetector lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
-          <DataAuditor lots={lots || []} tasks={tasks || []} staff={staff || []} />
-          <ResourceOptimizer tasks={tasks || []} staff={staff || []} supplies={supplies || []} />
+          <AnomalyDetector lots={lots} tasks={tasks} transactions={transactions} />
+          <DataAuditor lots={lots} tasks={tasks} staff={staff} />
+          <ResourceOptimizer tasks={tasks} staff={staff} supplies={supplies} />
       </div>
     </div>
   );

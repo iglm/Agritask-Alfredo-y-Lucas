@@ -28,7 +28,7 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    let tasksToFilter = allTasks || [];
+    let tasksToFilter = allTasks;
 
     if (filterCategory !== 'all') {
         tasksToFilter = tasksToFilter.filter(task => task.category === filterCategory);
@@ -156,7 +156,7 @@ export default function TasksPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <TasksTable tasks={filteredTasks} allTasks={allTasks || []} lots={lots || []} staff={staff || []} onEdit={handleEditTask} onDelete={handleDeleteRequest} onAdd={handleAddTask} />
+        <TasksTable tasks={filteredTasks} allTasks={allTasks} lots={lots} staff={staff} onEdit={handleEditTask} onDelete={handleDeleteRequest} onAdd={handleAddTask} />
       )}
 
 
@@ -171,10 +171,10 @@ export default function TasksPage() {
           <TaskForm 
             task={editingTask} 
             onSubmit={handleFormSubmit} 
-            lots={lots || []} 
-            staff={staff || []} 
-            tasks={allTasks || []}
-            supplies={supplies || []}
+            lots={lots} 
+            staff={staff} 
+            tasks={allTasks}
+            supplies={supplies}
           />
         </SheetContent>
       </Sheet>

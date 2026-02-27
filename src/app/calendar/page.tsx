@@ -153,7 +153,7 @@ export default function CalendarPage() {
       
       <div className="flex-1 min-h-0">
         <InteractiveCalendar 
-            tasks={allTasks || []} 
+            tasks={allTasks} 
             onDateSelect={handleDateSelect}
             onTaskSelect={handleTaskSelect}
             onTaskDrop={handleTaskDrop}
@@ -175,10 +175,10 @@ export default function CalendarPage() {
           <TaskForm 
             task={taskForForm}
             onSubmit={handleFormSubmit}
-            lots={lots || []}
-            staff={staff || []}
-            tasks={allTasks || []}
-            supplies={supplies || []}
+            lots={lots}
+            staff={staff}
+            tasks={allTasks}
+            supplies={supplies}
           />
         </DialogContent>
       </Dialog>

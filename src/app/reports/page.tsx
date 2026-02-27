@@ -35,13 +35,13 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <PageHeader title="Reportes y Análisis" />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <FinancialTrendsChart transactions={transactions || []} tasks={tasks || []} />
-        <ProfitabilityByLotChart lots={lots || []} tasks={tasks || []} transactions={transactions || []} />
-        <WorkerPerformanceChart staff={staff || []} tasks={tasks || []} />
-        <InvestmentChart lots={lots || []} tasks={tasks || []} />
-        <TasksDistributionChart tasks={tasks || []} />
-        <SupplyConsumptionChart supplies={supplies || []} supplyUsages={supplyUsages || []} />
-        <SupplyUsageByLotReport lots={lots || []} tasks={tasks || []} supplies={supplies || []} supplyUsages={supplyUsages || []} />
+        <FinancialTrendsChart transactions={transactions} tasks={tasks} />
+        <ProfitabilityByLotChart lots={lots} tasks={tasks} transactions={transactions} />
+        <WorkerPerformanceChart staff={staff} tasks={tasks} />
+        <InvestmentChart lots={lots} tasks={tasks} />
+        <TasksDistributionChart tasks={tasks} />
+        <SupplyConsumptionChart supplies={supplies} supplyUsages={supplyUsages} />
+        <SupplyUsageByLotReport lots={lots} tasks={tasks} supplies={supplies} supplyUsages={supplyUsages} />
       </div>
     </div>
   );

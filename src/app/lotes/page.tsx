@@ -40,7 +40,7 @@ export default function LotsPage() {
 
   useEffect(() => {
     if (allLots) {
-      const filtered = (allLots || []).filter(lot => 
+      const filtered = allLots.filter(lot => 
         lot.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredLots(filtered);
@@ -277,8 +277,8 @@ export default function LotsPage() {
       ) : (
         <LotsTable 
           lots={filteredLots} 
-          tasks={allTasks || []}
-          transactions={allTransactions || []}
+          tasks={allTasks}
+          transactions={allTransactions}
           onEditLot={handleEditLot} 
           onDeleteLot={handleDeleteLotRequest}
           onAddLot={handleAddLot}
@@ -296,7 +296,7 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnits={allUnits || []} />
+          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnits={allUnits} />
         </SheetContent>
       </Sheet>
       

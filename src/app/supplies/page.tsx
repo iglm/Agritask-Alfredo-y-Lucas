@@ -26,7 +26,7 @@ export default function SuppliesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    let suppliesToFilter = allSupplies || [];
+    let suppliesToFilter = allSupplies;
     
     if (searchTerm) {
         suppliesToFilter = suppliesToFilter.filter(s => 
@@ -64,7 +64,7 @@ export default function SuppliesPage() {
   };
 
   const handleFormSubmit = (values: Omit<Supply, 'id' | 'userId'>) => {
-    const isDuplicated = (allSupplies || []).some(s => 
+    const isDuplicated = allSupplies.some(s => 
       s.id !== editingSupply?.id &&
       s.name.toLowerCase().trim() === values.name.toLowerCase().trim()
     );

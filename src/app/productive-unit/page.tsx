@@ -79,7 +79,7 @@ export default function ProductiveUnitsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <ProductiveUnitsTable units={allUnits || []} onEdit={handleEditUnit} onDelete={handleDeleteRequest} onAdd={handleAddUnit} />
+        <ProductiveUnitsTable units={allUnits} onEdit={handleEditUnit} onDelete={handleDeleteRequest} onAdd={handleAddUnit} />
       )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

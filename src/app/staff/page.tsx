@@ -28,7 +28,7 @@ export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    let staffToFilter = allStaff || [];
+    let staffToFilter = allStaff;
     
     if (filterType !== 'all') {
         staffToFilter = staffToFilter.filter(s => s.employmentType === filterType);
@@ -85,7 +85,7 @@ export default function StaffPage() {
   };
 
   const handleFormSubmit = (values: Omit<Staff, 'id' | 'userId'>) => {
-    const isDuplicated = (allStaff || []).some(s => 
+    const isDuplicated = allStaff.some(s => 
       s.id !== editingStaff?.id &&
       (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
     );

@@ -85,18 +85,18 @@ export default function AttendancePage() {
                   </Popover>
               </div>
               <AttendanceList 
-                  staff={staff || []}
+                  staff={staff}
                   selectedDate={date}
               />
           </TabsContent>
           <TabsContent value="reports" className="mt-6">
-              <AttendanceReportGenerator staff={staff || []} />
+              <AttendanceReportGenerator staff={staff} />
           </TabsContent>
         </Tabs>
       </div>
       <div className="hidden print:block">
         <PrintableAttendanceSheet 
-            staff={staff || []}
+            staff={staff}
             date={date}
             productiveUnit={defaultUnit}
         />

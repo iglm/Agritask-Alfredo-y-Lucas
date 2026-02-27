@@ -24,7 +24,6 @@ export default function FinancialsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const sortedTransactions = useMemo(() => {
-    if (!allTransactions) return [];
     // Sort transactions by date in descending order (most recent first)
     return [...allTransactions].sort((a, b) => {
         try {
@@ -113,8 +112,8 @@ export default function FinancialsPage() {
         </div>
       ) : (
         <TransactionsTable 
-            transactions={sortedTransactions || []}
-            lots={lots || []}
+            transactions={sortedTransactions}
+            lots={lots}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteRequest}
             onAdd={handleAddTransaction}
@@ -131,8 +130,8 @@ export default function FinancialsPage() {
           </SheetHeader>
           <TransactionForm 
             transaction={editingTransaction}
-            lots={lots || []}
-            productiveUnits={productiveUnits || []}
+            lots={lots}
+            productiveUnits={productiveUnits}
             onSubmit={handleFormSubmit}
           />
         </SheetContent>

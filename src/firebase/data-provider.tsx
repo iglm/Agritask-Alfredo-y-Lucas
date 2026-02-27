@@ -11,13 +11,13 @@ import { es } from 'date-fns/locale';
 import { User } from 'firebase/auth';
 
 interface DataContextState {
-  lots: Lot[] | null;
-  staff: Staff[] | null;
-  tasks: Task[] | null;
-  supplies: Supply[] | null;
-  productiveUnits: ProductiveUnit[] | null;
-  transactions: Transaction[] | null;
-  supplyUsages: SupplyUsage[] | null;
+  lots: Lot[];
+  staff: Staff[];
+  tasks: Task[];
+  supplies: Supply[];
+  productiveUnits: ProductiveUnit[];
+  transactions: Transaction[];
+  supplyUsages: SupplyUsage[];
   user: User | null;
   isLoading: boolean;
   firestore: ReturnType<typeof useFirebase>['firestore'];
