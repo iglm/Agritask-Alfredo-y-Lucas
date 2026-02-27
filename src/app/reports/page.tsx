@@ -38,7 +38,7 @@ export default function ReportsPage() {
         <FinancialTrendsChart transactions={transactions} tasks={tasks} />
         <ProfitabilityByLotChart lots={lots} tasks={tasks} transactions={transactions} />
         <WorkerPerformanceChart staff={staff} tasks={tasks} />
-        <InvestmentChart lots={lots} tasks={tasks} />
+        <InvestmentChart lots={lots} tasks={tasks} supplies={supplies} />
         <TasksDistributionChart tasks={tasks} />
         <SupplyConsumptionChart supplies={supplies} supplyUsages={supplyUsages} />
         <SupplyUsageByLotReport lots={lots} tasks={tasks} supplies={supplies} supplyUsages={supplyUsages} />
