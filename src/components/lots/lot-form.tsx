@@ -8,6 +8,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Lot, ProductiveUnit } from "@/lib/types"
+import { lotTypes } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
 import { format, isValid, parseISO } from "date-fns"
@@ -20,7 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 const lotFormSchema = z.object({
   productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  crop: z.string().min(2, { message: "Debes especificar el cultivo principal del lote." }),
+  type: z.enum(lotTypes, { required_error: "Debe seleccionar un tipo de lote."}),
+  crop: z.string().optional(),
+  variety: z.string().optional(),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
   location: z.string().optional(),
   soilType: z.string().optional(),
@@ -30,10 +33,18 @@ const lotFormSchema = z.object({
   distanceBetweenPlants: z.coerce.number().optional(),
   distanceBetweenRows: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
+  accumulatedMortality: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
 }).refine(data => {
+    if (data.type === 'Productivo' && !data.crop) {
+        return false;
+    }
+    return true;
+}, {
+    message: "El cultivo es obligatorio para lotes productivos.",
+    path: ["crop"],
+}).refine(data => {
     if (data.totalTrees && data.areaHectares && data.sowingDensity) {
-        // Allow a small tolerance for rounding issues
         return data.totalTrees <= (data.areaHectares * data.sowingDensity) + 1;
     }
     return true;
@@ -76,7 +87,9 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
     defaultValues: {
       productiveUnitId: lot?.productiveUnitId ?? "",
       name: lot?.name ?? "",
+      type: lot?.type ?? "Productivo",
       crop: lot?.crop ?? "",
+      variety: lot?.variety ?? "",
       areaHectares: lot?.areaHectares ?? undefined,
       location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
@@ -84,6 +97,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
       distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
       distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
       totalTrees: lot?.totalTrees ?? undefined,
+      accumulatedMortality: lot?.accumulatedMortality ?? undefined,
       technicalNotes: lot?.technicalNotes ?? "",
       soilType: lot?.soilType ?? "",
       phAverage: lot?.phAverage ?? undefined,
@@ -94,6 +108,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
   const distanceBetweenPlants = watch('distanceBetweenPlants');
   const distanceBetweenRows = watch('distanceBetweenRows');
   const areaHectares = watch('areaHectares');
+  const lotType = watch('type');
 
   useEffect(() => {
     if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
@@ -109,11 +124,6 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
   const onSubmit = (values: LotFormValues) => {
     const dataToSubmit = {
       ...values,
-      productiveUnitId: values.productiveUnitId,
-      name: values.name,
-      crop: values.crop,
-      areaHectares: values.areaHectares,
-      location: values.location,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
     };
     handleOnSubmit(dataToSubmit);
@@ -160,19 +170,189 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             />
             <FormField
                 control={form.control}
-                name="crop"
+                name="type"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Cultivo Principal</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ej: Café" {...field} />
-                    </FormControl>
-                     <FormDescription>El cultivo principal de este lote.</FormDescription>
+                    <FormLabel>Tipo de Lote</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un tipo" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            {lotTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                     </FormItem>
                 )}
             />
         </div>
+        
+        {lotType === 'Productivo' && (
+            <div className="space-y-6 p-4 border rounded-md">
+                 <h3 className="text-sm font-medium text-muted-foreground">Datos de Lote Productivo</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="crop"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Cultivo Principal</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ej: Café" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="variety"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Variedad (Opcional)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ej: Castillo" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="soilType"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Ej: Franco-arcilloso" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phAverage"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>pH Promedio (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="sowingDate"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Fecha de siembra</FormLabel>
+                        <Popover modal={true}>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            locale={es}
+                            captionLayout="dropdown-buttons"
+                            fromYear={new Date().getFullYear() - 50}
+                            toYear={new Date().getFullYear() + 5}
+                            />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="distanceBetweenPlants"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Distancia entre Plantas (m)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="distanceBetweenRows"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Distancia entre Surcos (m)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                </div>
+                <FormField
+                control={form.control}
+                name="sowingDensity"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
+                    <FormControl>
+                        <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
+                    </FormControl>
+                    <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="totalTrees"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel># Árboles del Lote</FormLabel>
+                        <FormControl>
+                            <Input type="number" {...field} readOnly value={field.value ?? ''} />
+                        </FormControl>
+                        <FormDescription>Calculado del área y densidad.</FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="accumulatedMortality"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Mortalidad Acumulada</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="Ej: 50" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                             <FormDescription># de árboles muertos.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+            </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -194,130 +374,14 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
               <FormItem>
                 <FormLabel>Ubicación (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ej: Vereda El Placer" {...field} />
+                  <Input placeholder="Ej: Vereda El Placer" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="soilType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej: Franco-arcilloso" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phAverage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>pH Promedio (Opcional)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-         <FormField
-            control={form.control}
-            name="sowingDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fecha de siembra</FormLabel>
-                <Popover modal={true}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      locale={es}
-                      captionLayout="dropdown-buttons"
-                      fromYear={new Date().getFullYear() - 50}
-                      toYear={new Date().getFullYear() + 5}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="distanceBetweenPlants"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Distancia entre Plantas (m)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="distanceBetweenRows"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Distancia entre Surcos (m)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="sowingDensity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
-              <FormControl>
-                <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
-              </FormControl>
-              <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="totalTrees"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel># Árboles del Lote</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} readOnly value={field.value ?? ''} />
-              </FormControl>
-              <FormDescription>Se calcula del área y la densidad. Límite: (Área * Densidad).</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="technicalNotes"
@@ -325,7 +389,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             <FormItem>
               <FormLabel>Notas Técnicas</FormLabel>
               <FormControl>
-                <Textarea placeholder="Ej: Tipo de suelo, detalles de riego..." {...field} />
+                <Textarea placeholder="Ej: Tipo de suelo, detalles de riego..." {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -42,9 +42,21 @@
           "type": "string",
           "description": "The ID of the productive unit this lot belongs to."
         },
+        "type": {
+          "type": "string",
+          "description": "The type of the lot, either productive or for support.",
+          "enum": [
+            "Productivo",
+            "Soporte"
+          ]
+        },
         "crop": {
           "type": "string",
           "description": "The primary crop grown in this lot (e.g., Café, Aguacate)."
+        },
+        "variety": {
+          "type": "string",
+          "description": "The specific variety of the crop, if applicable."
         },
         "name": {
           "type": "string",
@@ -83,6 +95,10 @@
           "type": "number",
           "description": "Número total de árboles en el lote."
         },
+        "accumulatedMortality": {
+          "type": "number",
+          "description": "The accumulated number of dead plants/trees."
+        },
         "soilType": {
           "type": "string",
           "description": "Tipo de suelo del lote."
@@ -97,7 +113,7 @@
         "name",
         "areaHectares",
         "productiveUnitId",
-        "crop"
+        "type"
       ]
     },
     "SubLot": {

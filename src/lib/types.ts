@@ -4,12 +4,16 @@ export type UserProfile = {
   name?: string;
 };
 
+export const lotTypes = ["Productivo", "Soporte"] as const;
+
 export type Lot = {
   id: string;
   userId?: string;
   productiveUnitId: string;
   name: string;
-  crop: string;
+  type: (typeof lotTypes)[number];
+  crop?: string;
+  variety?: string;
   areaHectares: number;
   location?: string;
   technicalNotes?: string;
@@ -18,6 +22,7 @@ export type Lot = {
   distanceBetweenPlants?: number;
   distanceBetweenRows?: number;
   totalTrees?: number;
+  accumulatedMortality?: number;
   soilType?: string;
   phAverage?: number;
 };
