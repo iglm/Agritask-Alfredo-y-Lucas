@@ -116,9 +116,6 @@ export default function SuppliesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" disabled>
-              <Upload className="mr-2 h-4 w-4" /> Importar
-            </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
