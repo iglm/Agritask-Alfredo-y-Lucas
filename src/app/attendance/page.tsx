@@ -15,9 +15,10 @@ import { AttendanceList } from "@/components/attendance/attendance-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceReportGenerator } from "@/components/attendance/attendance-report-generator";
 import { PrintableAttendanceSheet } from "@/components/attendance/printable-attendance-sheet";
+import { PayrollReportGenerator } from "@/components/attendance/payroll-report-generator";
 
 export default function AttendancePage() {
-  const { staff, productiveUnits, isLoading: isAppLoading } = useAppData();
+  const { staff, productiveUnits, tasks, isLoading: isAppLoading } = useAppData();
   const [date, setDate] = useState<Date>();
 
   useEffect(() => {
@@ -50,9 +51,10 @@ export default function AttendancePage() {
         </PageHeader>
         
         <Tabs defaultValue="daily-log" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="daily-log">Registro Diario</TabsTrigger>
             <TabsTrigger value="reports">Reportes</TabsTrigger>
+            <TabsTrigger value="payroll">Pre-Nómina</TabsTrigger>
           </TabsList>
           <TabsContent value="daily-log" className="mt-6">
               <div className="flex justify-end mb-4">
@@ -91,6 +93,9 @@ export default function AttendancePage() {
           </TabsContent>
           <TabsContent value="reports" className="mt-6">
               <AttendanceReportGenerator staff={staff} />
+          </TabsContent>
+          <TabsContent value="payroll" className="mt-6">
+            <PayrollReportGenerator staff={staff} tasks={tasks} />
           </TabsContent>
         </Tabs>
       </div>
