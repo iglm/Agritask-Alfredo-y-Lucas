@@ -17,6 +17,7 @@ import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const lotFormSchema = z.object({
   productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
@@ -132,269 +133,283 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 max-h-[80vh] overflow-y-auto pr-4">
-        <FormField
-          control={form.control}
-          name="productiveUnitId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Unidad Productiva</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona la unidad a la que pertenece este lote" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {productiveUnits.map(unit => (
-                    <SelectItem key={unit.id} value={unit.id}>{unit.farmName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Nombre del Lote</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ej: El Manantial" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Tipo de Lote</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un tipo" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {lotTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
-        
-        {lotType === 'Productivo' && (
-            <div className="space-y-6 p-4 border rounded-md">
-                 <h3 className="text-sm font-medium text-muted-foreground">Datos de Lote Productivo</h3>
-                 <div className="grid grid-cols-2 gap-4">
-                     <FormField
-                        control={form.control}
-                        name="crop"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Cultivo Principal</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Ej: Café" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <Accordion type="multiple" defaultValue={['item-1', 'item-2', lot?.type === 'Productivo' ? 'item-3' : '']} className="w-full">
+            <AccordionItem value="item-1">
+                <AccordionTrigger>1. Información Principal</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
                     <FormField
-                        control={form.control}
-                        name="variety"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Variedad (Opcional)</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Ej: Castillo" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="soilType"
-                        render={({ field }) => (
+                      control={form.control}
+                      name="productiveUnitId"
+                      render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
+                          <FormLabel>Unidad Productiva</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                            <Input placeholder="Ej: Franco-arcilloso" {...field} value={field.value ?? ''} />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona la unidad a la que pertenece este lote" />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
+                            <SelectContent>
+                              {productiveUnits.map(unit => (
+                                <SelectItem key={unit.id} value={unit.id}>{unit.farmName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
-                        )}
+                      )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="phAverage"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>pH Promedio (Opcional)</FormLabel>
-                            <FormControl>
-                            <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-                <FormField
-                    control={form.control}
-                    name="sowingDate"
-                    render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                        <FormLabel>Fecha de siembra</FormLabel>
-                        <Popover modal={true}>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                            locale={es}
-                            captionLayout="dropdown-buttons"
-                            fromYear={new Date().getFullYear() - 50}
-                            toYear={new Date().getFullYear() + 5}
-                            />
-                        </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="distanceBetweenPlants"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Distancia entre Plantas (m)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="distanceBetweenRows"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Distancia entre Surcos (m)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                </div>
-                <FormField
-                control={form.control}
-                name="sowingDensity"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
-                    </FormControl>
-                    <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                    control={form.control}
-                    name="totalTrees"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel># Árboles del Lote</FormLabel>
-                        <FormControl>
-                            <Input type="number" {...field} readOnly value={field.value ?? ''} />
-                        </FormControl>
-                        <FormDescription>Calculado del área y densidad.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="accumulatedMortality"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Mortalidad Acumulada</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="Ej: 50" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                             <FormDescription># de árboles muertos.</FormDescription>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-            </div>
-        )}
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Nombre del Lote</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ej: El Manantial" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Tipo de Lote</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un tipo" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {lotTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="areaHectares"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Área (Hectáreas)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="any" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+            <AccordionItem value="item-2">
+                <AccordionTrigger>2. Datos Generales y Ubicación</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                     <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="areaHectares"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Área (Hectáreas)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="any" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ubicación (Opcional)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ej: Vereda El Placer" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="technicalNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notas Técnicas</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Ej: Tipo de suelo, detalles de riego..." {...field} value={field.value ?? ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </AccordionContent>
+            </AccordionItem>
+            
+            {lotType === 'Productivo' && (
+                <AccordionItem value="item-3">
+                    <AccordionTrigger>3. Detalles de Siembra y Cultivo</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="crop"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Cultivo Principal</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: Café" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="variety"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Variedad (Opcional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Ej: Castillo" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="soilType"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Tipo de Suelo (Opcional)</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="Ej: Franco-arcilloso" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phAverage"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>pH Promedio (Opcional)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="sowingDate"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Fecha de siembra</FormLabel>
+                                <Popover modal={true}>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                        {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elige una fecha</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    locale={es}
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={new Date().getFullYear() - 50}
+                                    toYear={new Date().getFullYear() + 5}
+                                    />
+                                </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="distanceBetweenPlants"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Distancia entre Plantas (m)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="distanceBetweenRows"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Distancia entre Surcos (m)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="sowingDensity"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
+                                </FormControl>
+                                <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                            control={form.control}
+                            name="totalTrees"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel># Árboles del Lote</FormLabel>
+                                <FormControl>
+                                    <Input type="number" {...field} readOnly value={field.value ?? ''} />
+                                </FormControl>
+                                <FormDescription>Calculado del área y densidad.</FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="accumulatedMortality"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Mortalidad Acumulada</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="Ej: 50" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormDescription># de árboles muertos.</FormDescription>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
             )}
-          />
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ubicación (Opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej: Vereda El Placer" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        </Accordion>
         
-        <FormField
-          control={form.control}
-          name="technicalNotes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notas Técnicas</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Ej: Tipo de suelo, detalles de riego..." {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <Button type="submit" className="w-full">{lot ? "Actualizar Lote" : "Crear Lote"}</Button>
       </form>
     </Form>
