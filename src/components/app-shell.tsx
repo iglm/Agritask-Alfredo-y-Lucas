@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, Bot, WifiOff } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, WifiOff } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -38,10 +38,9 @@ const managementNavItems = [
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
 ];
-const assistantNavItem = { href: '/assistant', label: 'Asistente IA', icon: Bot };
 const reportsNavItem = { href: '/reports', label: 'Reportes', icon: LayoutDashboard };
 const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
-const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, assistantNavItem, reportsNavItem, legalNavItem];
+const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
 function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
@@ -169,21 +168,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-            <SidebarSeparator className='my-1' />
-            <SidebarMenu>
-                <SidebarMenuItem>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(assistantNavItem.href)}
-                    tooltip={{ children: assistantNavItem.label }}
-                  >
-                    <Link href={assistantNavItem.href}>
-                      <assistantNavItem.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{assistantNavItem.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
             </SidebarMenu>
             <SidebarSeparator className='my-1' />
              <SidebarMenu>

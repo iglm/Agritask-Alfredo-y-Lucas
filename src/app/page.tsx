@@ -58,7 +58,7 @@ export default function DashboardPage() {
       firestore, 
       user,
       { lots, staff, tasks, supplies, productiveUnits, transactions },
-      toast
+      toast as any
     );
     setIsExporting(false);
   };
