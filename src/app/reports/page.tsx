@@ -10,6 +10,7 @@ import { TasksDistributionChart } from "@/components/dashboard/tasks-distributio
 import { Skeleton } from "@/components/ui/skeleton";
 import { SupplyConsumptionChart } from "@/components/dashboard/SupplyConsumptionChart";
 import { SupplyUsageByLotReport } from "@/components/reports/SupplyUsageByLotReport";
+import { SupportCostsBreakdownChart } from "@/components/dashboard/SupportCostsBreakdownChart";
 
 export default function ReportsPage() {
   const { lots, tasks, transactions, staff, supplies, supplyUsages, isLoading } = useAppData();
@@ -19,6 +20,7 @@ export default function ReportsPage() {
       <div>
         <PageHeader title="Reportes y Análisis" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[380px]" />
           <Skeleton className="h-[380px]" />
           <Skeleton className="h-[380px]" />
           <Skeleton className="h-[380px]" />
@@ -35,12 +37,13 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <PageHeader title="Reportes y Análisis" />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <FinancialTrendsChart transactions={transactions} tasks={tasks} />
+        <FinancialTrendsChart transactions={transactions} tasks={tasks} lots={lots} />
         <ProfitabilityByLotChart lots={lots} tasks={tasks} transactions={transactions} />
         <WorkerPerformanceChart staff={staff} tasks={tasks} />
         <InvestmentChart lots={lots} tasks={tasks} supplies={supplies} />
         <TasksDistributionChart tasks={tasks} />
         <SupplyConsumptionChart supplies={supplies} supplyUsages={supplyUsages} />
+        <SupportCostsBreakdownChart lots={lots} tasks={tasks} transactions={transactions} />
         <SupplyUsageByLotReport lots={lots} tasks={tasks} supplies={supplies} supplyUsages={supplyUsages} />
       </div>
     </div>

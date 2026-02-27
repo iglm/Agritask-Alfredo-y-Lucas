@@ -2,7 +2,7 @@
 
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Transaction, Task } from "@/lib/types"
+import { Transaction, Task, Lot } from "@/lib/types"
 import { useMemo } from "react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -10,40 +10,55 @@ import { es } from "date-fns/locale"
 type FinancialTrendsChartProps = {
   transactions: Transaction[];
   tasks: Task[];
+  lots: Lot[];
 };
 
-export function FinancialTrendsChart({ transactions, tasks }: FinancialTrendsChartProps) {
+export function FinancialTrendsChart({ transactions, tasks, lots }: FinancialTrendsChartProps) {
   const chartData = useMemo(() => {
-    const monthlyData: { [key: string]: { month: string, ingresos: number, egresos: number } } = {};
+    const lotTypeMap = new Map(lots.map(lot => [lot.id, lot.type]));
+    const monthlyData: { [key: string]: { month: string, ingresos: number, costosProductivos: number, costosSoporte: number } } = {};
 
     // Process transactions
     transactions.forEach(t => {
       const month = format(parseISO(t.date), 'yyyy-MM');
       if (!monthlyData[month]) {
-        monthlyData[month] = { month: format(parseISO(t.date), 'MMM yyyy', {locale: es}), ingresos: 0, egresos: 0 };
+        monthlyData[month] = { month: format(parseISO(t.date), 'MMM yyyy', {locale: es}), ingresos: 0, costosProductivos: 0, costosSoporte: 0 };
       }
       if (t.type === 'Ingreso') {
         monthlyData[month].ingresos += t.amount;
-      } else {
-        monthlyData[month].egresos += t.amount;
+      } else { // Egreso
+        if (t.lotId) {
+            const lotType = lotTypeMap.get(t.lotId);
+            if (lotType === 'Productivo') {
+                monthlyData[month].costosProductivos += t.amount;
+            } else { // Soporte or undefined lot
+                monthlyData[month].costosSoporte += t.amount;
+            }
+        } else { // General expense
+            monthlyData[month].costosSoporte += t.amount;
+        }
       }
     });
 
-    // Process task costs as expenses
+    // Process task costs
     tasks.forEach(task => {
-        // only count finished progress
-        const taskExpense = task.actualCost;
-        if(taskExpense > 0) {
+        const taskCost = task.actualCost;
+        if(taskCost > 0) {
             const month = format(parseISO(task.startDate), 'yyyy-MM');
              if (!monthlyData[month]) {
-                monthlyData[month] = { month: format(parseISO(task.startDate), 'MMM yyyy', {locale: es}), ingresos: 0, egresos: 0 };
+                monthlyData[month] = { month: format(parseISO(task.startDate), 'MMM yyyy', {locale: es}), ingresos: 0, costosProductivos: 0, costosSoporte: 0 };
             }
-            monthlyData[month].egresos += taskExpense;
+            const lotType = lotTypeMap.get(task.lotId);
+            if (lotType === 'Productivo') {
+                monthlyData[month].costosProductivos += taskCost;
+            } else { // Soporte or undefined
+                monthlyData[month].costosSoporte += taskCost;
+            }
         }
     });
 
     return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
-  }, [transactions, tasks]);
+  }, [transactions, tasks, lots]);
 
   if (chartData.length === 0) {
     return (
@@ -63,7 +78,7 @@ export function FinancialTrendsChart({ transactions, tasks }: FinancialTrendsCha
     <Card>
       <CardHeader>
         <CardTitle>Tendencias Financieras</CardTitle>
-        <CardDescription>Ingresos vs. Egresos a lo largo del tiempo</CardDescription>
+        <CardDescription>Análisis mensual de ingresos vs. costos productivos y de soporte.</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -81,8 +96,9 @@ export function FinancialTrendsChart({ transactions, tasks }: FinancialTrendsCha
                formatter={(value: number) => `$${value.toLocaleString()}`}
             />
             <Legend wrapperStyle={{fontSize: "14px"}}/>
-            <Line type="monotone" dataKey="ingresos" stroke="hsl(var(--chart-1))" name="Ingresos" strokeWidth={2} />
-            <Line type="monotone" dataKey="egresos" stroke="hsl(var(--chart-4))" name="Egresos" strokeWidth={2} />
+            <Line type="monotone" dataKey="ingresos" name="Ingresos" stroke="hsl(var(--chart-1))" strokeWidth={2} />
+            <Line type="monotone" dataKey="costosProductivos" name="Costos Productivos" stroke="hsl(var(--chart-4))" strokeWidth={2} />
+            <Line type="monotone" dataKey="costosSoporte" name="Costos de Soporte" stroke="hsl(var(--chart-2))" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

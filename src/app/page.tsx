@@ -2,7 +2,7 @@
 
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { useAppData } from "@/firebase";
-import { Tractor, TrendingUp, TrendingDown, Scale, Download, Loader2 } from "lucide-react";
+import { Tractor, TrendingUp, TrendingDown, Scale, Download, Loader2, HardHat } from "lucide-react";
 import { useMemo, useState } from "react";
 import { UpcomingTasks } from "@/components/dashboard/upcoming-tasks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,29 +22,61 @@ export default function DashboardPage() {
   const { 
     totalLots, 
     totalIncome, 
-    totalExpenses, 
-    netBalance 
+    productiveCosts,
+    supportCosts,
   } = useMemo(() => {
     if (isLoading || !lots || !tasks || !transactions) {
-      return { totalLots: 0, totalIncome: 0, totalExpenses: 0, netBalance: 0 };
+      return { totalLots: 0, totalIncome: 0, productiveCosts: 0, supportCosts: 0 };
     }
     
+    const lotTypeMap = new Map(lots.map(lot => [lot.id, lot.type]));
     const totalLotsCount = lots.length;
 
     const totalIncome = transactions
       .filter(t => t.type === 'Ingreso')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalTaskCost = tasks.reduce((sum, task) => sum + task.actualCost, 0);
-    const totalExplicitExpenses = transactions
-      .filter(t => t.type === 'Egreso')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    // El costo total es la suma de los costos de las labores (que ya incluyen insumos) y los egresos explícitos.
-    const totalExpenses = totalTaskCost + totalExplicitExpenses;
-    const netBalance = totalIncome - totalExpenses;
+    let productiveTaskCost = 0;
+    let supportTaskCost = 0;
 
-    return { totalLots: totalLotsCount, totalIncome, totalExpenses, netBalance };
+    tasks.forEach(task => {
+        const lotType = lotTypeMap.get(task.lotId);
+        if (lotType === 'Productivo') {
+            productiveTaskCost += task.actualCost;
+        } else { // Soporte o lotes sin tipo definido (antiguos) se consideran soporte
+            supportTaskCost += task.actualCost;
+        }
+    });
+
+    let productiveExplicitExpenses = 0;
+    let supportExplicitExpenses = 0;
+    let generalExplicitExpenses = 0;
+
+    transactions
+      .filter(t => t.type === 'Egreso')
+      .forEach(exp => {
+        if (exp.lotId) {
+            const lotType = lotTypeMap.get(exp.lotId);
+            if (lotType === 'Productivo') {
+                productiveExplicitExpenses += exp.amount;
+            } else { // Soporte o lotes sin tipo definido
+                supportExplicitExpenses += exp.amount;
+            }
+        } else {
+            // Los gastos generales/administrativos se consideran costos de soporte.
+            generalExplicitExpenses += exp.amount;
+        }
+    });
+    
+    const finalProductiveCosts = productiveTaskCost + productiveExplicitExpenses;
+    const finalSupportCosts = supportTaskCost + supportExplicitExpenses + generalExplicitExpenses;
+
+    return { 
+        totalLots: totalLotsCount, 
+        totalIncome, 
+        productiveCosts: finalProductiveCosts,
+        supportCosts: finalSupportCosts,
+    };
   }, [lots, tasks, transactions, isLoading]);
 
   const onExport = async () => {
@@ -58,7 +90,7 @@ export default function DashboardPage() {
       firestore, 
       user,
       { lots, staff, tasks, supplies, productiveUnits, transactions },
-      toast as any
+      toast
     );
     setIsExporting(false);
   };
@@ -99,19 +131,19 @@ export default function DashboardPage() {
         <KpiCard
           title="Ingresos Totales"
           value={`$${totalIncome.toLocaleString()}`}
-          icon={<TrendingUp className="h-6 w-6 text-success" />}
+          icon={<TrendingUp className="h-6 w-6 text-green-500" />}
           href="/financials"
         />
         <KpiCard
-          title="Egresos Totales"
-          value={`$${totalExpenses.toLocaleString()}`}
+          title="Costos Productivos"
+          value={`$${productiveCosts.toLocaleString()}`}
           icon={<TrendingDown className="h-6 w-6 text-destructive" />}
           href="/financials"
         />
         <KpiCard
-          title="Balance Neto"
-          value={`$${netBalance.toLocaleString()}`}
-          icon={<Scale className="h-6 w-6 text-primary" />}
+          title="Costos de Soporte"
+          value={`$${supportCosts.toLocaleString()}`}
+          icon={<HardHat className="h-6 w-6 text-amber-600" />}
           href="/financials"
         />
       </div>
