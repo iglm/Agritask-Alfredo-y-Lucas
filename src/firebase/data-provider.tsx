@@ -6,7 +6,7 @@ import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, SupplyUsage, Transact
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { User } from 'firebase/auth';
 
@@ -234,35 +234,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
             data.recurrenceInterval &&
             data.recurrenceInterval > 0
         ) {
-            const oldStartDate = new Date(data.startDate.replace(/-/g, '/'));
+            // It's better to use the end date of the completed task as the base for the next one, if available.
+            const baseDateString = data.endDate || data.startDate;
+            const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
+            
             let newStartDate: Date;
 
             switch (data.recurrenceFrequency) {
                 case 'días':
-                    newStartDate = addDays(oldStartDate, data.recurrenceInterval);
+                    newStartDate = addDays(baseDateForRecurrence, data.recurrenceInterval);
                     break;
                 case 'semanas':
-                    newStartDate = addWeeks(oldStartDate, data.recurrenceInterval);
+                    newStartDate = addWeeks(baseDateForRecurrence, data.recurrenceInterval);
                     break;
                 case 'meses':
-                    newStartDate = addMonths(oldStartDate, data.recurrenceInterval);
+                    newStartDate = addMonths(baseDateForRecurrence, data.recurrenceInterval);
                     break;
                 default:
                     console.error("Invalid recurrence frequency");
                     return;
             }
 
+            const { 
+                id, userId, endDate, status, progress, supplyCost, actualCost,
+                downtimeMinutes, harvestedQuantity, observations, dependsOn, ...restOfTaskData 
+            } = data;
+
             const nextTaskData: Omit<Task, 'id' | 'userId'> = {
-                ...data, // copy most properties
+                ...restOfTaskData, // Copies type, lotId, responsibleId, category, plannedJournals, plannedCost, etc.
                 startDate: format(newStartDate, 'yyyy-MM-dd'),
+                endDate: undefined,
                 status: 'Por realizar',
                 progress: 0,
                 supplyCost: 0,
                 actualCost: 0,
                 downtimeMinutes: 0,
                 harvestedQuantity: 0,
-                observations: '',
-                dependsOn: undefined, // A recurrent task shouldn't depend on the previous one.
+                observations: `Labor recurrente generada automáticamente.`,
+                dependsOn: undefined,
             };
 
             await addTask(nextTaskData);
