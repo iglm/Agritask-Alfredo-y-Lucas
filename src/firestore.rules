@@ -15,21 +15,19 @@ service cloud.firestore {
     }
 
     function isNewDocOwner() {
-      return request.resource.data.userId == request.auth.uid;
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
     
     function isExistingDocOwner() {
-      return resource.data.userId == request.auth.uid;
+      return isSignedIn() && resource.data.userId == request.auth.uid;
     }
     
     // ----------------------------------------------------------------------
     // User Profile Rules
     // ----------------------------------------------------------------------
     match /users/{userId} {
-      // Allow a user to create their own profile document.
-      allow create: if isSignedIn() && isOwner(userId);
-      // Allow a user to read and update their own profile.
-      allow get, update: if isSignedIn() && isOwner(userId);
+      // Allow a user to create, read and update their own profile document.
+      allow read, write: if isSignedIn() && isOwner(userId);
       // Disallow deleting profiles.
       allow delete: if false;
     }
@@ -38,15 +36,15 @@ service cloud.firestore {
     // Collection Group Rules for Cross-Collection Queries
     // ----------------------------------------------------------------------
     match /{path=**}/sublots/{sublotId} {
-      // This rule allows collection group queries on 'sublots'.
-      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
-      allow list: if isSignedIn();
+      // This rule allows collection group queries on 'sublots', but only
+      // if the query includes a 'where("userId", "==", request.auth.uid)' clause.
+      allow read: if isExistingDocOwner();
     }
 
     match /{path=**}/supplyUsages/{usageId} {
-      // This rule allows collection group queries on 'supplyUsages'.
-      // The client MUST use a 'where("userId", "==", request.auth.uid)' clause.
-      allow list: if isSignedIn();
+      // This rule allows collection group queries on 'supplyUsages', but only
+      // if the query includes a 'where("userId", "==", request.auth.uid)' clause.
+      allow read: if isExistingDocOwner();
     }
 
 
@@ -57,72 +55,71 @@ service cloud.firestore {
     match /lots/{lotId} {
       // Allow read/delete only if the user is the owner of the document.
       // List operation is allowed, but client-side queries MUST filter by userId.
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
       // Allow create if the new document has the creator's userId.
-      allow create: if isSignedIn() && isNewDocOwner();
+      allow create: if isNewDocOwner();
       // Allow update if the user owns the document and isn't changing the owner.
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
 
+      // This is for direct access to a sublot, not for collection group queries.
       match /sublots/{sublotId} {
-        // This rule is for direct GET requests, not for collection group queries.
-        allow get: if isSignedIn() && isExistingDocOwner();
-        // WRITE permissions for this specific path.
-        allow create: if isSignedIn() && isNewDocOwner();
-        allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
-        allow delete: if isSignedIn() && isExistingDocOwner();
+        allow write: if isNewDocOwner();
       }
     }
 
     match /staff/{staffId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
     }
     
     match /staffAttendance/{attendanceId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
     }
 
     match /tasks/{taskId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
       
+      // This is for direct access to a supply usage, not for collection group queries.
       match /supplyUsages/{usageId} {
-        // This rule is for direct GET requests, not for collection group queries.
-        allow get: if isSignedIn() && isExistingDocOwner();
-        // WRITE permissions for this specific path.
-        allow create: if isSignedIn() && isNewDocOwner();
-        allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
-        allow delete: if isSignedIn() && isExistingDocOwner();
+        allow write: if isNewDocOwner();
       }
     }
 
     match /productiveUnits/{unitId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
     }
 
     match /supplies/{supplyId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
     }
 
     match /transactions/{transactionId} {
-      allow get, delete: if isSignedIn() && isExistingDocOwner();
+      allow get, delete: if isExistingDocOwner();
       allow list: if isSignedIn();
-      allow create: if isSignedIn() && isNewDocOwner();
-      allow update: if isSignedIn() && isExistingDocOwner() && isNewDocOwner();
+      allow create: if isNewDocOwner();
+      allow update: if isExistingDocOwner() && isNewDocOwner();
+    }
+
+    match /system_logs/{logId} {
+      // Allow any signed-in user to write their own error logs.
+      allow create: if isNewDocOwner();
+      // Disallow reading or modifying logs from the client.
+      allow read, update, delete: if false; 
     }
   }
 }
