@@ -7,11 +7,9 @@ import { PageHeader } from "@/components/page-header";
 import { employmentTypes, type Staff } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Download, Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
@@ -116,17 +114,6 @@ export default function StaffPage() {
     setEditingStaff(undefined);
   };
 
-  const handleExport = () => {
-    if (filteredStaff.length > 0) {
-      exportToCsv(`colaboradores-${new Date().toISOString()}.csv`, filteredStaff);
-    } else {
-      toast({
-        title: "No hay datos para exportar",
-        description: "Filtra los datos que deseas exportar.",
-      });
-    }
-  };
-
   return (
     <div>
       <PageHeader title="Manejo de Colaboradores" actionButtonText="Agregar Colaborador" onActionButtonClick={handleAddStaff}>
@@ -148,9 +135,6 @@ export default function StaffPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Exportar
-            </Button>
         </div>
       </PageHeader>
       
@@ -194,3 +178,5 @@ export default function StaffPage() {
     </div>
   );
 }
+
+    

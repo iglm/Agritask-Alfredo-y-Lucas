@@ -6,16 +6,13 @@ import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Lot, SubLot } from "@/lib/types";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
-import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
-import { format } from "date-fns";
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore, user } = useAppData();
@@ -34,8 +31,7 @@ export default function LotsPage() {
 
   const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-
+  
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -185,74 +181,6 @@ export default function LotsPage() {
     }
   };
 
-  const handleExport = async () => {
-    if (!firestore || !user) {
-      toast({ variant: "destructive", title: "Error de autenticación", description: "Inicia sesión para exportar." });
-      return;
-    }
-    if (allLots && allLots.length > 0) {
-      setIsExporting(true);
-      try {
-        const lotsToExport = allLots.map(lot => ({
-            id: lot.id,
-            nombre: lot.name,
-            area_hectareas: lot.areaHectares,
-            ubicacion: lot.location,
-            fecha_siembra: lot.sowingDate,
-            densidad_siembra: lot.sowingDensity,
-            arboles_totales: lot.totalTrees,
-            tipo: 'Lote Principal',
-            lote_padre: ''
-        }));
-        
-        // Efficiently fetch all sublots for the user in one go
-        const allSublotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
-        const sublotsSnapshot = await getDocs(allSublotsQuery);
-        const parentLotNames = new Map(allLots.map(lot => [lot.id, lot.name]));
-
-        const sublotsToExport = sublotsSnapshot.docs.map(doc => {
-            const subLot = doc.data() as SubLot;
-            const parentLot = allLots.find(l => l.id === subLot.lotId);
-            return {
-                id: subLot.id,
-                nombre: subLot.name,
-                area_hectareas: subLot.areaHectares,
-                ubicacion: parentLot?.location || 'N/A', // Inherits from parent
-                fecha_siembra: subLot.sowingDate,
-                densidad_siembra: subLot.sowingDensity,
-                arboles_totales: subLot.totalTrees,
-                tipo: 'Sub-Lote',
-                lote_padre: parentLotNames.get(subLot.lotId) || ''
-            };
-        });
-
-        const dataToExport = [...lotsToExport, ...sublotsToExport];
-        if (dataToExport.length > 0) {
-            exportToCsv(`lotes-y-sublotes-${new Date().toISOString()}.csv`, dataToExport);
-        } else {
-            toast({
-                title: "No hay datos para exportar",
-                description: "No se encontraron lotes ni sub-lotes.",
-            });
-        }
-      } catch (error) {
-        console.error("Error al exportar lotes:", error);
-        toast({
-            variant: "destructive",
-            title: "Error al exportar",
-            description: "No se pudieron obtener los datos para la exportación.",
-        });
-      } finally {
-        setIsExporting(false);
-      }
-    } else {
-        toast({
-            title: "No hay datos para exportar",
-            description: "No hay lotes para exportar.",
-        });
-    }
-  };
-
   return (
     <div>
       <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Nuevo Lote" onActionButtonClick={handleAddLot}>
@@ -263,10 +191,6 @@ export default function LotsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
-              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              Exportar
-            </Button>
         </div>
       </PageHeader>
       
@@ -351,3 +275,5 @@ export default function LotsPage() {
     </div>
   );
 }
+
+    

@@ -6,11 +6,9 @@ import { SupplyForm } from "@/components/supplies/supply-form";
 import { PageHeader } from "@/components/page-header";
 import { supplyUnits, type Supply } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
@@ -95,17 +93,6 @@ export default function SuppliesPage() {
     setEditingSupply(undefined);
   };
 
-  const handleExport = () => {
-    if (filteredSupplies.length > 0) {
-      exportToCsv(`insumos-${new Date().toISOString()}.csv`, filteredSupplies);
-    } else {
-      toast({
-        title: "No hay datos para exportar",
-        description: "Filtra los datos que deseas exportar.",
-      });
-    }
-  };
-
   return (
     <div>
       <PageHeader title="Gestión de Insumos" actionButtonText="Agregar Insumo" onActionButtonClick={handleAddSupply}>
@@ -116,9 +103,6 @@ export default function SuppliesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
             />
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Exportar
-            </Button>
         </div>
       </PageHeader>
       
@@ -162,3 +146,5 @@ export default function SuppliesPage() {
     </div>
   );
 }
+
+    

@@ -9,10 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Download } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { exportToCsv } from "@/lib/csv";
 import { Input } from "@/components/ui/input";
 
 export default function TasksPage() {
@@ -108,22 +106,6 @@ export default function TasksPage() {
     setEditingTask(undefined);
   };
 
-  const handleExport = () => {
-    if (filteredTasks.length > 0) {
-      const dataToExport = filteredTasks.map(task => ({
-        ...task,
-        lotName: lots?.find(l => l.id === task.lotId)?.name || 'N/A',
-        responsibleName: staff?.find(s => s.id === task.responsibleId)?.name || 'N/A',
-      }));
-      exportToCsv(`labores-${new Date().toISOString()}.csv`, dataToExport);
-    } else {
-      toast({
-        title: "No hay datos para exportar",
-        description: "Filtra los datos que deseas exportar.",
-      })
-    }
-  };
-
   return (
     <div>
       <PageHeader title="Gestión de Labores" actionButtonText="Agregar Nueva Labor" onActionButtonClick={handleAddTask}>
@@ -145,9 +127,6 @@ export default function TasksPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" /> Exportar
-          </Button>
         </div>
       </PageHeader>
       
@@ -199,3 +178,5 @@ export default function TasksPage() {
     </div>
   );
 }
+
+    

@@ -3,10 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useAppData } from "@/firebase";
-import { Loader2, Trash2, Download } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -82,29 +81,9 @@ export default function FinancialsPage() {
     setEditingTransaction(undefined);
   };
 
-  const handleExport = () => {
-    if (sortedTransactions && sortedTransactions.length > 0) {
-      const dataToExport = sortedTransactions.map(transaction => ({
-        ...transaction,
-        lotName: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
-      }));
-      exportToCsv(`transacciones-${new Date().toISOString()}.csv`, dataToExport);
-    } else {
-      toast({
-        title: "No hay datos para exportar",
-      });
-    }
-  };
-
   return (
     <div>
-      <PageHeader title="Gestión Financiera" actionButtonText="Agregar Transacción" onActionButtonClick={handleAddTransaction}>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" /> Exportar
-            </Button>
-        </div>
-      </PageHeader>
+      <PageHeader title="Gestión Financiera" actionButtonText="Agregar Transacción" onActionButtonClick={handleAddTransaction} />
       
       {isLoading ? (
         <div className="flex justify-center items-center py-10">
@@ -157,3 +136,5 @@ export default function FinancialsPage() {
     </div>
   );
 }
+
+    
