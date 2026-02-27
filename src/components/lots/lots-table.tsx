@@ -155,9 +155,11 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                       <TableCell className="font-medium">
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                            <span>{lot.name}</span>
-                           <Badge variant="outline" className={cn("gap-1.5 w-fit", config.badgeClass)}>
-                             {config.icon} {lot.type}
-                           </Badge>
+                           {config && (
+                            <Badge variant="outline" className={cn("gap-1.5 w-fit", config.badgeClass)}>
+                                {config.icon} {lot.type}
+                            </Badge>
+                           )}
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
