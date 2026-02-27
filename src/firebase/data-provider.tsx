@@ -504,28 +504,54 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteProductiveUnit = async (id: string) => {
     if (!ensureAuth()) throw new Error("Not authenticated");
-    
-    const associatedLots = lots?.filter(lot => lot.productiveUnitId === id) || [];
-    if (associatedLots.length > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No se puede eliminar la unidad',
-        description: `Esta unidad tiene ${associatedLots.length} lote(s) asociado(s). Debes eliminarlos o reasignarlos primero.`,
-        duration: 6000,
-      });
-      throw new Error('Unit has associated lots.');
-    }
 
-    const docRef = doc(firestore, 'productiveUnits', id);
+    const unitRef = doc(firestore, 'productiveUnits', id);
+    const associatedLots = lots?.filter(lot => lot.productiveUnitId === id) || [];
+
     try {
-      await deleteDoc(docRef);
-      toast({
-        title: "Unidad Productiva eliminada",
-        description: "La unidad ha sido eliminada permanentemente.",
-      });
+        const batch = writeBatch(firestore);
+
+        // For each associated lot, add its deletion and its sub-data's deletion to the batch
+        for (const lot of associatedLots) {
+            const lotRef = doc(firestore, 'lots', lot.id);
+            
+            // 1. Delete sub-lots
+            const sublotsQuery = query(collection(firestore, 'lots', lot.id, 'sublots'));
+            const sublotsSnapshot = await getDocs(sublotsQuery);
+            sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            // 2. Process and delete tasks (and their subcollections)
+            const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
+            const tasksSnapshot = await getDocs(tasksQuery);
+            for (const taskDoc of tasksSnapshot.docs) {
+                const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
+                const usagesSnapshot = await getDocs(usagesQuery);
+                usagesSnapshot.forEach(usageDoc => batch.delete(usageDoc.ref));
+                batch.delete(taskDoc.ref);
+            }
+
+            // 3. Delete financial transactions associated with the lot
+            const transactionsQuery = query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
+            const transactionsSnapshot = await getDocs(transactionsQuery);
+            transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            // 4. Delete the lot itself
+            batch.delete(lotRef);
+        }
+
+        // 5. Finally, delete the productive unit
+        batch.delete(unitRef);
+        
+        await batch.commit();
+
+        toast({
+            title: "Unidad Productiva eliminada",
+            description: `La unidad y sus ${associatedLots.length} lotes asociados han sido eliminados.`,
+        });
+
     } catch (error) {
-      handleWriteError(error, docRef.path, 'delete');
-      throw error;
+      handleWriteError(error, unitRef.path, 'delete');
+      throw error; // Re-throw to be handled by the calling component if needed
     }
   };
 

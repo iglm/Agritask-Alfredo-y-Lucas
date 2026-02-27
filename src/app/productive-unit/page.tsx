@@ -40,10 +40,6 @@ export default function ProductiveUnitsPage() {
     if (!unitToDelete) return;
     try {
       await deleteProductiveUnit(unitToDelete.id);
-       toast({
-        title: "Unidad Productiva eliminada",
-        description: "La unidad ha sido eliminada permanentemente.",
-      });
     } catch (error) {
         // Error toast is handled by the provider, no need to show another one.
         console.error("Failed to delete productive unit:", error);
@@ -99,14 +95,14 @@ export default function ProductiveUnitsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente la unidad <span className="font-bold">{unitToDelete?.farmName}</span>.
+              Esta acción es irreversible. Se eliminará permanentemente la unidad <span className="font-bold">{unitToDelete?.farmName}</span> y todos los lotes, labores y finanzas que contiene.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
               <Trash2 className="mr-2 h-4 w-4" />
-              Sí, eliminar
+              Sí, eliminar todo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
