@@ -144,24 +144,37 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
         plannedCost = values.plannedJournals * responsible.baseDailyRate;
     }
 
-    // The actual cost in-app is an estimation based on labor progress.
     const actualCost = plannedCost * (progress / 100) + (task?.supplyCost || 0);
-
+    
     const { dependsOn, ...restOfValues } = values;
 
-    const fullTaskData: Omit<Task, 'id' | 'userId'> = {
+    // Create a mutable payload object
+    const dataPayload: Record<string, any> = {
       ...restOfValues,
-      dependsOn: dependsOn === 'none' ? undefined : dependsOn,
       startDate: format(values.startDate, 'yyyy-MM-dd'),
-      endDate: values.endDate ? format(values.endDate, 'yyyy-MM-dd') : undefined,
       progress,
       plannedCost,
-      supplyCost: task?.supplyCost || 0, // This is now managed by SupplyUsageManager
+      supplyCost: task?.supplyCost || 0,
       actualCost,
-      harvestedQuantity: values.harvestedQuantity,
-      plannedSupplies: values.plannedSupplies,
     };
-    onSubmit(fullTaskData);
+
+    // Conditionally add optional fields
+    if (dependsOn && dependsOn !== 'none') {
+      dataPayload.dependsOn = dependsOn;
+    }
+    if (values.endDate) {
+      dataPayload.endDate = format(values.endDate, 'yyyy-MM-dd');
+    }
+
+    // Firestore does not support 'undefined'. We must remove keys with this value.
+    // Also remove empty strings for optional fields.
+    for (const key in dataPayload) {
+      if (dataPayload[key] === undefined || dataPayload[key] === '') {
+        delete dataPayload[key];
+      }
+    }
+
+    onSubmit(dataPayload as Omit<Task, 'id' | 'userId'>);
   }
 
   return (
