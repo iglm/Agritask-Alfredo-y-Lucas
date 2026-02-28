@@ -24,7 +24,6 @@ const lotFormSchema = z.object({
   crop: z.string().optional(),
   variety: z.string().optional(),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
-  location: z.string().optional(),
   soilType: z.string().optional(),
   phAverage: z.coerce.number().optional(),
   sowingDate: z.date().optional(),
@@ -81,7 +80,6 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
       areaHectares: lot?.areaHectares ?? undefined,
-      location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
       sowingDensity: lot?.sowingDensity ?? undefined,
       distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
@@ -113,12 +111,21 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
 
   const onSubmit = (values: LotFormValues) => {
     const type = values.crop && values.crop.length > 0 ? 'Productivo' : 'Soporte';
-    const dataToSubmit = {
+    
+    const dataPayload: Record<string, any> = {
       ...values,
       type,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
     };
-    handleOnSubmit(dataToSubmit);
+    
+    // Firestore does not support 'undefined'. We must remove keys with this value.
+    for (const key in dataPayload) {
+      if (dataPayload[key] === undefined) {
+        delete dataPayload[key];
+      }
+    }
+
+    handleOnSubmit(dataPayload as Omit<Lot, 'id' | 'userId'>);
   }
 
   return (
@@ -198,8 +205,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             <AccordionItem value="item-2">
                 <AccordionTrigger>2. Datos Generales y Ubicación</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
-                     <div className="grid grid-cols-2 gap-4">
-                      <FormField
+                     <FormField
                         control={form.control}
                         name="areaHectares"
                         render={({ field }) => (
@@ -212,20 +218,6 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Ubicación (Opcional)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ej: Vereda El Placer" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
                     
                     <FormField
                       control={form.control}
