@@ -30,15 +30,15 @@ const OptimizationSuggestionSchema = z.object({
     severity: z.enum(["Alta", "Media", "Baja"]).describe("The priority of the suggestion. 'Alta' for critical imbalances or shortages, 'Baja' for minor tweaks."),
     action: z.union([
         z.object({
-            type: z.literal('reassignTask'),
+            type: z.enum(['reassignTask']),
             payload: ReassignTaskPayloadSchema,
         }),
         z.object({
-            type: z.literal('createPurchaseOrder'),
+            type: z.enum(['createPurchaseOrder']),
             payload: CreatePurchaseOrderPayloadSchema,
         }),
         z.object({
-            type: z.literal('informational'),
+            type: z.enum(['informational']),
             payload: z.object({
                 details: z.string().optional().describe("Any extra detail for the informational suggestion.")
             }),
