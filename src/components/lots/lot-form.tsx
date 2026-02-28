@@ -8,7 +8,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Lot, ProductiveUnit } from "@/lib/types"
-import { lotTypes } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
 import { format, isValid, parseISO } from "date-fns"
@@ -22,7 +21,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 const lotFormSchema = z.object({
   productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  type: z.enum(lotTypes, { required_error: "Debe seleccionar un tipo de lote."}),
   crop: z.string().optional(),
   variety: z.string().optional(),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
@@ -36,14 +34,6 @@ const lotFormSchema = z.object({
   totalTrees: z.coerce.number().optional(),
   accumulatedMortality: z.coerce.number().optional(),
   technicalNotes: z.string().optional(),
-}).refine(data => {
-    if (data.type === 'Productivo' && !data.crop) {
-        return false;
-    }
-    return true;
-}, {
-    message: "El cultivo es obligatorio para lotes productivos.",
-    path: ["crop"],
 }).refine(data => {
     if (data.totalTrees && data.areaHectares && data.sowingDensity) {
         return data.totalTrees <= (data.areaHectares * data.sowingDensity) + 1;
@@ -88,7 +78,6 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
     defaultValues: {
       productiveUnitId: lot?.productiveUnitId ?? "",
       name: lot?.name ?? "",
-      type: lot?.type ?? "Productivo",
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
       areaHectares: lot?.areaHectares ?? undefined,
@@ -109,7 +98,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
   const distanceBetweenPlants = watch('distanceBetweenPlants');
   const distanceBetweenRows = watch('distanceBetweenRows');
   const areaHectares = watch('areaHectares');
-  const lotType = watch('type');
+  const cropValue = watch('crop');
 
   useEffect(() => {
     if (distanceBetweenPlants && distanceBetweenRows && distanceBetweenPlants > 0 && distanceBetweenRows > 0) {
@@ -123,8 +112,10 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
   }, [distanceBetweenPlants, distanceBetweenRows, areaHectares, setValue]);
 
   const onSubmit = (values: LotFormValues) => {
+    const type = values.crop && values.crop.length > 0 ? 'Productivo' : 'Soporte';
     const dataToSubmit = {
       ...values,
+      type,
       sowingDate: values.sowingDate ? format(values.sowingDate, 'yyyy-MM-dd') : undefined,
     };
     handleOnSubmit(dataToSubmit);
@@ -159,32 +150,43 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                         </FormItem>
                       )}
                     />
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Nombre del Lote</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ej: El Manantial" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <div className="grid grid-cols-2 gap-4">
                         <FormField
                             control={form.control}
-                            name="name"
+                            name="crop"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Nombre del Lote</FormLabel>
+                                <FormLabel>Cultivo (si es productivo)</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Ej: El Manantial" {...field} />
+                                    <Input placeholder="Ej: Café" {...field} value={field.value ?? ''} />
                                 </FormControl>
+                                <FormDescription>Dejar vacío si es un lote de soporte (vías, etc.).</FormDescription>
                                 <FormMessage />
                                 </FormItem>
                             )}
                         />
                         <FormField
                             control={form.control}
-                            name="type"
+                            name="variety"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Tipo de Lote</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Selecciona un tipo" /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        {lotTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <FormLabel>Variedad (Opcional)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ej: Castillo" {...field} value={field.value ?? ''} />
+                                </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -241,38 +243,10 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                 </AccordionContent>
             </AccordionItem>
             
-            {lotType === 'Productivo' && (
+            {!!cropValue && (
                 <AccordionItem value="item-3">
                     <AccordionTrigger>3. Detalles de Siembra y Cultivo</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="crop"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Cultivo Principal</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Ej: Café" {...field} value={field.value ?? ''} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="variety"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Variedad (Opcional)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Ej: Castillo" {...field} value={field.value ?? ''} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
