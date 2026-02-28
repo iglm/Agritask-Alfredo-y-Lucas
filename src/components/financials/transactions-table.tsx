@@ -9,6 +9,7 @@ import { EmptyState } from "../ui/empty-state";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { es } from "date-fns/locale";
+import { useLocalization } from "@/context/localization-context";
 
 type TransactionsTableProps = {
   transactions: Transaction[];
@@ -20,6 +21,7 @@ type TransactionsTableProps = {
 
 export function TransactionsTable({ transactions, lots, onEdit, onDelete, onAdd }: TransactionsTableProps) {
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'N/A';
+  const { formatCurrency } = useLocalization();
   
   return (
     <Card>
@@ -44,7 +46,7 @@ export function TransactionsTable({ transactions, lots, onEdit, onDelete, onAdd 
                   <TableCell className="hidden md:table-cell"><Badge variant="outline">{transaction.category}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">{transaction.lotId ? getLotName(transaction.lotId) : 'General'}</TableCell>
                   <TableCell className={cn("text-right font-semibold", transaction.type === 'Ingreso' ? 'text-green-600' : 'text-red-600')}>
-                    {transaction.type === 'Ingreso' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                    {transaction.type === 'Ingreso' ? '+' : '-'}{formatCurrency(transaction.amount)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

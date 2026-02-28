@@ -26,21 +26,8 @@ import { Button } from './ui/button';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-
-const productiveUnitNavItem = { href: '/productive-unit', label: 'Unidad Productiva', icon: Home };
-const mainNavItem = { href: '/', label: 'Panel', icon: LayoutDashboard };
-const managementNavItems = [
-  { href: '/lotes', label: 'Lotes', icon: Tractor },
-  { href: '/staff', label: 'Colaboradores', icon: Users },
-  { href: '/tasks', label: 'Labores', icon: CheckSquare },
-  { href: '/supplies', label: 'Insumos', icon: SprayCan },
-  { href: '/financials', label: 'Finanzas', icon: Banknote },
-  { href: '/calendar', label: 'Calendario', icon: Calendar },
-  { href: '/attendance', label: 'Asistencia', icon: CalendarCheck },
-];
-const reportsNavItem = { href: '/reports', label: 'Reportes', icon: LayoutDashboard };
-const legalNavItem = { href: '/legal', label: 'Legal y Contacto', icon: Gavel };
-const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+import { useLocalization } from '@/context/localization-context';
+import { LocalizationSwitcher } from './localization-switcher';
 
 function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
@@ -80,6 +67,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const auth = useAuth();
   const { user, profile } = useUser();
+  const { t, language } = useLocalization();
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const productiveUnitNavItem = { href: '/productive-unit', label: t('nav.productive_unit'), icon: Home };
+  const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
+  const managementNavItems = [
+    { href: '/lotes', label: t('nav.lots'), icon: Tractor },
+    { href: '/staff', label: t('nav.staff'), icon: Users },
+    { href: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { href: '/supplies', label: t('nav.supplies'), icon: SprayCan },
+    { href: '/financials', label: t('nav.financials'), icon: Banknote },
+    { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
+    { href: '/attendance', label: t('nav.attendance'), icon: CalendarCheck },
+  ];
+  const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: LayoutDashboard };
+  const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
+  const allNavItems = [productiveUnitNavItem, mainNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -242,8 +249,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <h1 className="flex-1 text-lg font-semibold md:text-xl">
               {currentPage?.label || 'Optimizador de Labores'}
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <OfflineIndicator />
+              <LocalizationSwitcher />
               <ThemeToggle />
             </div>
           </header>

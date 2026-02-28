@@ -1,0 +1,18 @@
+{
+  "nav.productive_unit": "Productive Unit",
+  "nav.dashboard": "Dashboard",
+  "nav.lots": "Lots",
+  "nav.staff": "Staff",
+  "nav.tasks": "Tasks",
+  "nav.supplies": "Supplies",
+  "nav.financials": "Financials",
+  "nav.calendar": "Calendar",
+  "nav.attendance": "Attendance",
+  "nav.reports": "Reports",
+  "nav.legal": "Legal & Contact",
+  "dashboard.title": "Dashboard",
+  "dashboard.total_lots": "Total Lots",
+  "dashboard.total_income": "Total Income",
+  "dashboard.productive_costs": "Productive Costs",
+  "dashboard.support_costs": "Support Costs"
+}

@@ -8,6 +8,7 @@ import { DataProvider } from '@/firebase/data-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { SafeHydrationWrapper } from '@/components/safe-hydration-wrapper';
+import { LocalizationProvider } from '@/context/localization-context';
 
 export const metadata: Metadata = {
   title: 'Optimizador de Labores Agrícolas',
@@ -46,7 +47,9 @@ export default function RootLayout({
               <FirebaseClientProvider>
                 <AuthProvider>
                   <DataProvider>
-                    <AppShell>{children}</AppShell>
+                    <LocalizationProvider>
+                      <AppShell>{children}</AppShell>
+                    </LocalizationProvider>
                   </DataProvider>
                 </AuthProvider>
               </FirebaseClientProvider>

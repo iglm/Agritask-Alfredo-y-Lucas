@@ -1,0 +1,18 @@
+{
+  "nav.productive_unit": "Unidad Productiva",
+  "nav.dashboard": "Panel",
+  "nav.lots": "Lotes",
+  "nav.staff": "Colaboradores",
+  "nav.tasks": "Labores",
+  "nav.supplies": "Insumos",
+  "nav.financials": "Finanzas",
+  "nav.calendar": "Calendario",
+  "nav.attendance": "Asistencia",
+  "nav.reports": "Reportes",
+  "nav.legal": "Legal y Contacto",
+  "dashboard.title": "Panel Principal",
+  "dashboard.total_lots": "Lotes Totales",
+  "dashboard.total_income": "Ingresos Totales",
+  "dashboard.productive_costs": "Costos Productivos",
+  "dashboard.support_costs": "Costos de Soporte"
+}

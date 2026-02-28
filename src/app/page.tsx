@@ -13,11 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 import { DataAuditor } from "@/components/dashboard/data-auditor";
 import { ResourceOptimizer } from "@/components/dashboard/resource-optimizer";
 import { handleExportAll } from "@/lib/export";
+import { useLocalization } from "@/context/localization-context";
 
 export default function DashboardPage() {
   const { lots, tasks, transactions, isLoading, staff, supplies, productiveUnits, firestore, user } = useAppData();
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const { t, formatCurrency } = useLocalization();
   
   const { 
     totalLots, 
@@ -114,7 +116,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Panel Principal">
+      <PageHeader title={t('dashboard.title')}>
         <Button variant="outline" onClick={onExport} disabled={isExporting}>
           {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
           Crear Respaldo Completo
@@ -123,26 +125,26 @@ export default function DashboardPage() {
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Lotes Totales"
+          title={t('dashboard.total_lots')}
           value={totalLots}
           icon={<Tractor className="h-6 w-6 text-primary" />}
           href="/lotes"
         />
         <KpiCard
-          title="Ingresos Totales"
-          value={`$${totalIncome.toLocaleString()}`}
+          title={t('dashboard.total_income')}
+          value={formatCurrency(totalIncome)}
           icon={<TrendingUp className="h-6 w-6 text-green-500" />}
           href="/financials"
         />
         <KpiCard
-          title="Costos Productivos"
-          value={`$${productiveCosts.toLocaleString()}`}
+          title={t('dashboard.productive_costs')}
+          value={formatCurrency(productiveCosts)}
           icon={<TrendingDown className="h-6 w-6 text-destructive" />}
           href="/financials"
         />
         <KpiCard
-          title="Costos de Soporte"
-          value={`$${supportCosts.toLocaleString()}`}
+          title={t('dashboard.support_costs')}
+          value={formatCurrency(supportCosts)}
           icon={<HardHat className="h-6 w-6 text-amber-600" />}
           href="/financials"
         />

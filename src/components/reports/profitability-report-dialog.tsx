@@ -14,6 +14,7 @@ import { BarChart, DollarSign, Minus, Plus, Scale, ShoppingBag, TrendingDown, Tr
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { cn } from "@/lib/utils";
+import { useLocalization } from "@/context/localization-context";
 
 interface ProfitabilityReportDialogProps {
   lot: Lot;
@@ -35,6 +36,7 @@ const StatCard = ({ title, value, icon, className }: { title: string, value: str
 
 export function ProfitabilityReportDialog({ lot, tasks, transactions, children }: ProfitabilityReportDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { formatCurrency } = useLocalization();
 
   const report = useMemo(() => {
     if (!isOpen) return null;
@@ -90,17 +92,17 @@ export function ProfitabilityReportDialog({ lot, tasks, transactions, children }
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <StatCard 
                         title="Ingresos Totales" 
-                        value={`$${report.totalRevenue.toLocaleString()}`}
+                        value={formatCurrency(report.totalRevenue)}
                         icon={<TrendingUp className="h-8 w-8 text-green-500" />}
                     />
                     <StatCard
                         title="Costos Totales"
-                        value={`$${report.totalCost.toLocaleString()}`}
+                        value={formatCurrency(report.totalCost)}
                         icon={<TrendingDown className="h-8 w-8 text-red-500" />}
                     />
                     <StatCard
                         title="Rentabilidad Neta"
-                        value={`$${report.netProfit.toLocaleString()}`}
+                        value={formatCurrency(report.netProfit)}
                         className={report.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}
                         icon={<DollarSign className="h-8 w-8 text-primary" />}
                     />
@@ -120,17 +122,17 @@ export function ProfitabilityReportDialog({ lot, tasks, transactions, children }
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                              <StatCard 
                                 title="Ingreso por Kg" 
-                                value={`$${report.revenuePerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                value={formatCurrency(report.revenuePerKg, { includeDecimals: true })}
                                 icon={<Plus className="h-6 w-6 text-green-500" />}
                             />
                             <StatCard
                                 title="Costo por Kg"
-                                value={`$${report.costPerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                value={formatCurrency(report.costPerKg, { includeDecimals: true })}
                                 icon={<Minus className="h-6 w-6 text-red-500" />}
                             />
                             <StatCard
                                 title="Rentabilidad por Kg"
-                                value={`$${report.profitPerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                value={formatCurrency(report.profitPerKg, { includeDecimals: true })}
                                 className={report.profitPerKg >= 0 ? 'text-green-600' : 'text-red-600'}
                                 icon={<Scale className="h-6 w-6 text-primary" />}
                             />
