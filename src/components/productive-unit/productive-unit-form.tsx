@@ -44,10 +44,10 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       crops: productiveUnit?.crops?.join(', ') ?? "",
       varieties: productiveUnit?.varieties?.join(', ') ?? "",
       altitudeRange: productiveUnit?.altitudeRange ?? "",
-      averageTemperature: productiveUnit?.averageTemperature ?? undefined,
+      averageTemperature: productiveUnit?.averageTemperature ?? '',
       projectStartDate: productiveUnit?.projectStartDate ?? "",
-      totalFarmArea: productiveUnit?.totalFarmArea ?? undefined,
-      cultivatedArea: productiveUnit?.cultivatedArea ?? undefined,
+      totalFarmArea: productiveUnit?.totalFarmArea ?? '',
+      cultivatedArea: productiveUnit?.cultivatedArea ?? '',
     },
   });
 

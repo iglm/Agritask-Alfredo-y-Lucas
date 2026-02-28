@@ -100,11 +100,11 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
       progress: task?.progress ?? 0,
       plannedJournals: task?.plannedJournals ?? 0,
       plannedSupplies: task?.plannedSupplies ?? [],
-      downtimeMinutes: task?.downtimeMinutes ?? 0,
-      harvestedQuantity: task?.harvestedQuantity ?? undefined,
+      downtimeMinutes: task?.downtimeMinutes ?? '',
+      harvestedQuantity: task?.harvestedQuantity ?? '',
       observations: task?.observations ?? "",
       isRecurring: task?.isRecurring ?? false,
-      recurrenceInterval: task?.recurrenceInterval ?? undefined,
+      recurrenceInterval: task?.recurrenceInterval ?? '',
       recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
     }
   });
@@ -390,7 +390,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                       <FormItem>
                           <FormLabel>Repetir cada</FormLabel>
                           <FormControl>
-                          <Input type="number" placeholder="Ej: 30" {...field} value={field.value ?? ''} />
+                          <Input type="number" placeholder="Ej: 30" {...field} />
                           </FormControl>
                           <FormMessage />
                       </FormItem>
@@ -426,7 +426,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                 <FormItem>
                     <FormLabel>Cantidad Cosechada (Kg)</FormLabel>
                     <FormControl>
-                    <Input type="number" step="any" placeholder="Ej: 1500" {...field} value={field.value ?? ''} />
+                    <Input type="number" step="any" placeholder="Ej: 1500" {...field} />
                     </FormControl>
                     <FormDescription>La cantidad total cosechada en esta labor. Se usa para reportes de rentabilidad.</FormDescription>
                     <FormMessage />
@@ -467,7 +467,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                     <FormItem>
                       <FormLabel>Tiempo Inactividad (minutos)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} />
+                        <Input type="number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

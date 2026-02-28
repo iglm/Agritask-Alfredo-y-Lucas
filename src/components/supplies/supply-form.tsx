@@ -30,11 +30,12 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
     defaultValues: supply ? {
       ...supply,
       currentStock: supply.currentStock || supply.initialStock,
+      costPerUnit: supply.costPerUnit ?? '',
     } : {
       name: "",
       unitOfMeasure: "Unidad",
-      costPerUnit: 0,
-      currentStock: 0,
+      costPerUnit: '',
+      currentStock: '',
       supplier: "",
     },
   });
@@ -120,7 +121,7 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
                 <FormItem>
                 <FormLabel>Proveedor (Opcional)</FormLabel>
                 <FormControl>
-                    <Input placeholder="Ej: Agro-insumos SAS" {...field} />
+                    <Input placeholder="Ej: Agro-insumos SAS" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

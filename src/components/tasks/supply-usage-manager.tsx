@@ -44,7 +44,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
     resolver: zodResolver(addSupplySchema),
     defaultValues: {
       supplyId: '',
-      quantityUsed: undefined,
+      quantityUsed: '',
       date: undefined, // Initialize as undefined to prevent hydration error
     },
   });
@@ -74,7 +74,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
         return;
       }
       await addSupplyUsage(taskId, values.supplyId, values.quantityUsed, format(values.date, 'yyyy-MM-dd'));
-      reset({ supplyId: '', quantityUsed: undefined, date: new Date() });
+      reset({ supplyId: '', quantityUsed: '', date: new Date() });
       toast({ title: 'Insumo añadido', description: 'El costo de la labor y el inventario han sido actualizados.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error al añadir insumo', description: error.message });
@@ -147,6 +147,9 @@ export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageMan
                                     }
                                     initialFocus
                                     locale={es}
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={new Date().getFullYear() - 5}
+                                    toYear={new Date().getFullYear()}
                                 />
                             </PopoverContent>
                         </Popover>

@@ -28,12 +28,15 @@ type StaffFormProps = {
 export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
-    defaultValues: staffMember || {
+    defaultValues: staffMember ? {
+      ...staffMember,
+      baseDailyRate: staffMember.baseDailyRate ?? '',
+    } : {
       name: "",
       contact: "",
       eps: "",
       employmentType: "Temporal",
-      baseDailyRate: 0,
+      baseDailyRate: '',
       certifications: "",
     },
   });

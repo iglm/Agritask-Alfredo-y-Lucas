@@ -66,12 +66,12 @@ export function SubLotForm({ subLot, onSubmit: handleOnSubmit }: SubLotFormProps
     resolver: zodResolver(subLotFormSchema),
     defaultValues: {
       name: subLot?.name ?? "",
-      areaHectares: subLot?.areaHectares ?? 0,
+      areaHectares: subLot?.areaHectares ?? '',
       sowingDate: getInitialDate(subLot?.sowingDate),
-      sowingDensity: subLot?.sowingDensity ?? undefined,
-      distanceBetweenPlants: subLot?.distanceBetweenPlants ?? undefined,
-      distanceBetweenRows: subLot?.distanceBetweenRows ?? undefined,
-      totalTrees: subLot?.totalTrees ?? undefined,
+      sowingDensity: subLot?.sowingDensity ?? '',
+      distanceBetweenPlants: subLot?.distanceBetweenPlants ?? '',
+      distanceBetweenRows: subLot?.distanceBetweenRows ?? '',
+      totalTrees: subLot?.totalTrees ?? '',
       technicalNotes: subLot?.technicalNotes ?? "",
     },
   });

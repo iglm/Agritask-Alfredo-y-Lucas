@@ -79,16 +79,16 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
       name: lot?.name ?? "",
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
-      areaHectares: lot?.areaHectares ?? undefined,
+      areaHectares: lot?.areaHectares ?? '',
       sowingDate: getInitialDate(lot?.sowingDate),
-      sowingDensity: lot?.sowingDensity ?? undefined,
-      distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
-      distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
-      totalTrees: lot?.totalTrees ?? undefined,
-      accumulatedMortality: lot?.accumulatedMortality ?? undefined,
+      sowingDensity: lot?.sowingDensity ?? '',
+      distanceBetweenPlants: lot?.distanceBetweenPlants ?? '',
+      distanceBetweenRows: lot?.distanceBetweenRows ?? '',
+      totalTrees: lot?.totalTrees ?? '',
+      accumulatedMortality: lot?.accumulatedMortality ?? '',
       technicalNotes: lot?.technicalNotes ?? "",
       soilType: lot?.soilType ?? "",
-      phAverage: lot?.phAverage ?? undefined,
+      phAverage: lot?.phAverage ?? '',
     },
   });
 
@@ -120,7 +120,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
     
     // Firestore does not support 'undefined'. We must remove keys with this value.
     for (const key in dataPayload) {
-      if (dataPayload[key] === undefined) {
+      if (dataPayload[key] === undefined || dataPayload[key] === '') {
         delete dataPayload[key];
       }
     }
@@ -203,7 +203,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
             </AccordionItem>
 
             <AccordionItem value="item-2">
-                <AccordionTrigger>2. Datos Generales y Ubicación</AccordionTrigger>
+                <AccordionTrigger>2. Datos Generales</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                      <FormField
                         control={form.control}
@@ -260,7 +260,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                 <FormItem>
                                     <FormLabel>pH Promedio (Opcional)</FormLabel>
                                     <FormControl>
-                                    <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} value={field.value ?? ''} />
+                                    <Input type="number" step="0.1" placeholder="Ej: 5.5" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -307,7 +307,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                 <FormItem>
                                     <FormLabel>Distancia entre Plantas (m)</FormLabel>
                                     <FormControl>
-                                    <Input type="number" step="any" placeholder="Ej: 1.5" {...field} value={field.value ?? ''} />
+                                    <Input type="number" step="any" placeholder="Ej: 1.5" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -320,7 +320,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                 <FormItem>
                                     <FormLabel>Distancia entre Surcos (m)</FormLabel>
                                     <FormControl>
-                                    <Input type="number" step="any" placeholder="Ej: 2.5" {...field} value={field.value ?? ''} />
+                                    <Input type="number" step="any" placeholder="Ej: 2.5" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -334,7 +334,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                 <FormItem>
                                 <FormLabel>Densidad de Siembra (árboles/Ha)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly value={field.value ?? ''} />
+                                    <Input type="number" step="any" placeholder="Calculado..." {...field} readOnly />
                                 </FormControl>
                                 <FormDescription>Se calcula automáticamente a partir de las distancias.</FormDescription>
                                 <FormMessage />
@@ -349,7 +349,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                 <FormItem>
                                 <FormLabel># Árboles del Lote</FormLabel>
                                 <FormControl>
-                                    <Input type="number" {...field} readOnly value={field.value ?? ''} />
+                                    <Input type="number" {...field} readOnly />
                                 </FormControl>
                                 <FormDescription>Calculado del área y densidad.</FormDescription>
                                 <FormMessage />
@@ -363,7 +363,7 @@ export function LotForm({ lot, onSubmit: handleOnSubmit, productiveUnits }: LotF
                                     <FormItem>
                                     <FormLabel>Mortalidad Acumulada</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="Ej: 50" {...field} value={field.value ?? ''} />
+                                        <Input type="number" placeholder="Ej: 50" {...field} />
                                     </FormControl>
                                     <FormDescription># de árboles muertos.</FormDescription>
                                     <FormMessage />

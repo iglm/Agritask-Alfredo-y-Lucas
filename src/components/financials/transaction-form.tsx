@@ -43,7 +43,7 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
       type: transaction?.type ?? "Ingreso",
       date: transaction?.date ? parseISO(transaction.date) : undefined,
       description: transaction?.description ?? "",
-      amount: transaction?.amount ?? undefined,
+      amount: transaction?.amount ?? '',
       category: transaction?.category ?? "",
       lotId: transaction?.lotId ?? "none",
     },
@@ -171,6 +171,9 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
                       onSelect={field.onChange}
                       initialFocus
                       locale={es}
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 5}
+                      toYear={new Date().getFullYear()}
                     />
                   </PopoverContent>
                 </Popover>
