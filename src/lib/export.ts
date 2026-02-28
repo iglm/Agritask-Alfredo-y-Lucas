@@ -2,7 +2,7 @@
 
 import { Lot, Staff, Task, ProductiveUnit, SubLot, Supply, Transaction } from './types';
 import { exportToCsv } from './csv';
-import { Firestore, collection, getDocs, query, where, collectionGroup } from 'firebase/firestore';
+import { Firestore, collection, getDocs, query, where } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
 type ToastFunc = (props: {
@@ -41,53 +41,71 @@ export const handleExportAll = async (
     try {
       // 1. Productive Units
       if (productiveUnits && productiveUnits.length > 0) {
-          exportToCsv(`unidades-productivas_respaldo.csv`, productiveUnits);
+          const dataToExport = productiveUnits.map(unit => ({
+              id_unidad: unit.id,
+              nombre_finca: unit.farmName || '',
+              pais: unit.country || '',
+              departamento: unit.department || '',
+              municipio: unit.municipality || '',
+              vereda: unit.vereda || '',
+              cultivos: unit.crops?.join('; ') || '',
+              variedades: unit.varieties?.join('; ') || '',
+              rango_altitud: unit.altitudeRange || '',
+              temperatura_promedio: unit.averageTemperature || '',
+              fecha_inicio_proyecto: unit.projectStartDate || '',
+              area_total_finca_ha: unit.totalFarmArea || '',
+              area_cultivada_ha: unit.cultivatedArea || '',
+          }));
+          exportToCsv(`unidades-productivas_respaldo.csv`, dataToExport);
           exportedSomething = true;
       }
 
       // 2. Lots and Sublots
       if (lots && lots.length > 0) {
-        const dataToExport = [];
-        const allSublotsQuery = query(collectionGroup(firestore, 'sublots'), where('userId', '==', user.uid));
-        const sublotsSnapshot = await getDocs(allSublotsQuery);
-        const sublotsByLotId = new Map<string, SubLot[]>();
-        sublotsSnapshot.forEach(doc => {
-            const subLot = doc.data() as SubLot;
-            const sublots = sublotsByLotId.get(subLot.lotId) || [];
-            sublots.push(subLot);
-            sublotsByLotId.set(subLot.lotId, sublots);
-        });
+        const lotsAndSublotsData = [];
 
         for (const lot of lots) {
-            dataToExport.push({
-                id: lot.id,
-                nombre: lot.name,
-                area_hectareas: lot.areaHectares,
-                ubicacion: lot.location,
-                fecha_siembra: lot.sowingDate,
-                densidad_siembra: lot.sowingDensity,
-                arboles_totales: lot.totalTrees,
-                tipo: 'Lote Principal',
-                lote_padre: ''
-            });
+          // Add parent lot
+          lotsAndSublotsData.push({
+            id_entidad: lot.id,
+            nombre: lot.name || '',
+            tipo_entidad: 'Lote Principal',
+            lote_padre_id: '',
+            lote_padre_nombre: '',
+            area_hectareas: lot.areaHectares || 0,
+            ubicacion: lot.location || '',
+            fecha_siembra: lot.sowingDate || '',
+            densidad_siembra: lot.sowingDensity || '',
+            arboles_totales: lot.totalTrees || '',
+            cultivo: lot.crop || 'N/A',
+            variedad: lot.variety || 'N/A',
+          });
 
-            const lotSublots = sublotsByLotId.get(lot.id) || [];
-            for (const subLot of lotSublots) {
-                 dataToExport.push({
-                    id: subLot.id,
-                    nombre: subLot.name,
-                    area_hectareas: subLot.areaHectares,
-                    ubicacion: lot.location,
-                    fecha_siembra: subLot.sowingDate,
-                    densidad_siembra: subLot.sowingDensity,
-                    arboles_totales: subLot.totalTrees,
-                    tipo: 'Sub-Lote',
-                    lote_padre: lot.name
-                });
-            }
+          // Fetch and add sublots for this lot - this is the core fix
+          const sublotsQuery = query(collection(firestore, 'lots', lot.id, 'sublots'));
+          const sublotsSnapshot = await getDocs(sublotsQuery);
+          
+          sublotsSnapshot.forEach(doc => {
+            const subLot = doc.data() as SubLot;
+            lotsAndSublotsData.push({
+              id_entidad: subLot.id,
+              nombre: subLot.name || '',
+              tipo_entidad: 'Sub-Lote',
+              lote_padre_id: lot.id,
+              lote_padre_nombre: lot.name || '',
+              area_hectareas: subLot.areaHectares || 0,
+              ubicacion: lot.location || '', // Inherit location from parent for context
+              fecha_siembra: subLot.sowingDate || '',
+              densidad_siembra: subLot.sowingDensity || '',
+              arboles_totales: subLot.totalTrees || '',
+              cultivo: lot.crop || 'N/A', // Inherit crop from parent
+              variedad: lot.variety || 'N/A', // Inherit variety from parent
+            });
+          });
         }
-        if (dataToExport.length > 0) {
-          exportToCsv(`lotes-y-sublotes_respaldo.csv`, dataToExport);
+        
+        if (lotsAndSublotsData.length > 0) {
+          exportToCsv(`lotes-y-sublotes_respaldo.csv`, lotsAndSublotsData);
           exportedSomething = true;
         }
       }
@@ -106,11 +124,15 @@ export const handleExportAll = async (
 
       // 5. Tasks
       if (tasks && tasks.length > 0) {
-        const dataToExport = tasks.map(task => ({
-          ...task,
-          lotName: lots?.find(l => l.id === task.lotId)?.name || 'N/A',
-          responsibleName: staff?.find(s => s.id === task.responsibleId)?.name || 'N/A',
-        }));
+        const dataToExport = tasks.map(task => {
+            const { plannedSupplies, ...restOfTask } = task; // Exclude complex object
+            return {
+              ...restOfTask,
+              nombre_lote: lots?.find(l => l.id === task.lotId)?.name || 'N/A',
+              nombre_responsable: staff?.find(s => s.id === task.responsibleId)?.name || 'N/A',
+              insumos_planificados: plannedSupplies?.map(p => `${supplies?.find(s => s.id === p.supplyId)?.name || 'ID:'+p.supplyId} (${p.quantity})`).join('; ') || ''
+            };
+        });
         exportToCsv(`labores_respaldo.csv`, dataToExport);
         exportedSomething = true;
       }
@@ -119,7 +141,7 @@ export const handleExportAll = async (
       if (transactions && transactions.length > 0) {
         const dataToExport = transactions.map(transaction => ({
           ...transaction,
-          lotName: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
+          nombre_lote: transaction.lotId ? (lots?.find(l => l.id === transaction.lotId)?.name || 'N/A') : 'General',
         }));
         exportToCsv(`transacciones_respaldo.csv`, dataToExport);
         exportedSomething = true;
