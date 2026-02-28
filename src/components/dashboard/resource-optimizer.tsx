@@ -10,7 +10,7 @@ import { Task, Staff, Supply } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
-import { addDays, startOfToday, isWithinInterval } from 'date-fns';
+import { addDays, startOfToday, isWithinInterval, parseISO, isValid } from 'date-fns';
 import { useAppData } from '@/firebase';
 
 // Re-map the configuration to the new action types
@@ -77,15 +77,16 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
       start: today,
       end: addDays(today, 7),
     };
-    const upcomingTasks = tasks.filter(task => {
-        // Use a robust date parsing method
-        try {
-            const taskDate = new Date(task.startDate.replace(/-/g, '/'));
-            return isWithinInterval(taskDate, nextSevenDays) && task.status !== 'Finalizado';
-        } catch {
-            return false;
-        }
-    });
+    
+    const upcomingTasks = tasks
+      .map(task => {
+        if (!task.startDate) return null;
+        const taskDate = parseISO(task.startDate);
+        if (!isValid(taskDate)) return null;
+        return { ...task, taskDate };
+      })
+      .filter(Boolean)
+      .filter(task => task && isWithinInterval(task.taskDate, nextSevenDays) && task.status !== 'Finalizado');
     
     if (upcomingTasks.length === 0) {
       toast({
@@ -204,7 +205,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
                                     size="sm" 
                                     variant="ghost" 
                                     className="text-primary hover:bg-primary/10 hover:text-primary h-auto py-1 px-2"
-                                    onClick={() => handleReassignTask(suggestion.action.payload)}
+                                    onClick={() => handleReassignTask(suggestion.action.payload as ReassignTaskPayload)}
                                     disabled={isActionCompleted}
                                 >
                                     {isActionCompleted ? (
@@ -223,7 +224,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
                                     size="sm" 
                                     variant="ghost"
                                     className="text-primary hover:bg-primary/10 hover:text-primary h-auto py-1 px-2"
-                                    onClick={() => handleCreatePurchaseOrder(suggestion.action.payload)}
+                                    onClick={() => handleCreatePurchaseOrder(suggestion.action.payload as CreatePurchaseOrderPayload)}
                                 >
                                     Crear Egreso
                                 </Button>
