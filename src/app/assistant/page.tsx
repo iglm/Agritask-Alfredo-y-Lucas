@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -43,8 +44,8 @@ export default function AssistantPage() {
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
   
-  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('status', '!=', 'Finalizado')) : null, [firestore, user]);
-  const { data: openTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: allTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
 
   const isPageLoading = unitsLoading || lotsLoading || staffLoading || suppliesLoading || tasksLoading;
 

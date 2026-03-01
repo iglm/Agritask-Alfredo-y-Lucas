@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,8 +22,8 @@ export default function StaffPage() {
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: allStaff, isLoading: isStaffLoading } = useCollection<Staff>(staffQuery);
 
-  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('status', '!=', 'Finalizado')) : null, [firestore, user]);
-  const { data: openTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: allTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
 
   const isLoading = isStaffLoading || isTasksLoading;
 
@@ -78,7 +79,7 @@ export default function StaffPage() {
   const confirmDelete = async () => {
     if (!staffToDelete || !firestore) return;
     
-    const assignedTasks = (openTasks || []).filter(task => task.responsibleId === staffToDelete.id);
+    const assignedTasks = (allTasks || []).filter(task => task.responsibleId === staffToDelete.id && task.status !== 'Finalizado');
     if (assignedTasks.length > 0) {
         toast({
             variant: 'destructive',
@@ -117,7 +118,7 @@ export default function StaffPage() {
     
     const isDuplicated = (allStaff || []).some(s => 
       s.id !== editingStaff?.id &&
-      (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
+      (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact?.trim() === values.contact?.trim())
     );
 
     if (isDuplicated) {
@@ -215,3 +216,5 @@ export default function StaffPage() {
     </div>
   );
 }
+
+    
