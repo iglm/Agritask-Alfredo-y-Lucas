@@ -10,6 +10,13 @@ Su objetivo principal es centralizar la información de la finca, facilitar la p
 
 ## 3. Módulos y Funcionalidades Detalladas
 
+### Asistente de Comandos por IA
+- **Función:** Permite al usuario interactuar con la aplicación usando lenguaje natural para automatizar el ingreso de datos, eliminando la necesidad de llenar formularios manualmente.
+- **Detalle de Funcionalidades:**
+    - **Creación de Labores:** El usuario puede dictar o escribir una orden completa, y la IA se encarga de crear la labor con todos sus detalles.
+    - **Ejemplo de Comando:** `"Programar fertilización en El Manantial para mañana con Carlos Pérez, 2 jornales"`.
+    - **Procesamiento Inteligente:** La IA interpreta el comando, identifica el lote, el responsable, la fecha y los jornales, y crea la labor correspondiente en el sistema.
+
 ### Panel Principal (Dashboard)
 - **Función:** Proporciona una vista general y resumida del estado operativo y financiero de la finca. Es la primera pantalla que ve el usuario al ingresar.
 - **Detalle de Funcionalidades:**
