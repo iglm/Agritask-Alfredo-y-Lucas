@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Trash2 } from "lucide-react";
-import { Lot, SubLot } from "@/lib/types";
+import { Lot, SubLot, ProductiveUnit } from "@/lib/types";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot } = useAppData();
+  const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, addTransaction, addTask, staff, transactions } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -47,7 +47,15 @@ export default function LotsPage() {
   // --- Lot Handlers ---
   const handleAddLot = async () => {
     setEditingLot(undefined);
-    // The limit check is now in addLot, so we just open the sheet
+    if (!allUnits || allUnits.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Primero crea una Unidad Productiva",
+            description: "Necesitas registrar al menos una finca antes de poder añadir un lote.",
+        });
+        // Optionally, you could redirect them to the productive unit creation page
+        return;
+    }
     setIsLotSheetOpen(true);
   };
   
@@ -91,8 +99,6 @@ export default function LotsPage() {
         });
       } else {
         await addLot(values);
-        // The DataProvider will show the upgrade dialog if needed.
-        // We only toast on success, which happens when the limit is not reached.
         toast({
           title: "¡Lote creado!",
           description: "El nuevo lote ha sido agregado a tu lista.",
@@ -213,12 +219,16 @@ export default function LotsPage() {
         <LotsTable 
           lots={filteredLots} 
           tasks={allTasks || []} 
+          transactions={transactions || []}
+          staff={staff || []}
+          productiveUnits={allUnits || []}
           onEditLot={handleEditLot} 
           onDeleteLot={handleDeleteLotRequest}
           onAddLot={handleAddLot}
           onAddSubLot={handleAddSubLot}
           onEditSubLot={handleEditSubLot}
           onDeleteSubLot={handleDeleteSubLotRequest}
+          addTask={addTask}
         />
       )}
 
@@ -230,7 +240,7 @@ export default function LotsPage() {
               {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
             </SheetDescription>
           </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} />
+          <LotForm lot={editingLot} productiveUnits={allUnits || []} onSubmit={handleLotFormSubmit} />
         </SheetContent>
       </Sheet>
       

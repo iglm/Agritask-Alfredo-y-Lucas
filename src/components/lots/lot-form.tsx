@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { Lot } from "@/lib/types"
+import type { Lot, ProductiveUnit } from "@/lib/types"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { cn } from "@/lib/utils"
 import { format, isValid, parseISO } from "date-fns"
@@ -16,6 +16,7 @@ import { CalendarIcon } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { useEffect } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 
 const lotFormSchema = z.object({
   productiveUnitId: z.string().min(1, "Debe seleccionar una unidad productiva."),
@@ -47,7 +48,7 @@ type LotFormValues = z.infer<typeof lotFormSchema>;
 
 type LotFormProps = {
   lot?: Lot;
-  productiveUnitId: string | null;
+  productiveUnits: ProductiveUnit[];
   onSubmit: (values: Omit<Lot, 'id' | 'userId'>) => void;
 };
 
@@ -71,11 +72,11 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 };
 
 
-export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: LotFormProps) {
+export function LotForm({ lot, productiveUnits, onSubmit: handleOnSubmit }: LotFormProps) {
   const form = useForm<LotFormValues>({
     resolver: zodResolver(lotFormSchema),
     defaultValues: {
-      productiveUnitId: lot?.productiveUnitId ?? productiveUnitId ?? "",
+      productiveUnitId: lot?.productiveUnitId ?? (productiveUnits.length === 1 ? productiveUnits[0].id : ""),
       name: lot?.name ?? "",
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
@@ -142,9 +143,20 @@ export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: Lot
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Unidad Productiva</FormLabel>
-                          <FormControl>
-                            <Input {...field} readOnly disabled />
-                          </FormControl>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={productiveUnits.length <= 1}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona una unidad productiva" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {productiveUnits.map(unit => (
+                                    <SelectItem key={unit.id} value={unit.id}>
+                                    {unit.farmName}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
                           <FormMessage />
                         </FormItem>
                       )}

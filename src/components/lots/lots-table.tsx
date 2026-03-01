@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot, BarChart, HardHat, Sprout } from "lucide-react";
-import { Lot, SubLot, Task, Transaction, Staff } from "@/lib/types";
+import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot, BarChart, HardHat, Sprout, Building } from "lucide-react";
+import { Lot, SubLot, Task, Transaction, Staff, ProductiveUnit } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
@@ -22,6 +22,7 @@ type LotsTableProps = {
   tasks: Task[];
   transactions: Transaction[];
   staff: Staff[];
+  productiveUnits: ProductiveUnit[];
   onEditLot: (lot: Lot) => void;
   onDeleteLot: (lot: Lot) => void;
   onAddLot: () => void;
@@ -103,7 +104,7 @@ const SubLotsList: React.FC<{
 };
 
 
-export function LotsTable({ lots, tasks, transactions, staff, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot, addTask, isInsideCard }: LotsTableProps) {
+export function LotsTable({ lots, tasks, transactions, staff, productiveUnits, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot, addTask, isInsideCard }: LotsTableProps) {
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
 
   const toggleRow = (lotId: string) => {
@@ -122,6 +123,8 @@ export function LotsTable({ lots, tasks, transactions, staff, onEditLot, onDelet
   };
 
   const TableWrapper = isInsideCard ? React.Fragment : Card;
+  const productiveUnitMap = new Map(productiveUnits.map(unit => [unit.id, unit.farmName]));
+
 
   if (!isInsideCard && lots.length === 0) {
     return (
@@ -146,8 +149,8 @@ export function LotsTable({ lots, tasks, transactions, staff, onEditLot, onDelet
           <TableHeader>
             <TableRow>
               <TableHead className="w-10"></TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead className="hidden md:table-cell">Ubicación</TableHead>
+              <TableHead>Nombre del Lote</TableHead>
+              <TableHead className="hidden md:table-cell">Finca</TableHead>
               <TableHead className="hidden md:table-cell">Fecha siembra</TableHead>
               <TableHead>Progreso</TableHead>
               <TableHead className="hidden sm:table-cell text-right">Área (Ha)</TableHead>
@@ -183,7 +186,7 @@ export function LotsTable({ lots, tasks, transactions, staff, onEditLot, onDelet
                            )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">{lot.location || 'N/A'}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">{productiveUnitMap.get(lot.productiveUnitId) || 'N/A'}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">
                           {lot.type === 'Productivo' && lot.sowingDate ? format(parseISO(lot.sowingDate), "dd MMM yyyy", { locale: es }) : 'N/A'}
                       </TableCell>
