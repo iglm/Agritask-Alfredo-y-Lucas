@@ -74,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
+  const builderNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
   const assistantNavItem = { href: '/assistant', label: 'Consola de IA', icon: Bot };
   
   const managementNavItems = [
@@ -84,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: PieChart };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
 
-  const allNavItems = [mainNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, builderNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -138,6 +139,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href={mainNavItem.href}>
                       <mainNavItem.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{mainNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(builderNavItem.href)}
+                    tooltip={{ children: builderNavItem.label }}
+                  >
+                    <Link href={builderNavItem.href}>
+                      <builderNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{builderNavItem.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -256,5 +269,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
