@@ -49,11 +49,16 @@ export interface InternalQuery extends Query<DocumentData> {
  * @template T Optional type for document data. Defaults to any.
  * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
  * The Firestore CollectionReference or Query. Waits if null/undefined.
+ * @param {object} options - Optional settings for the hook.
+ * @param {number} options.retryCount - Number of times to retry on network-like errors. Defaults to 3.
+ * @param {number} options.retryDelay - Delay between retries in ms. Defaults to 1000.
  * @returns {UseCollectionResult<T>} Object with data, isLoading, error. Data is always an array.
  */
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    options: { retryCount?: number; retryDelay?: number } = {}
 ): UseCollectionResult<T> {
+  const { retryCount = 3, retryDelay = 1000 } = options;
   type ResultItemType = WithId<T>;
   
   const [data, setData] = useState<ResultItemType[]>([]);
@@ -68,51 +73,75 @@ export function useCollection<T = any>(
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    let retryAttempt = 0;
+    let unsubscribe: (() => void) | null = null;
 
-    const unsubscribe = onSnapshot(
-      memoizedTargetRefOrQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = [];
-        for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
-        }
-        setData(results);
+    const subscribe = () => {
+        setIsLoading(true);
         setError(null);
-        setIsLoading(false);
-      },
-      (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        let path: string;
-        const internalQuery = memoizedTargetRefOrQuery as unknown as InternalQuery;
 
-        if (memoizedTargetRefOrQuery.type === 'collection') {
-            path = (memoizedTargetRefOrQuery as CollectionReference).path;
-        } else if (internalQuery._query?.collectionGroup) {
-            // For a collection group query, the "path" is the group's ID for error reporting.
-            path = internalQuery._query.collectionGroup;
-        } else {
-            // Fallback for other queries
-            path = internalQuery._query.path.canonicalString();
-        }
+        unsubscribe = onSnapshot(
+          memoizedTargetRefOrQuery,
+          (snapshot: QuerySnapshot<DocumentData>) => {
+            const results: ResultItemType[] = [];
+            for (const doc of snapshot.docs) {
+              results.push({ ...(doc.data() as T), id: doc.id });
+            }
+            setData(results);
+            setError(null);
+            setIsLoading(false);
+            retryAttempt = 0; // Reset on success
+          },
+          (err: FirestoreError) => {
+            console.error("useCollection Firestore error:", err);
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
+            // No retry for permission errors, they are a config issue.
+            if (err.code === 'permission-denied') {
+                let path: string;
+                const internalQuery = memoizedTargetRefOrQuery as unknown as InternalQuery;
+                if (memoizedTargetRefOrQuery.type === 'collection') {
+                    path = (memoizedTargetRefOrQuery as CollectionReference).path;
+                } else if (internalQuery._query?.collectionGroup) {
+                    path = internalQuery._query.collectionGroup;
+                } else {
+                    path = internalQuery._query.path.canonicalString();
+                }
+                const contextualError = new FirestorePermissionError({ operation: 'list', path });
+                setError(contextualError);
+                setData([]);
+                setIsLoading(false);
+                errorEmitter.emit('permission-error', contextualError);
+                return;
+            }
 
-        setError(contextualError)
-        setData([]) // Return empty array on error
-        setIsLoading(false)
+            // No retry for index errors, they are a config issue.
+            if (err.code === 'failed-precondition') {
+                const indexError = new Error(`Índice de Firestore requerido. ${err.message}. Revisa la consola de Firebase para crearlo.`);
+                setError(indexError);
+                setData([]);
+                setIsLoading(false);
+                return;
+            }
+            
+            // Retry for other errors (likely network-related)
+            if (retryAttempt < retryCount) {
+              retryAttempt++;
+              setTimeout(subscribe, retryDelay * retryAttempt);
+            } else {
+              setError(err);
+              setData([]);
+              setIsLoading(false);
+            }
+          }
+        );
+    }
+    
+    subscribe();
 
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]);
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [memoizedTargetRefOrQuery, retryCount, retryDelay]);
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');

@@ -7,77 +7,77 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // For creating documents
     function isCreatingOwnDoc() {
-      return request.auth.uid == request.resource.data.userId;
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    // For accessing existing documents
     function isOwnerOfDoc() {
-      return request.auth.uid == resource.data.userId;
+      return isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // --- User Profile ---
-    // A user can manage their own profile. Deletion is disallowed.
+    // A user can manage their own profile.
     match /users/{userId} {
-      allow read, update, create: if request.auth.uid == userId;
-      allow delete: if false;
+      allow get, update: if isSignedIn() && request.auth.uid == userId;
+      allow list, create, delete: if false;
     }
 
-    // --- Main Data Collections ---
-    // All these collections follow the same ownership pattern.
+    // --- Data Collections Pattern ---
+    // list: Allowed for any signed-in user. Client must filter by userId.
+    // get, update, delete: Allowed only for the owner of the document.
+    // create: Allowed if the new document's userId matches the requester's UID.
+    
     match /productiveUnits/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /lots/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /staff/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /staffAttendance/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /tasks/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /supplies/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
     match /transactions/{id} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
       allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
     }
 
     // --- Subcollections ---
+    // Allow full access if the user owns the parent document.
     match /lots/{lotId}/sublots/{sublotId} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
-      allow list: if isSignedIn();
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/lots/$(lotId)).data.userId == request.auth.uid;
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
-      allow list: if isSignedIn(); // Required for collectionGroup query
-      allow get, update, delete: if isSignedIn() && isOwnerOfDoc();
+      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/tasks/$(taskId)).data.userId == request.auth.uid;
     }
 
-    // --- System Logs (Write-only for clients) ---
+    // --- System Logs ---
+    // Clients can create their own logs.
+    // They cannot read, update, or delete any logs.
     match /system_logs/{logId} {
-      allow create: if isSignedIn() && isCreatingOwnDoc();
+      allow create: if isCreatingOwnDoc();
       allow read, update, delete: if false;
     }
   }
