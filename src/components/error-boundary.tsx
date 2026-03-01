@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Button } from './ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -30,37 +29,11 @@ export class ErrorBoundary extends React.Component<
     errorEmitter.emit('client-exception', { error });
   }
 
-  handleReset = async () => {
-    try {
-      console.log("Attempting to repair application...");
-
-      // 1. Unregister all service workers
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-          await registration.unregister();
-          console.log("Service worker unregistered:", registration.scope);
-        }
-      }
-
-      // 2. Clear localStorage (carefully)
-      if (window.localStorage) {
-        window.localStorage.clear();
-        console.log("localStorage cleared.");
-      }
-      
-      // 3. Force a hard reload from the server
-      console.log("Forcing a hard reload...");
-      window.location.reload(); 
-
-    } catch (error) {
-      console.error("Failed to repair application:", error);
-      alert("No se pudo reparar la aplicación. Por favor, intente limpiar la caché de su navegador manualmente y recargue la página.");
-    }
-  };
-
   render() {
     if (this.state.hasError) {
+      // This is a simple, non-interactive fallback UI.
+      // In development, the Next.js overlay will appear over this.
+      // In production, this prevents a white screen crash.
       return (
         <div style={{
             fontFamily: 'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
@@ -75,15 +48,12 @@ export class ErrorBoundary extends React.Component<
             padding: '1rem',
         }}>
             <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-            <h2 style={{ fontSize: '24px', fontWeight: '600', lineHeight: '2rem', margin: '0 0 8px 0' }}>
-                Ocurrió un Error
+            <h2 style={{ fontSize: '24px', fontWeight: '600', margin: '0 0 8px 0' }}>
+                Ha Ocurrido un Error
             </h2>
-            <p style={{ fontSize: '16px', lineHeight: '1.5rem', margin: '0 8px 24px 8px', color: 'hsl(var(--muted-foreground))' }}>
-                La aplicación encontró un problema inesperado. Puedes intentar repararla para restaurar su estado inicial.
+            <p style={{ fontSize: '16px', margin: '0 8px 24px 8px', color: 'hsl(var(--muted-foreground))' }}>
+                La aplicación encontró un problema inesperado. Por favor, intenta recargar la página.
             </p>
-            <Button onClick={this.handleReset} className="bg-green-600 hover:bg-green-700 text-white font-semibold">
-                Reparar Aplicación
-            </Button>
         </div>
       );
     }

@@ -1,64 +1,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner(userId) { return request.auth != null && request.auth.uid == userId; }
+    // Helper function to check ownership
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
 
+    // User can only access their own profile
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    // --- User-Owned Top-Level Collections ---
+    // Rules for user-owned collections.
     // This pattern allows secure reads for both single documents and lists,
     // relying on client-side queries to constrain list results to the user's own data.
-
-    function userOwnedCollectionRules() {
-      return {
-        // GET: A user can get a specific document if they are the owner.
-        allow get: if isOwner(resource.data.userId),
-        
-        // LIST: A user can list documents. This is secure because all client-side
-        // queries are built with a `where('userId', '==', user.uid)` clause.
-        allow list: if request.auth != null,
-        
-        // WRITE: A user can create, update, or delete their own documents.
-        allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId)
-      };
+    match /productiveUnits/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /lots/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /staff/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /staffAttendance/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /supplies/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /tasks/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    match /transactions/{docId} { 
+      allow get: if isOwner(resource.data.userId);
+      allow list: if request.auth != null;
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
     }
 
-    match /productiveUnits/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /lots/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /staff/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /staffAttendance/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /supplies/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /tasks/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-    match /transactions/{docId} { allow get: if isOwner(resource.data.userId); allow list: if request.auth != null; allow write: if isOwner(request.resource.data.userId) || isOwner(resource.data.userId); }
-
-    // --- Subcollections ---
-    
+    // --- Subcollection Rules ---
     match /lots/{lotId}/sublots/{sublotId} {
+      // Allow access if the user owns the parent lot.
       allow read, write: if isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
     }
 
-    // This handles direct access. Collection group is handled below.
     match /tasks/{taskId}/supplyUsages/{usageId} {
-       allow read, write: if isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
+      // Allow access if the user owns the parent task.
+      allow read, write: if isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
     }
-
-    // --- Collection Group Queries ---
-
+    
+    // --- Collection Group Rules ---
     match /{path=**}/supplyUsages/{usageId} {
-      // This rule allows a collection group query on 'supplyUsages'.
-      // It works for 'list' because Firestore verifies the client's `where` clause against this `resource.data` check.
-      allow read: if isOwner(resource.data.userId);
-      // Writes must still check the parent task for security.
-      allow write: if isOwner(get(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)).data.userId);
+      // For collection group queries on supplyUsages.
+      // Firestore enforces that any 'where' clause on userId must match this condition.
+      allow list: if isOwner(resource.data.userId);
     }
     
     // --- System Logs ---
-    
     match /system_logs/{logId} {
+      // Users can only create logs for themselves and read their own.
       allow create: if isOwner(request.resource.data.userId);
       allow read: if isOwner(resource.data.userId);
+      // Logs are immutable.
       allow update, delete: if false;
     }
   }
