@@ -7,14 +7,18 @@ import { PageHeader } from "@/components/page-header";
 import { supplyUnits, type Supply } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Loader2, Trash2 } from "lucide-react";
-import { useAppData } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { collection, query, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export default function SuppliesPage() {
-  const { supplies: allSupplies, isLoading, addSupply, updateSupply, deleteSupply } = useAppData();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
+
+  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: allSupplies, isLoading } = useCollection<Supply>(suppliesQuery);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredSupplies, setFilteredSupplies] = useState<Supply[]>([]);
@@ -24,7 +28,7 @@ export default function SuppliesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    let suppliesToFilter = allSupplies;
+    let suppliesToFilter = allSupplies || [];
     
     if (searchTerm) {
         suppliesToFilter = suppliesToFilter.filter(s => 
@@ -34,6 +38,44 @@ export default function SuppliesPage() {
 
     setFilteredSupplies(suppliesToFilter);
   }, [allSupplies, searchTerm]);
+
+  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
+    console.error(`SuppliesPage Error (${operation} on ${path}):`, error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+  };
+
+  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>): Promise<Supply> => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'supplies'));
+    const newSupply: Supply = { ...data, id: newDocRef.id, userId: user.uid };
+    try {
+      await setDoc(newDocRef, newSupply);
+      return newSupply;
+    } catch (error) {
+      handleWriteError(error, newDocRef.path, 'create', newSupply);
+      throw error;
+    }
+  };
+
+  const updateSupply = async (data: Supply) => {
+    if (!user || !firestore) return;
+    const docRef = doc(firestore, 'supplies', data.id);
+    try {
+      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
+    }
+  };
+
+  const deleteSupply = async (id: string) => {
+    if (!user || !firestore) return;
+    const docRef = doc(firestore, 'supplies', id);
+    try {
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'delete');
+    }
+  };
   
   const handleAddSupply = () => {
     setEditingSupply(undefined);
@@ -62,7 +104,7 @@ export default function SuppliesPage() {
   };
 
   const handleFormSubmit = (values: Omit<Supply, 'id' | 'userId'>) => {
-    const isDuplicated = allSupplies.some(s => 
+    const isDuplicated = (allSupplies || []).some(s => 
       s.id !== editingSupply?.id &&
       s.name.toLowerCase().trim() === values.name.toLowerCase().trim()
     );
@@ -146,5 +188,3 @@ export default function SuppliesPage() {
     </div>
   );
 }
-
-    

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
-import { useAppData } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { Loader2, Trash2 } from "lucide-react";
-import { Transaction } from "@/lib/types";
+import { Transaction, Lot, ProductiveUnit } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,18 +12,67 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { TransactionsTable } from "@/components/financials/transactions-table";
 import { TransactionForm } from "@/components/financials/transaction-form";
 import { format, parseISO } from "date-fns";
+import { collection, query, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export default function FinancialsPage() {
-  const { transactions: allTransactions, lots, productiveUnits, isLoading, addTransaction, updateTransaction, deleteTransaction } = useAppData();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
+
+  const transactionsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
+
+  const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
+  const { data: productiveUnits, isLoading: unitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
+
+  const isLoading = transactionsLoading || lotsLoading || unitsLoading;
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
+    console.error(`FinancialsPage Error (${operation} on ${path}):`, error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+  };
+
+  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'transactions'));
+    const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
+    try {
+      await setDoc(newDocRef, newTransaction);
+      return newTransaction;
+    } catch (error) {
+      handleWriteError(error, newDocRef.path, 'create', newTransaction);
+      throw error;
+    }
+  };
+
+  const updateTransaction = async (data: Transaction) => {
+    if (!user || !firestore) return;
+    const docRef = doc(firestore, 'transactions', data.id);
+    try {
+      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    if (!user || !firestore) return;
+    const docRef = doc(firestore, 'transactions', id);
+    try {
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleWriteError(error, docRef.path, 'delete');
+    }
+  };
+
   const sortedTransactions = useMemo(() => {
-    // Sort transactions by date in descending order (most recent first)
+    if (!allTransactions) return [];
     return [...allTransactions].sort((a, b) => {
         try {
             return parseISO(b.date).getTime() - parseISO(a.date).getTime();
@@ -92,7 +141,7 @@ export default function FinancialsPage() {
       ) : (
         <TransactionsTable 
             transactions={sortedTransactions}
-            lots={lots}
+            lots={lots || []}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteRequest}
             onAdd={handleAddTransaction}
@@ -109,8 +158,8 @@ export default function FinancialsPage() {
           </SheetHeader>
           <TransactionForm 
             transaction={editingTransaction}
-            lots={lots}
-            productiveUnits={productiveUnits}
+            lots={lots || []}
+            productiveUnits={productiveUnits || []}
             onSubmit={handleFormSubmit}
           />
         </SheetContent>
@@ -136,5 +185,3 @@ export default function FinancialsPage() {
     </div>
   );
 }
-
-    

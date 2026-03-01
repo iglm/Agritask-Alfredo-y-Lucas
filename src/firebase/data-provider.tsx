@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, deleteDoc, getDocs, writeBatch, collectionGroup } from 'firebase/firestore';
 import { ProductiveUnit, Lot, Transaction, SupplyUsage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from './error-emitter';
@@ -10,7 +10,6 @@ import { User } from 'firebase/auth';
 
 interface DataContextState {
   productiveUnits: ProductiveUnit[];
-  transactions: Transaction[];
   supplyUsages: SupplyUsage[];
   user: User | null;
   isLoading: boolean;
@@ -18,9 +17,6 @@ interface DataContextState {
   addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<ProductiveUnit>;
   updateProductiveUnit: (data: ProductiveUnit) => Promise<void>;
   deleteProductiveUnit: (id: string, lots: Lot[] | null) => Promise<void>;
-  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => Promise<Transaction>;
-  updateTransaction: (data: Transaction) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextState | undefined>(undefined);
@@ -30,11 +26,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const transactionsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const supplyUsagesQuery = useMemoFirebase(() => user && firestore ? query(collectionGroup(firestore, 'supplyUsages'), where('userId', '==', user.uid)) : null, [firestore, user]);
 
   const { data: productiveUnits, isLoading: productiveUnitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
-  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: supplyUsages, isLoading: supplyUsagesLoading } = useCollection<SupplyUsage>(supplyUsagesQuery);
 
 
@@ -121,44 +115,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> => {
-    if (!ensureAuth()) throw new Error("Not authenticated");
-    const newDocRef = doc(collection(firestore, 'transactions'));
-    const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-      await setDoc(newDocRef, newTransaction);
-      return newTransaction;
-    } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', newTransaction);
-      throw error;
-    }
-  };
-
-  const updateTransaction = async (data: Transaction) => {
-    if (!ensureAuth()) return;
-    const docRef = doc(firestore, 'transactions', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
-  };
-
-  const deleteTransaction = async (id: string) => {
-    if (!ensureAuth()) return;
-    const docRef = doc(firestore, 'transactions', id);
-    try {
-      await deleteDoc(docRef);
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'delete');
-    }
-  };
-
-  const isLoading = isUserLoading || productiveUnitsLoading || transactionsLoading || supplyUsagesLoading;
+  const isLoading = isUserLoading || productiveUnitsLoading || supplyUsagesLoading;
 
   const value: DataContextState = {
     productiveUnits: productiveUnits || [],
-    transactions: transactions || [],
     supplyUsages: supplyUsages || [],
     user,
     isLoading,
@@ -166,9 +126,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addProductiveUnit, 
     updateProductiveUnit, 
     deleteProductiveUnit,
-    addTransaction, 
-    updateTransaction, 
-    deleteTransaction,
   };
 
   return (
