@@ -47,18 +47,23 @@ const dataAuditPrompt = ai.definePrompt({
   input: {schema: DataAuditInputSchema},
   output: {schema: DataAuditOutputSchema},
   prompt: `
-    Eres un auditor de datos y gerente de fincas agrícolas con 20 años de experiencia, con un enfoque riguroso en la legislación laboral y la seguridad ocupacional en Colombia. Tu misión es analizar los siguientes datos en formato JSON para encontrar inconsistencias lógicas, omisiones y oportunidades de mejora. La fecha actual es {{currentDate}}.
+    You are an expert farm manager and data auditor AI with 20 years of experience, focusing on Colombian labor laws and occupational safety. The current date is {{currentDate}}.
 
-    Tu análisis debe centrarse en:
-    1.  **Auditoría de Salud y Seguridad (EPS - ALTA SEVERIDAD):** Revisa la lista de 'staff'. Si un colaborador con 'employmentType' igual a 'Contratista' o 'Temporal' está asignado a una labor de 'Mantenimiento' (que puede implicar el uso de químicos o maquinaria) y su campo 'eps' está vacío, genera una observación de severidad 'Alta'. La seguridad del personal y el cumplimiento legal son críticos. La sugerencia debe ser 'Registrar la información de EPS del colaborador de inmediato'.
-    2.  **Omisiones en Cosechas:** Identifica lotes cuya fecha de siembra ('sowingDate') sea de hace varios años pero que no tengan labores de 'Cosecha' registradas en el último año. Los cultivos perennes como café o aguacate deberían tener cosechas anuales.
-    3.  **Colaboradores Inactivos:** Encuentra colaboradores ('staff') que no han tenido ninguna labor ('tasks') asignada en los últimos 60-90 días. Podrían ser colaboradores inactivos que requieren actualización de estado.
-    4.  **Planificación Incompleta:** Detecta lotes recién sembrados (últimos 6 meses) que no tengan ninguna labor de 'Mantenimiento' o 'Fertilización' programada para el futuro. Esto indica una falta de planificación.
-    5.  **Uso de Lotes:** Identifica lotes que existen desde hace mucho tiempo pero no tienen ninguna labor asignada, ni pasada ni futura. Podrían estar abandonados o subutilizados.
+    STRICT INSTRUCTIONS:
+    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
+    2.  Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    3.  Analyze the provided JSON data to find logical inconsistencies, omissions, and opportunities for improvement.
+    4.  If you find no issues, you MUST return an object with an empty "observations" array.
+    5.  For each observation, provide a clear description, category, a concrete suggestion, and a severity level.
 
-    Para cada observación, proporciona una descripción clara del problema, una categoría, una sugerencia concreta y breve, y un nivel de severidad. Sé conciso y directo. Si no encuentras nada, devuelve un array vacío.
+    ANALYTICAL FOCUS:
+    -   **Health & Safety Audit (EPS - HIGH SEVERITY):** This is your highest priority. Review the 'staff' list. If a collaborator with 'employmentType' of 'Contratista' or 'Temporal' is assigned to a 'Mantenimiento' task (which may involve chemicals or machinery) and their 'eps' field is empty, generate a 'High' severity observation. The suggestion must be 'Registrar la información de EPS del colaborador de inmediato'.
+    -   **Harvest Omissions:** Identify lots with a 'sowingDate' from several years ago that have no 'Cosecha' (Harvest) tasks registered in the last year. Perennial crops like coffee or avocado should have annual harvests.
+    -   **Inactive Collaborators:** Find 'staff' members who have not been assigned to any 'tasks' in the last 60-90 days. They might be inactive and require a status update.
+    -   **Incomplete Planning:** Detect recently planted lots (within the last 6 months) that have no 'Mantenimiento' or 'Fertilización' tasks scheduled for the future. This indicates a lack of planning.
+    -   **Lot Utilization:** Identify lots that have existed for a long time but have no tasks assigned, either past or future. They could be abandoned or underutilized.
 
-    Datos a analizar:
+    Data to analyze:
     {{{jsonData}}}
   `,
 });

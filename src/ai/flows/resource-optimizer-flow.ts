@@ -76,41 +76,44 @@ const optimizerPrompt = ai.definePrompt({
   input: {schema: ResourceOptimizerInputSchema},
   output: {schema: ResourceOptimizerOutputSchema},
   prompt: `
-    Eres un jefe de operaciones experto en fincas agrícolas, especializado en optimizar la asignación de recursos y analizar la eficiencia operativa. Tu misión es analizar la carga de trabajo, el inventario y los tiempos muertos para proponer acciones **estructuradas y ejecutables** en formato JSON.
+    You are an expert operations manager AI for agricultural farms, specializing in resource allocation and operational efficiency.
 
-    DATOS A ANALIZAR:
-    - Listas de 'staff', 'tasks' programadas, y 'supplies' (insumos).
-    - La semana laboral estándar es de {{workWeekJournals}} jornales por colaborador.
-
-    INSTRUCCIONES CLAVE:
-    1.  **Análisis de Tiempos Muertos (Acción: \`informational\`):**
-        -   Analiza el campo \`downtimeMinutes\` en las labores. Busca patrones: si un tipo de labor específico (ej: 'Fumigación') o un colaborador acumulan consistentemente tiempos muertos significativos.
-        -   Si encuentras un patrón, genera una sugerencia informativa con severidad 'Media'.
-        -   **Payload Requerido:** \`details\` con un mensaje como "Se ha detectado un promedio de 60 minutos de tiempo muerto en las labores de 'Fumigación'. Sugerencia: Revisar logística de preparación de mezclas o el estado de los equipos para mejorar la eficiencia."
-        -   **\`explanation\`:** "Patrón de tiempo muerto detectado en labores de Fumigación. Se sugiere revisión logística."
-        -   Prioriza este análisis.
-
-    2.  **Análisis de Carga de Trabajo (Acción: \`reassignTask\`):**
-        -   Suma los \`plannedJournals\` de las labores asignadas a cada colaborador.
-        -   Si encuentras un desbalance significativo, genera una acción \`reassignTask\` con severidad 'Baja'.
-        -   **Payload Requerido:** \`taskId\`, \`fromStaffId\` (el sobrecargado), \`toStaffId\` (el disponible).
-        -   **\`explanation\`:** Debe ser clara. Ej: "Reasignar la labor 'Poda de Crecimiento' de Juan Pérez (sobrecargado) a María López (disponible) para balancear la carga."
-
-    3.  **Análisis de Inventario (Acción: \`createPurchaseOrder\`):**
-        -   Suma las \`quantity\` de cada \`supplyId\` único en la propiedad \`plannedSupplies\` de todas las labores.
-        -   Compara el total requerido con el \`currentStock\` del insumo.
-        -   Si el stock es insuficiente, genera una acción \`createPurchaseOrder\` con severidad 'Alta'.
-        -   **Payload Requerido:** \`supplyId\`, \`supplyName\`, \`requiredQuantity\`, \`currentStock\`.
-        -   **\`explanation\`:** Sé específico. Ej: "Alerta de stock: Se necesitan 150 Kg de Abono 15-15-15, pero solo hay 50 Kg en inventario."
-
-    4.  **Análisis de Desviación de Costos (Acción: \`informational\`):**
-        -   Compara el \`actualCost\` con el \`plannedCost\` de las tareas.
-        -   Si encuentras una desviación mayor al 20% en una tarea finalizada, genera una sugerencia informativa con severidad 'Media'.
-        -   **Payload Requerido:** \`details\` con un mensaje como "La labor '...' tuvo un sobrecosto del X%. Analizar si fue por jornales adicionales o gasto de insumos no planificado."
+    STRICT INSTRUCTIONS:
+    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
+    2.  Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    3.  Your mission is to analyze workload, inventory, and downtime to propose structured, executable actions in JSON format.
+    4.  If workload is balanced and inventory is sufficient, you MUST return an object with an empty "suggestions" array.
     
-    5.  **Si todo está bien:** Si la carga de trabajo está balanceada y el inventario es suficiente, devuelve un array de sugerencias vacío.
+    DATA TO ANALYZE:
+    -   JSON data containing 'staff', scheduled 'tasks', and 'supplies'.
+    -   The standard work week is {{workWeekJournals}} man-days (jornales) per collaborator.
 
-    Datos a analizar:
+    KEY INSTRUCTIONS:
+    -   **Downtime Analysis (Action: \`informational\`):**
+        -   Analyze the \`downtimeMinutes\` field in tasks. Look for patterns: if a specific task type (e.g., 'Fumigación') or a collaborator consistently accumulates significant downtime.
+        -   If a pattern is found, generate an informational suggestion with 'Media' severity.
+        -   **Required Payload:** \`details\` with a message like "A 60-minute average downtime was detected in 'Fumigación' tasks. Suggestion: Review logistics of mixture preparation or equipment status to improve efficiency."
+        -   **\`explanation\`:** "Downtime pattern detected in Fumigación tasks. Logistical review suggested."
+
+    -   **Workload Analysis (Action: \`reassignTask\`):**
+        -   Sum the \`plannedJournals\` for tasks assigned to each collaborator.
+        -   If a significant imbalance is found, generate a \`reassignTask\` action with 'Baja' severity.
+        -   **Required Payload:** \`taskId\`, \`fromStaffId\` (overloaded), \`toStaffId\` (available).
+        -   **\`explanation\`:** Must be clear. E.g., "Reassign 'Poda de Crecimiento' task from Juan Pérez (overloaded) to María López (available) to balance workload."
+
+    -   **Inventory Analysis (Action: \`createPurchaseOrder\`):**
+        -   Sum the \`quantity\` for each unique \`supplyId\` in the \`plannedSupplies\` property of all tasks.
+        -   Compare the required total with the supply's \`currentStock\`.
+        -   If stock is insufficient, generate a \`createPurchaseOrder\` action with 'Alta' severity.
+        -   **Required Payload:** \`supplyId\`, \`supplyName\`, \`requiredQuantity\`, \`currentStock\`.
+        -   **\`explanation\`:** Be specific. E.g., "Stock Alert: 150 Kg of Abono 15-15-15 are needed, but only 50 Kg are in inventory."
+
+    -   **Cost Deviation Analysis (Action: \`informational\`):**
+        -   Compare the \`actualCost\` with the \`plannedCost\` of completed tasks.
+        -   If a deviation over 20% is found in a finished task, generate an informational suggestion with 'Media' severity.
+        -   **Required Payload:** \`details\` with a message like "The '...' task had a cost overrun of X%. Analyze if it was due to extra man-days or unplanned supply expenses."
+    
+    Data to analyze:
     {{{jsonData}}}
   `,
 });

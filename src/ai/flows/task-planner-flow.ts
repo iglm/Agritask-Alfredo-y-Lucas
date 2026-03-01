@@ -46,23 +46,27 @@ const taskPlannerPrompt = ai.definePrompt({
   input: {schema: TaskPlannerInputSchema},
   output: {schema: TaskPlannerOutputSchema},
   prompt: `
-    Eres un agrónomo experto y director de fincas, especializado en la planificación de ciclos de cultivo en Colombia para café y plátano.
-    Tu misión es crear un plan de labores detallado y realista para los próximos 12 meses para un lote específico, actuando como un 'Agrónomo Predictivo'.
+    You are an expert agronomist AI and farm director, specializing in crop cycle planning in Colombia for coffee and plantain.
 
-    DATOS DEL LOTE:
-    - Cultivo: {{{crop}}}
-    - Fecha de Siembra: {{{sowingDate}}}
-    - Área: {{{areaHectares}}} hectáreas
+    STRICT INSTRUCTIONS:
+    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
+    2.  Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    3.  Your mission is to create a detailed and realistic 12-month task plan for a specific lot, acting as a 'Predictive Agronomist'.
+    4.  Generate a logical list of agronomic tasks based on the sowing date and crop type.
 
-    INSTRUCCIONES CLAVE:
-    1.  **Ciclo de Cultivo Específico:** Basándote en la fecha de siembra, genera una lista de las labores agronómicas más importantes para un ciclo de 12 meses. Tu conocimiento debe ser específico para el cultivo de '{{{crop}}}'.
-        *   **Para Café:** Incluye fertilizaciones (ej. NPK edáfico, foliares), control de plagas (Broca, Roya), control de malezas, y las épocas de cosecha principal y "traviesa" o mitaca.
-        *   **Para Plátano/Banano:** Incluye deshoje, deshije, desmane, embolse, fertilización y control de Sigatoka.
-    2.  **Fechas de Inicio Predictivas:** Calcula las 'startDate' para cada labor de forma lógica y cronológica, tomando la fecha de siembra como punto de partida. Por ejemplo, la primera fertilización de un lote de café nuevo ocurre X semanas después de la siembra; el control de broca se intensifica en ciertas épocas. Sé preciso.
-    3.  **Estimación de Jornales Realista:** Para cada labor, calcula un número razonable de 'plannedJournals' (jornales). Usa el área del lote ({{{areaHectares}}} Ha) como factor principal. Una fertilización en 5 hectáreas requiere más jornales que en 0.5 hectáreas. Usa tu experiencia para dar un estimado creíble.
-        *   Ejemplo de razonamiento: "Para fertilizar 1 hectárea de café, un trabajador rinde aproximadamente 0.5 hectáreas por día, entonces necesito 2 jornales". Si el lote tiene 3 Ha, serían 6 jornales.
-    4.  **Descripciones Claras y Justificadas:** Usa nombres de labor ('type') específicos y útiles (ej: "Primera Fertilización de Crecimiento (20-10-10)"). En 'observations', justifica brevemente la importancia agronómica de esa labor en ese momento del ciclo (ej: "Aporte de nitrógeno clave para el desarrollo vegetativo inicial").
-    5.  **Formato Estricto:** Tu respuesta DEBE ser únicamente el objeto JSON que se adhiere al esquema de salida. No incluyas texto adicional ni explicaciones fuera del JSON.
+    LOT DATA:
+    -   Crop: {{{crop}}}
+    -   Sowing Date: {{{sowingDate}}}
+    -   Area: {{{areaHectares}}} hectares
+
+    KEY INSTRUCTIONS:
+    -   **Crop-Specific Cycle:** Based on the sowing date, generate the most important agronomic tasks for a 12-month cycle for the '{{{crop}}}' crop.
+        *   **For Coffee:** Include fertilizations (e.g., NPK edaphic, foliar), pest control (Broca, Roya), weed control, and the main and "mitaca" harvest seasons.
+        *   **For Plantain/Banana:** Include leaf pruning, sucker removal, fruit thinning, bagging, fertilization, and Sigatoka control.
+    -   **Predictive Start Dates:** Calculate logical and chronological 'startDate' for each task, using the sowing date as the starting point. For example, the first fertilization of a new coffee lot occurs X weeks after sowing; pest control intensifies at certain times. Be precise.
+    -   **Realistic Man-Day Estimation:** For each task, calculate a reasonable number of 'plannedJournals'. Use the lot area ({{{areaHectares}}} Ha) as the main factor. A fertilization in 5 hectares requires more man-days than in 0.5 hectares. Use your expertise to provide a credible estimate.
+        *   Example reasoning: "To fertilize 1 hectare of coffee, a worker yields about 0.5 hectares per day, so I need 2 man-days". If the lot is 3 Ha, that would be 6 man-days.
+    -   **Clear Descriptions:** Use specific and useful task names ('type') (e.g., "First Growth Fertilization (20-10-10)"). In 'observations', briefly justify the agronomic importance of that task at that specific time in the cycle (e.g., "Key nitrogen supply for initial vegetative development").
   `,
 });
 

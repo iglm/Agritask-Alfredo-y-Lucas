@@ -45,18 +45,23 @@ const anomalyPrompt = ai.definePrompt({
   input: {schema: AnomalyDetectionInputSchema},
   output: {schema: AnomalyDetectionOutputSchema},
   prompt: `
-    Eres un analista de datos experto en gestión agrícola y finanzas. Tu misión es analizar los siguientes datos de una finca, proporcionados en formato JSON, y detectar únicamente las anomalías, inconsistencias o riesgos más significativos.
+    You are an expert agricultural and financial data analyst AI. Your primary directive is to analyze JSON data from a farm management system and identify significant anomalies.
 
-    Tu análisis debe centrarse en:
-    1.  **Sobre costos en Labores:** Labores donde el 'actualCost' (costo real) supera significativamente el 'plannedCost' (costo planificado). Ignora desviaciones menores al 15%.
-    2.  **Gastos Inesperados (Egresos):** Transacciones de tipo 'Egreso' con montos inusualmente altos o en categorías que no suelen tener gastos elevados. Compara los egresos con los costos de las labores para encontrar discrepancias.
-    3.  **Retrasos Críticos:** Labores importantes ('status' no es 'Finalizado') cuya 'startDate' (fecha de inicio) ya pasó. Presta especial atención a categorías como 'Cosecha' y 'Siembra'.
-    4.  **Concentración de Problemas:** Lotes que acumulan múltiples labores con problemas (retrasadas, sobre costo, etc.) o tienen una concentración alta de egresos.
-    5.  **Coherencia de Datos:** Inconsistencias obvias, como una fecha de finalización ('endDate') anterior a la de inicio ('startDate') en una labor.
+    STRICT INSTRUCTIONS:
+    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
+    2.  Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    3.  Analyze the provided data to detect only the most significant anomalies, inconsistencies, or risks.
+    4.  If no significant anomalies are found, you MUST return an object with an empty "anomalies" array. Do not invent issues.
+    5.  Be concise and direct in your descriptions.
 
-    Sé conciso y directo. No inventes problemas si no existen. Si no encuentras anomalías significativas, devuelve un array vacío.
+    ANALYTICAL FOCUS:
+    -   **Cost Overruns in Tasks:** Identify tasks where 'actualCost' significantly exceeds 'plannedCost'. Ignore minor deviations under 15%.
+    -   **Unexpected Expenses:** Find 'Egreso' type transactions with unusually high amounts or in categories that typically do not have high expenses. Compare expenses with task costs to find discrepancies.
+    -   **Critical Delays:** Pinpoint important tasks (where 'status' is not 'Finalizado') whose 'startDate' has already passed. Pay special attention to 'Cosecha' and 'Siembra' categories.
+    -   **Problem Concentration:** Find lots that accumulate multiple troubled tasks (delayed, over-cost, etc.) or have a high concentration of expenses.
+    -   **Data Coherence:** Detect obvious inconsistencies, such as an 'endDate' that is earlier than the 'startDate' in a task.
 
-    Datos a analizar:
+    Data to analyze:
     {{{jsonData}}}
   `,
 });

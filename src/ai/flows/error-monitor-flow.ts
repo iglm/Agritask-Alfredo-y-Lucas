@@ -42,33 +42,37 @@ const errorMonitorPrompt = ai.definePrompt({
   input: { schema: z.object({ log: ErrorMonitorInputSchema }) },
   output: { schema: ErrorMonitorOutputSchema },
   prompt: `
-    You are a Staff Site Reliability Engineer (SRE) for a complex web application. Your task is to analyze an error log and provide a root cause analysis and a concise developer notification.
+    You are a Staff Site Reliability Engineer (SRE) AI for a complex web application. Your task is to analyze an error log and provide a root cause analysis and a concise developer notification.
 
-    Here is the error log to analyze:
-    {{{log}}}
+    STRICT INSTRUCTIONS:
+    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
+    2.  Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    3.  Analyze the entire log object, including 'errorDetail', 'contextSnapshot', 'occurrences', and 'resolution'.
+    4.  Follow the diagnostic logic precisely.
 
-    INSTRUCTIONS:
-    1.  **Analyze the Log:** Examine the entire log object, including 'errorDetail', 'contextSnapshot', 'occurrences', and 'resolution'.
-    
-    2.  **Diagnose the Root Cause:**
-        *   If 'errorDetail.message' contains "Missing or insufficient permissions", it is a 'Firestore Security Rule Denial'.
+    DIAGNOSTIC LOGIC:
+    -   **Diagnose the Root Cause:**
+        *   If 'errorDetail.message' contains "Missing or insufficient permissions", it is 'Firestore Security Rule Denial'.
         *   If 'errorDetail.message' or 'errorDetail.stack' mentions Next.js hydration errors ('Text content does not match server-rendered HTML', 'Hydration failed'), it's a 'Client-Side Hydration Mismatch'.
         *   If 'errorDetail.message' contains AI-related failures (e.g., 'The AI assistant did not return a valid action'), it's an 'AI Assistant Logic Fault'.
         *   If the error is generic (e.g., network timeout, failed to fetch), classify it as 'Network/Connectivity Issue'.
-        *   If none of the above, classify as 'Unknown ApplicationError'.
+        *   If none of the above, classify as 'Unknown Application Error'.
 
-    3.  **Formulate Developer Notification:** Create a brief, technical notification for the lead developer. Be specific.
+    -   **Formulate Developer Notification:** Create a brief, technical notification based on the diagnosis.
         *   For a security rule error: "Firestore '{{contextSnapshot.requestOperation}}' op on '{{contextSnapshot.requestPath}}' was denied. Occurred {{occurrences}} times. Review collection group rules."
         *   For hydration: "Hydration mismatch in '{{contextSnapshot.userAgent}}'. Likely caused by date/time objects. 'rescueTriggered' was '{{resolution.rescueTriggered}}'. Occurred {{occurrences}} times."
         *   For AI fault: "AI assistant logic fault with message: '{{errorDetail.message}}'. Occurred {{occurrences}} times. Review the relevant flow's prompt or logic."
 
-    4.  **Determine Suggested Action:**
+    -   **Determine Suggested Action:**
         *   For 'Client-Side Hydration Mismatch' or suspected local data corruption, suggest 'force_reset_client_cache'.
         *   For 'Firestore Security Rule Denial', suggest 'review_security_rules'.
         *   For 'AI Assistant Logic Fault', suggest 'review_component_logic'.
         *   For all others, suggest 'none'.
     
-    5.  **Pattern Detection:** If the 'occurrences' field in the log is greater than 1, set 'isPatternDetected' to true. Otherwise, set it to false.
+    -   **Pattern Detection:** If the 'occurrences' field in the log is greater than 1, set 'isPatternDetected' to true. Otherwise, set it to false.
+
+    Here is the error log to analyze:
+    {{{log}}}
   `,
 });
 
