@@ -28,7 +28,7 @@ const CreateTaskPayloadSchema = z.object({
 });
 
 const CreateTaskActionSchema = z.object({
-  action: z.literal("CREATE_TASK"),
+  action: z.enum(["CREATE_TASK"]),
   payload: CreateTaskPayloadSchema,
 });
 
@@ -41,7 +41,7 @@ const CreateProductiveUnitPayloadSchema = z.object({
 });
 
 const CreateProductiveUnitActionSchema = z.object({
-    action: z.literal("CREATE_PRODUCTIVE_UNIT"),
+    action: z.enum(["CREATE_PRODUCTIVE_UNIT"]),
     payload: CreateProductiveUnitPayloadSchema,
 });
 
@@ -55,7 +55,7 @@ const CreateLotPayloadSchema = z.object({
 });
 
 const CreateLotActionSchema = z.object({
-    action: z.literal("CREATE_LOT"),
+    action: z.enum(["CREATE_LOT"]),
     payload: CreateLotPayloadSchema,
 });
 
@@ -71,7 +71,7 @@ const UpdateLotPayloadSchema = z.object({
 });
 
 const UpdateLotActionSchema = z.object({
-    action: z.literal("UPDATE_LOT"),
+    action: z.enum(["UPDATE_LOT"]),
     payload: UpdateLotPayloadSchema,
 });
 
@@ -81,7 +81,7 @@ const DeleteLotPayloadSchema = z.object({
 });
 
 const DeleteLotActionSchema = z.object({
-    action: z.literal("DELETE_LOT"),
+    action: z.enum(["DELETE_LOT"]),
     payload: DeleteLotPayloadSchema,
 });
 
@@ -95,7 +95,7 @@ const CreateStaffPayloadSchema = z.object({
 });
 
 const CreateStaffActionSchema = z.object({
-    action: z.literal("CREATE_STAFF"),
+    action: z.enum(["CREATE_STAFF"]),
     payload: CreateStaffPayloadSchema,
 });
 
@@ -111,7 +111,7 @@ const UpdateStaffPayloadSchema = z.object({
 });
 
 const UpdateStaffActionSchema = z.object({
-    action: z.literal("UPDATE_STAFF"),
+    action: z.enum(["UPDATE_STAFF"]),
     payload: UpdateStaffPayloadSchema,
 });
 
@@ -125,7 +125,7 @@ const CreateSupplyPayloadSchema = z.object({
 });
 
 const CreateSupplyActionSchema = z.object({
-    action: z.literal("CREATE_SUPPLY"),
+    action: z.enum(["CREATE_SUPPLY"]),
     payload: CreateSupplyPayloadSchema,
 });
 
@@ -141,14 +141,14 @@ const CreateTransactionPayloadSchema = z.object({
 });
 
 const CreateTransactionActionSchema = z.object({
-    action: z.literal("CREATE_TRANSACTION"),
+    action: z.enum(["CREATE_TRANSACTION"]),
     payload: CreateTransactionPayloadSchema,
 });
 
 
 // -- UNION & PLAN --
 const IncomprehensibleActionSchema = z.object({
-  action: z.literal("INCOMPREHENSIBLE"),
+  action: z.enum(["INCOMPREHENSIBLE"]),
   payload: z.object({
     reason: z.string().describe("Una explicación breve de por qué no se pudo entender el comando o una parte de él."),
   }),
