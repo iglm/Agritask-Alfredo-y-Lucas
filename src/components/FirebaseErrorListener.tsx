@@ -24,34 +24,40 @@ export function FirebaseErrorListener() {
         
         try {
             const fingerprint = `${error.name}:${error.message.split('\n')[0]}`;
-            const now = new Date().toISOString();
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
             const logsCollection = collection(context.firestore, 'system_logs');
+            // Simplified query to avoid composite index
             const q = query(
                 logsCollection,
                 where('userId', '==', context.user.uid),
-                where('fingerprint', '==', fingerprint),
-                where('lastOccurrence', '>=', twentyFourHoursAgo)
+                where('fingerprint', '==', fingerprint)
             );
             
             const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty) {
+            // Client-side filtering for the date range
+            const recentLogDoc = querySnapshot.docs.find(doc => {
+              const lastOccurrence = new Date(doc.data().lastOccurrence);
+              return lastOccurrence >= twentyFourHoursAgo;
+            });
+
+
+            if (recentLogDoc) {
                 // Update existing log
-                const existingLogDoc = querySnapshot.docs[0];
-                const logRef = doc(context.firestore, 'system_logs', existingLogDoc.id);
-                const currentOccurrences = existingLogDoc.data().occurrences || 1;
+                const logRef = doc(context.firestore, 'system_logs', recentLogDoc.id);
+                const currentOccurrences = recentLogDoc.data().occurrences || 1;
                 await updateDoc(logRef, {
                     occurrences: currentOccurrences + 1,
-                    lastOccurrence: now,
+                    lastOccurrence: now.toISOString(),
                 });
             } else {
                 // Create new log document
                 const newLogData: Omit<SystemLog, 'id'> = {
                     userId: context.user.uid,
-                    timestamp: now,
-                    lastOccurrence: now,
+                    timestamp: now.toISOString(),
+                    lastOccurrence: now.toISOString(),
                     severity: 'HIGH', // All caught errors are considered high severity for now
                     fingerprint: fingerprint,
                     occurrences: 1,
