@@ -4,18 +4,27 @@ import { useState, useEffect } from "react";
 import { StaffTable } from "@/components/staff/staff-table";
 import { StaffForm } from "@/components/staff/staff-form";
 import { PageHeader } from "@/components/page-header";
-import { employmentTypes, type Staff } from "@/lib/types";
+import { employmentTypes, type Staff, type Task } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Loader2, Trash2 } from "lucide-react";
-import { useAppData } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { collection, query, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export default function StaffPage() {
-  const { staff: allStaff, isLoading, addStaff, updateStaff, deleteStaff } = useAppData();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
+
+  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: allStaff, isLoading: isStaffLoading } = useCollection<Staff>(staffQuery);
+
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('status', '!=', 'Finalizado')) : null, [firestore, user]);
+  const { data: openTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
+
+  const isLoading = isStaffLoading || isTasksLoading;
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
@@ -26,7 +35,7 @@ export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState('');
   
   useEffect(() => {
-    let staffToFilter = allStaff;
+    let staffToFilter = allStaff || [];
     
     if (filterType !== 'all') {
         staffToFilter = staffToFilter.filter(s => s.employmentType === filterType);
@@ -61,10 +70,17 @@ export default function StaffPage() {
   };
 
   const confirmDelete = async () => {
-    if (!staffToDelete) return;
+    if (!staffToDelete || !firestore) return;
     
     try {
-      await deleteStaff(staffToDelete.id);
+      const assignedTasks = (openTasks || []).filter(task => task.responsibleId === staffToDelete.id);
+      if (assignedTasks.length > 0) {
+          throw new Error(`Este colaborador está asignado a ${assignedTasks.length} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`);
+      }
+
+      const docRef = doc(firestore, 'staff', staffToDelete.id);
+      await deleteDoc(docRef);
+
       toast({
         title: "Colaborador eliminado",
         description: `El colaborador "${staffToDelete.name}" ha sido eliminado.`,
@@ -82,8 +98,10 @@ export default function StaffPage() {
     }
   };
 
-  const handleFormSubmit = (values: Omit<Staff, 'id' | 'userId'>) => {
-    const isDuplicated = allStaff.some(s => 
+  const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
+    if (!firestore || !user) return;
+    
+    const isDuplicated = (allStaff || []).some(s => 
       s.id !== editingStaff?.id &&
       (s.name.toLowerCase().trim() === values.name.toLowerCase().trim() || s.contact.trim() === values.contact.trim())
     );
@@ -97,21 +115,29 @@ export default function StaffPage() {
       return;
     }
     
-    if (editingStaff) {
-      updateStaff({ ...values, id: editingStaff.id, userId: editingStaff.userId });
-      toast({
-        title: "¡Colaborador actualizado!",
-        description: "Los detalles del colaborador han sido actualizados.",
-      });
-    } else {
-      addStaff(values);
-      toast({
-        title: "¡Colaborador creado!",
-        description: "El nuevo colaborador ha sido agregado.",
-      });
+    try {
+      if (editingStaff) {
+        const docRef = doc(firestore, 'staff', editingStaff.id);
+        await setDoc(docRef, { ...values, userId: user.uid }, { merge: true });
+        toast({
+          title: "¡Colaborador actualizado!",
+          description: "Los detalles del colaborador han sido actualizados.",
+        });
+      } else {
+        const collectionRef = collection(firestore, 'staff');
+        const docRef = doc(collectionRef);
+        await setDoc(docRef, { ...values, id: docRef.id, userId: user.uid });
+        toast({
+          title: "¡Colaborador creado!",
+          description: "El nuevo colaborador ha sido agregado.",
+        });
+      }
+      setIsSheetOpen(false);
+      setEditingStaff(undefined);
+    } catch (e) {
+      console.error("Error saving staff:", e);
+      toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudo guardar el colaborador." });
     }
-    setIsSheetOpen(false);
-    setEditingStaff(undefined);
   };
 
   return (
@@ -178,5 +204,3 @@ export default function StaffPage() {
     </div>
   );
 }
-
-    
