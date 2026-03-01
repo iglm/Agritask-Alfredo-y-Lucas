@@ -45,7 +45,7 @@ export type Staff = {
   id: string;
   userId?: string;
   name: string;
-  contact: string;
+  contact?: string;
   employmentType: "Permanente" | "Temporal" | "Contratista";
   baseDailyRate: number;
   eps?: string;

@@ -12,7 +12,7 @@ import { subMonths, format } from 'date-fns';
 
 // Schemas for what can be created. Optional fields are for the AI to infer.
 const ProductiveUnitCreateSchema = z.object({
-  farmName: z.string().describe("El nombre de la finca o unidad productiva."),
+  farmName: z.string().optional().describe("El nombre de la finca o unidad productiva."),
   municipality: z.string().optional().describe("El municipio donde está ubicada."),
   department: z.string().optional().describe("El departamento."),
   totalFarmArea: z.number().optional().describe("El área total de la finca en hectáreas."),
@@ -29,6 +29,7 @@ const StaffCreateSchema = z.object({
   name: z.string().describe("Un nombre ficticio para el colaborador. Ej: 'Colaborador 1', 'Ana Rojas'."),
   baseDailyRate: z.number().describe("El jornal o tarifa diaria a pagar."),
   employmentType: z.enum(employmentTypes).describe("El tipo de empleo, por defecto 'Temporal'."),
+  contact: z.string().optional().describe("Número de contacto del colaborador, si se menciona."),
 });
 
 
@@ -68,9 +69,10 @@ const farmBuilderPrompt = ai.definePrompt({
 
     **CRITICAL DIRECTIVES:**
     1.  **Primary Goal:** Your output MUST be a single, valid JSON object that strictly adheres to the 'FarmPlanSchema'.
-    2.  **Entity Extraction:** You must parse the user's description to create a plan containing ONE 'productiveUnit' (la finca), and OPTIONALLY, arrays of 'lots' and 'staff'.
+    2.  **Entity Extraction:** You must parse the user's description to create a plan containing ONE 'productiveUnit', and OPTIONALLY, arrays of 'lots' and 'staff'. You MUST ignore any instructions related to creating specific recurring tasks (like fertilizations, weedings), financial entries, or supplies. Your scope is limited to Productive Units, Lots, and Staff.
     3.  **Calculations & Logic:**
         *   If the user specifies a total area and a number of lots, you MUST calculate the area for each lot by dividing the total area by the number of lots.
+        *   If a farm name is not provided, you MUST create a default name like 'Finca [Nombre del Municipio]' or 'Mi Finca'.
         *   If the user specifies a relative sowing date (e.g., "10 meses de sembrado"), you MUST calculate the exact date based on the 'currentDate' ({{currentDate}}) and format it as 'YYYY-MM-DD'.
         *   Generate descriptive names for lots and staff if not provided (e.g., "Lote 1", "Lote 2", "Colaborador 1").
     4.  **Defaults:**
@@ -80,7 +82,7 @@ const farmBuilderPrompt = ai.definePrompt({
         *   You are STRICTLY FORBIDDEN from generating more than 25 lots in a single plan.
         *   You are STRICTLY FORBIDDEN from generating more than 25 staff members in a single plan.
         *   If the user's request exceeds these limits, you MUST inform them of the limitation in the 'summary' field and generate a plan with the maximum allowed number (25). Example summary: "Entendido. Crearé la finca con 25 de los 81 lotes solicitados, ya que el máximo por ahora es 25."
-    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the plan you are about to generate.
+    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the plan. If you ignored parts of the request (like creating tasks), you MUST mention it. For example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores. La creación de labores recurrentes o insumos aún no está soportada y esa parte fue ignorada."
 
     **USER DESCRIPTION:**
     "{{description}}"

@@ -11,7 +11,7 @@ import { employmentTypes, type Staff } from "@/lib/types"
 
 const staffFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  contact: z.string().min(7, { message: "El número de contacto es obligatorio." }),
+  contact: z.string().optional(),
   eps: z.string().optional(),
   employmentType: z.enum(employmentTypes),
   baseDailyRate: z.coerce.number().positive({ message: "La tarifa diaria debe ser un número positivo." }),
@@ -65,7 +65,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
               <FormItem>
                 <FormLabel>Número de Contacto</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ej: 3101234567" {...field} />
+                  <Input placeholder="Ej: 3101234567" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -78,7 +78,7 @@ export function StaffForm({ staffMember, onSubmit }: StaffFormProps) {
               <FormItem>
                 <FormLabel>EPS (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ej: Sura" {...field} />
+                  <Input placeholder="Ej: Sura" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

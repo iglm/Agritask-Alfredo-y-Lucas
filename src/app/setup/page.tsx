@@ -81,7 +81,6 @@ export default function SetupPage() {
                 const staffRef = doc(collection(firestore, 'staff'));
                  const newStaff: Staff = {
                     ...staffData,
-                    contact: 'N/A', // Add default for required field
                     id: staffRef.id,
                     userId: user.uid,
                 };
@@ -165,7 +164,7 @@ export default function SetupPage() {
                 <CardContent className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                         <Wheat className="h-4 w-4 text-muted-foreground"/>
-                        <span>Finca: <span className="font-semibold">{plan.productiveUnit.farmName}</span></span>
+                        <span>Finca: <span className="font-semibold">{plan.productiveUnit.farmName || 'Mi Finca'}</span></span>
                     </div>
                      <div className="flex items-center gap-2">
                         <Tractor className="h-4 w-4 text-muted-foreground"/>
