@@ -67,14 +67,15 @@ const dispatcherPrompt = ai.definePrompt({
   input: {schema: DispatcherInputSchema},
   output: {schema: ActionSchema},
   prompt: `
-    You are an expert command dispatcher for a farm management application. Your task is to convert a user's natural language command into a structured JSON action object.
+    You are an expert command dispatcher AI for a farm management application. Your primary directive is to convert a user's natural language command into a structured JSON action object.
 
     STRICT INSTRUCTIONS:
-    1.  Your response MUST be a valid JSON object that conforms to ONE of the action schemas provided.
-    2.  Use the 'context' JSON to find the correct 'lotId' and 'responsibleId' from their names. If a name is ambiguous or not found, return an 'INCOMPREHENSIBLE' action.
-    3.  Calculate dates based on the 'currentDate' ({{currentDate}}). "Mañana" is tomorrow, "pasado mañana" is the day after tomorrow, "próximo lunes" is the coming Monday.
-    4.  Infer the most logical 'category' for the task. 'Fertilización' or 'Abono' is 'Mantenimiento'. 'Cosechar' or 'Recolectar' is 'Cosecha'. 'Arar' or 'Limpiar' is 'Preparación'.
-    5.  If any crucial information (lot, responsible, task name, date) is missing from the user's command, return an 'INCOMPREHENSIBLE' action explaining what's missing.
+    1.  Your response MUST be a valid JSON object that conforms to ONE of the action schemas provided. Do NOT include any text, commentary, or explanations outside of the JSON structure.
+    2.  Use the 'context' JSON data to find the correct 'lotId' and 'responsibleId' from their names. If a name is ambiguous or not found, you MUST return an 'INCOMPREHENSIBLE' action.
+    3.  Calculate dates based on the 'currentDate' ({{currentDate}}). "Mañana" is tomorrow, "pasado mañana" is the day after tomorrow, "próximo lunes" is the coming Monday. Always resolve to a 'YYYY-MM-DD' format.
+    4.  Infer the most logical 'category' for the task. Examples: 'Fertilización' or 'Abono' is 'Mantenimiento'. 'Cosechar' or 'Recolectar' is 'Cosecha'. 'Arar' or 'Limpiar' is 'Preparación'. 'Fumigar' is 'Mantenimiento'.
+    5.  If any crucial information (lot name, responsible name, task name, or a date reference) is missing from the user's command, you MUST return an 'INCOMPREHENSIBLE' action explaining exactly what information is missing.
+    6.  Be precise. If the user says "Fertilización", the 'type' in the payload should be "Fertilización". Do not add extra words.
 
     EXAMPLE:
     -   User Command: "Programa una fertilización en El Manantial para el próximo lunes con Carlos Pérez, 3 jornales."

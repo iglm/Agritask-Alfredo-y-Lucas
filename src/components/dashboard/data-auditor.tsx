@@ -12,6 +12,8 @@ import { format, startOfToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface DataAuditorProps {
+  title: string;
+  description: string;
   lots: Lot[];
   tasks: Task[];
   staff: Staff[];
@@ -34,7 +36,7 @@ const severityConfig = {
   },
 };
 
-export function DataAuditor({ lots, tasks, staff, isAiProcessing, setIsAiProcessing }: DataAuditorProps) {
+export function DataAuditor({ title, description, lots, tasks, staff, isAiProcessing, setIsAiProcessing }: DataAuditorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DataAuditOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +87,10 @@ export function DataAuditor({ lots, tasks, staff, isAiProcessing, setIsAiProcess
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SearchCheck className="h-6 w-6 text-primary" />
-          <span>Agente Auditor de Datos</span>
+          <span>{title}</span>
         </CardTitle>
         <CardDescription>
-          Detecta inconsistencias lógicas, riesgos de cumplimiento y oportunidades de mejora en la planificación de tu finca.
+          {description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -99,7 +101,7 @@ export function DataAuditor({ lots, tasks, staff, isAiProcessing, setIsAiProcess
               Auditando Datos...
             </>
           ) : (
-            'Ejecutar Auditoría Ahora'
+            'Ejecutar Auditoría'
           )}
         </Button>
 

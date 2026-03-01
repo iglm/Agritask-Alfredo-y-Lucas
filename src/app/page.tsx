@@ -156,7 +156,9 @@ export default function DashboardPage() {
       </div>
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <AnomalyDetector 
+          <AnomalyDetector
+            title="Analista de Anomalías"
+            description="Encuentra sobrecostos, retrasos o gastos inesperados en tu operación."
             lots={lots} 
             tasks={tasks} 
             transactions={transactions} 
@@ -164,6 +166,8 @@ export default function DashboardPage() {
             setIsAiProcessing={setIsAiProcessing}
           />
           <DataAuditor 
+            title="Auditor de Planificación"
+            description="Detecta inconsistencias lógicas, riesgos de cumplimiento y omisiones en tu planificación."
             lots={lots} 
             tasks={tasks} 
             staff={staff}
@@ -171,6 +175,8 @@ export default function DashboardPage() {
             setIsAiProcessing={setIsAiProcessing}
           />
           <ResourceOptimizer 
+            title="Optimizador de Recursos"
+            description="Analiza la carga de trabajo y el inventario de la próxima semana para sugerir mejoras."
             tasks={tasks} 
             staff={staff} 
             supplies={supplies}

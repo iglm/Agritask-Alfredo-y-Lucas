@@ -47,6 +47,8 @@ type CreatePurchaseOrderPayload = {
 };
 
 interface ResourceOptimizerProps {
+  title: string;
+  description: string;
   tasks: Task[];
   staff: Staff[];
   supplies: Supply[];
@@ -54,7 +56,7 @@ interface ResourceOptimizerProps {
   setIsAiProcessing: (isProcessing: boolean) => void;
 }
 
-export function ResourceOptimizer({ tasks, staff, supplies, isAiProcessing, setIsAiProcessing }: ResourceOptimizerProps) {
+export function ResourceOptimizer({ title, description, tasks, staff, supplies, isAiProcessing, setIsAiProcessing }: ResourceOptimizerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ResourceOptimizerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -154,10 +156,10 @@ export function ResourceOptimizer({ tasks, staff, supplies, isAiProcessing, setI
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SlidersHorizontal className="h-6 w-6 text-primary" />
-          <span>Agente Optimizador de Recursos</span>
+          <span>{title}</span>
         </CardTitle>
         <CardDescription>
-          Analiza la carga de trabajo y el inventario para la próxima semana y sugiere acciones para mejorar la eficiencia.
+          {description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -168,7 +170,7 @@ export function ResourceOptimizer({ tasks, staff, supplies, isAiProcessing, setI
               Optimizando...
             </>
           ) : (
-            'Optimizar Próxima Semana'
+            'Optimizar Recursos'
           )}
         </Button>
 

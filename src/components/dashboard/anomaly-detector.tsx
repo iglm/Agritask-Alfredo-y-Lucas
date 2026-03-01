@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 
 interface AnomalyDetectorProps {
+  title: string;
+  description: string;
   lots: Lot[];
   tasks: Task[];
   transactions: Transaction[];
@@ -33,7 +35,7 @@ const severityConfig = {
   },
 };
 
-export function AnomalyDetector({ lots, tasks, transactions, isAiProcessing, setIsAiProcessing }: AnomalyDetectorProps) {
+export function AnomalyDetector({ title, description, lots, tasks, transactions, isAiProcessing, setIsAiProcessing }: AnomalyDetectorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function AnomalyDetector({ lots, tasks, transactions, isAiProcessing, set
       setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: 'Error del Agente de Detección',
+        title: 'Error del Analista de IA',
         description: errorMessage,
       });
     } finally {
@@ -78,10 +80,10 @@ export function AnomalyDetector({ lots, tasks, transactions, isAiProcessing, set
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-6 w-6 text-primary" />
-          <span>Asistente IA de Detección</span>
+          <span>{title}</span>
         </CardTitle>
         <CardDescription>
-          Usa inteligencia artificial para encontrar posibles problemas o inconsistencias en tus datos.
+          {description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -92,7 +94,7 @@ export function AnomalyDetector({ lots, tasks, transactions, isAiProcessing, set
               Analizando...
             </>
           ) : (
-            'Detectar Anomalías Ahora'
+            'Analizar Ahora'
           )}
         </Button>
 
