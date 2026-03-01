@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Archive, Gavel, WifiOff, Bot, Sparkles, PieChart } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Gavel, WifiOff, Bot, Sparkles, PieChart, SprayCan, Banknote, CalendarCheck } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +78,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const assistantNavItem = { href: '/assistant', label: 'Consola de IA', icon: Bot };
   
   const managementNavItems = [
-    { href: '/management', label: 'Gestión de Datos', icon: Archive },
+    { href: '/lotes', label: t('nav.lots'), icon: Tractor },
+    { href: '/staff', label: t('nav.staff'), icon: Users },
+    { href: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { href: '/supplies', label: t('nav.supplies'), icon: SprayCan },
+    { href: '/financials', label: t('nav.financials'), icon: Banknote },
+    { href: '/attendance', label: t('nav.attendance'), icon: CalendarCheck },
     { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
   ];
   
