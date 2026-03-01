@@ -10,6 +10,16 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+    
+    // Helper function to check ownership securely, ensuring userId field exists.
+    function isExistingDocOwner() {
+        return isSignedIn() && 'userId' in resource.data && isOwner(resource.data.userId);
+    }
+    
+    // Helper function to check ownership for new documents.
+    function isNewDocOwner() {
+        return isSignedIn() && 'userId' in request.resource.data && isOwner(request.resource.data.userId);
+    }
 
     // User can manage their own profile
     match /users/{userId} {
@@ -17,55 +27,53 @@ service cloud.firestore {
     }
 
     // --- Collections ---
-    // General pattern:
-    // - To create a document, the new document's `userId` must match the user's UID.
-    // - To read, update, or delete a document, the existing document's `userId` must match the user's UID.
-    // - To list (query) a collection, the query MUST include a `where("userId", "==", request.auth.uid)` clause.
+    // This pattern is now robust against documents that might be missing a `userId`.
+    // It enforces that any document read must have a `userId` field that matches the user.
+    // This forces client queries to include `where("userId", "==", request.auth.uid)`.
 
     match /lots/{lotId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /productiveUnits/{unitId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /staff/{staffId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /staffAttendance/{attendanceId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /supplies/{supplyId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /tasks/{taskId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /transactions/{transactionId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read, update, delete: if isExistingDocOwner();
     }
 
     match /system_logs/{logId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isNewDocOwner();
+      allow read: if isExistingDocOwner();
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
-    // Permissions for subcollections are inherited from their parent documents.
-    // We verify the user owns the parent document before allowing access.
+    // Permissions for subcollections are based on ownership of the parent document.
     
     match /lots/{lotId}/sublots/{sublotId} {
       allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
@@ -73,6 +81,11 @@ service cloud.firestore {
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
       allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
+    }
+    
+    // --- Collection Group ---
+    match /{path=**}/supplyUsages/{usageId} {
+      allow read: if isExistingDocOwner();
     }
   }
 }
