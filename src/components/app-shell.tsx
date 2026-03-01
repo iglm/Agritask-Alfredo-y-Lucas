@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, WifiOff, Bot } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, WifiOff, Bot, Sparkles } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
+  const setupNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
   const assistantNavItem = { href: '/assistant', label: 'Asistente de Comandos', icon: Bot };
   const managementNavItems = [
     { href: '/lotes', label: 'Gestión de Lotes', icon: Tractor },
@@ -86,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: LayoutDashboard };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
-  const allNavItems = [mainNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, setupNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -140,6 +141,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href={mainNavItem.href}>
                       <mainNavItem.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{mainNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(setupNavItem.href)}
+                    tooltip={{ children: setupNavItem.label }}
+                  >
+                    <Link href={setupNavItem.href}>
+                      <setupNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{setupNavItem.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
