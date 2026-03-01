@@ -58,7 +58,21 @@ export default function FinancialsPage() {
   const deleteTransaction = (id: string) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'transactions', id);
-    deleteDoc(docRef).catch(error => handleWriteError(error, docRef.path, 'delete'));
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: "Transacción eliminada",
+          description: `La transacción ha sido eliminada permanentemente.`,
+        });
+      })
+      .catch(error => {
+        handleWriteError(error, docRef.path, 'delete');
+        toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar la transacción.",
+        });
+      });
   };
 
   const sortedTransactions = useMemo(() => {
@@ -90,10 +104,6 @@ export default function FinancialsPage() {
   const confirmDelete = () => {
     if (!transactionToDelete) return;
     deleteTransaction(transactionToDelete.id);
-    toast({
-      title: "Transacción eliminada",
-      description: `La transacción ha sido eliminada permanentemente.`,
-    });
     setIsDeleteDialogOpen(false);
     setTransactionToDelete(null);
   };

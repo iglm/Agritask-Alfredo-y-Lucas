@@ -42,12 +42,6 @@ export default function AttendancePage() {
   const handlePrint = () => {
     window.print();
   };
-
-  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
-    console.error(`AttendancePage Error (${operation} on ${path}):`, error);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
-    throw error;
-  };
   
   const saveAttendance = async (records: StaffAttendance[]) => {
     if (!firestore || !user) {
@@ -55,29 +49,35 @@ export default function AttendancePage() {
         return;
     }
     
-    try {
-        const batch = writeBatch(firestore);
-        const attendanceCol = collection(firestore, 'staffAttendance');
+    const batch = writeBatch(firestore);
+    const attendanceCol = collection(firestore, 'staffAttendance');
 
-        for (const record of records) {
-             const { id, ...data } = record;
-             data.userId = user.uid;
+    for (const record of records) {
+        const { id, ...data } = record;
+        data.userId = user.uid;
 
-            if (record.id.startsWith('temp-')) { // A temporary ID for new records
-                const docRef = doc(attendanceCol);
-                batch.set(docRef, { ...data, id: docRef.id });
-            } else {
-                const docRef = doc(firestore, 'staffAttendance', record.id);
-                batch.update(docRef, data);
-            }
+        if (record.id.startsWith('temp-')) { // A temporary ID for new records
+            const docRef = doc(attendanceCol);
+            batch.set(docRef, { ...data, id: docRef.id });
+        } else {
+            const docRef = doc(firestore, 'staffAttendance', record.id);
+            batch.update(docRef, data);
         }
-
-        await batch.commit();
-        toast({ title: '¡Asistencia guardada!', description: `Se guardó la asistencia para el ${format(date!, "PPP", { locale: es })}.` });
-    } catch (error: any) {
-        handleWriteError(error, 'staffAttendance', 'write', records);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la asistencia.' });
     }
+
+    batch.commit()
+      .then(() => {
+        toast({ title: '¡Asistencia guardada!', description: `Se guardó la asistencia para el ${format(date!, "PPP", { locale: es })}.` });
+      })
+      .catch((error) => {
+        console.error("Error saving attendance: ", error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: 'staffAttendance',
+          operation: 'write',
+          requestResourceData: records
+        }));
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la asistencia.' });
+      });
   };
 
 

@@ -81,7 +81,7 @@ export const handleExportAll = async (
             variedad: lot.variety || 'N/A',
           });
 
-          // Fetch and add sublots for this lot - this is the core fix
+          // Fetch and add sublots for this lot
           const sublotsQuery = query(collection(firestore, 'lots', lot.id, 'sublots'));
           const sublotsSnapshot = await getDocs(sublotsQuery);
           

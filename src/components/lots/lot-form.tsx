@@ -79,17 +79,17 @@ export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: Lot
       name: lot?.name ?? "",
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
-      areaHectares: lot?.areaHectares ?? '',
+      areaHectares: lot?.areaHectares ?? undefined,
       location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
-      sowingDensity: lot?.sowingDensity ?? '',
-      distanceBetweenPlants: lot?.distanceBetweenPlants ?? '',
-      distanceBetweenRows: lot?.distanceBetweenRows ?? '',
-      totalTrees: lot?.totalTrees ?? '',
-      accumulatedMortality: lot?.accumulatedMortality ?? '',
+      sowingDensity: lot?.sowingDensity ?? undefined,
+      distanceBetweenPlants: lot?.distanceBetweenPlants ?? undefined,
+      distanceBetweenRows: lot?.distanceBetweenRows ?? undefined,
+      totalTrees: lot?.totalTrees ?? undefined,
+      accumulatedMortality: lot?.accumulatedMortality ?? undefined,
       technicalNotes: lot?.technicalNotes ?? "",
       soilType: lot?.soilType ?? "",
-      phAverage: lot?.phAverage ?? '',
+      phAverage: lot?.phAverage ?? undefined,
     },
   });
 
@@ -132,7 +132,7 @@ export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: Lot
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4 max-h-[80vh] overflow-y-auto pr-4">
-        <Accordion type="multiple" defaultValue={['item-1', 'item-2', lot?.type === 'Productivo' ? 'item-3' : '']} className="w-full">
+        <Accordion type="multiple" defaultValue={['item-1', 'item-2', lot?.type === 'Productivo' || cropValue ? 'item-3' : '']} className="w-full">
             <AccordionItem value="item-1">
                 <AccordionTrigger>1. Información Principal</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">

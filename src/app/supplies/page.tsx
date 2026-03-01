@@ -45,21 +45,21 @@ export default function SuppliesPage() {
     throw error;
   };
 
-  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>) => {
+  const addSupply = (data: Omit<Supply, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'supplies'));
     const newSupply: Supply = { ...data, id: newDocRef.id, userId: user.uid };
     setDoc(newDocRef, newSupply).catch(error => handleWriteError(error, newDocRef.path, 'create', newSupply));
   };
 
-  const updateSupply = async (data: Supply) => {
+  const updateSupply = (data: Supply) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'supplies', data.id);
     const payload = { ...data, userId: user.uid };
     setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
-  const deleteSupply = async (id: string) => {
+  const deleteSupply = (id: string) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'supplies', id);
     deleteDoc(docRef).catch(error => handleWriteError(error, docRef.path, 'delete'));

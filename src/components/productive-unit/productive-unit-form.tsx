@@ -51,7 +51,7 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
     },
   });
 
-  const { isSubmitting } = form;
+  const { formState: { isSubmitting } } = form;
   
   function handleFormSubmit(values: FormValues) {
     const { crops, varieties, ...rest } = values;

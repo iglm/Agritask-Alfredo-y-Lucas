@@ -61,10 +61,12 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
   const transactionType = form.watch("type");
   const categories = transactionType === 'Ingreso' ? incomeCategories : expenseCategories;
   
-  // Reset category if type changes and current category is not valid for new type
-  if (transactionType && !categories.includes(form.getValues('category'))) {
-    form.setValue('category', '');
-  }
+  useEffect(() => {
+    // Reset category if type changes and current category is not valid for new type
+    if (transactionType && !categories.includes(form.getValues('category'))) {
+        form.setValue('category', '');
+    }
+  }, [transactionType, categories, form]);
 
   function handleFormSubmit(values: TransactionFormValues) {
     const dataToSubmit = {

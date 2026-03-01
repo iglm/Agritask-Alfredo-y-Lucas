@@ -12,7 +12,7 @@ export type Lot = {
   productiveUnitId: string;
   name: string;
   type: (typeof lotTypes)[number];
-  crop?: string;
+  crop: string;
   variety?: string;
   areaHectares: number;
   location?: string;

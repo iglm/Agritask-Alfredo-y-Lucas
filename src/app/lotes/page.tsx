@@ -197,9 +197,25 @@ export default function LotsPage() {
     const lotRef = doc(firestore, 'lots', id);
     const batch = writeBatch(firestore);
     
+    // Delete sublots
     const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
     const sublotsSnapshot = await getDocs(sublotsQuery);
     sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    // Delete associated tasks and their supply usages
+    const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id));
+    const tasksSnapshot = await getDocs(tasksQuery);
+    for (const taskDoc of tasksSnapshot.docs) {
+        const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
+        const usagesSnapshot = await getDocs(usagesQuery);
+        usagesSnapshot.forEach(usageDoc => batch.delete(usageDoc.ref));
+        batch.delete(taskDoc.ref);
+    }
+
+    // Delete associated transactions
+    const transactionsQuery = query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', id));
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+    transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
 
     batch.delete(lotRef);
     batch.commit().catch(error => handleWriteError(error, lotRef.path, 'delete'));
@@ -400,13 +416,13 @@ export default function LotsPage() {
       
       {/* Deletion Dialogs */}
       <AlertDialog open={isUnitDeleteDialogOpen} onOpenChange={setIsUnitDeleteDialogOpen}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la unidad "{unitToDelete?.farmName}" y **todos** sus lotes, labores y finanzas asociados. Esta acción es irreversible.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteUnit} className="bg-destructive hover:bg-destructive/90">Eliminar Todo</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la unidad "{unitToDelete?.farmName}" y **todos** sus lotes, labores y finanzas asociados. Esta acción es irreversible.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteUnit} className="bg-destructive hover:bg-destructive/90"><Trash2 className="mr-2 h-4 w-4" />Eliminar Todo</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
       <AlertDialog open={isLotDeleteDialogOpen} onOpenChange={setIsLotDeleteDialogOpen}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el lote "{lotToDelete?.name}" y sus datos asociados (sub-lotes, labores, etc.).</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteLot} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el lote "{lotToDelete?.name}" y sus datos asociados (sub-lotes, labores, etc.).</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteLot} className="bg-destructive hover:bg-destructive/90"><Trash2 className="mr-2 h-4 w-4" />Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
       <AlertDialog open={isSubLotDeleteDialogOpen} onOpenChange={setIsSubLotDeleteDialogOpen}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el sub-lote "{subLotToDelete?.name}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteSubLot} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el sub-lote "{subLotToDelete?.name}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteSubLot} className="bg-destructive hover:bg-destructive/90"><Trash2 className="mr-2 h-4 w-4" />Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
     </div>
   );

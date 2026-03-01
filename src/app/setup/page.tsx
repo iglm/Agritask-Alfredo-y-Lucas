@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Bot, Check, FileJson, Loader2, Sparkles, Wand2, Wheat, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
-import { useFirebase } from '@/firebase';
+import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { ProductiveUnit, Lot, Staff } from '@/lib/types';
 import { writeBatch, collection, doc } from 'firebase/firestore';
 
@@ -47,9 +47,9 @@ export default function SetupPage() {
     if (!plan || !firestore || !user) return;
 
     setIsCreating(true);
-    try {
-        const batch = writeBatch(firestore);
+    const batch = writeBatch(firestore);
 
+    try {
         // 1. Create Productive Unit
         const unitRef = doc(collection(firestore, 'productiveUnits'));
         const newUnit: ProductiveUnit = {
@@ -65,6 +65,7 @@ export default function SetupPage() {
                 const lotRef = doc(collection(firestore, 'lots'));
                 const newLot: Lot = {
                     ...lotData,
+                    crop: lotData.crop || '',
                     id: lotRef.id,
                     userId: user.uid,
                     productiveUnitId: unitRef.id,
@@ -99,7 +100,12 @@ export default function SetupPage() {
 
     } catch (e: any) {
         console.error('Error executing plan:', e);
-        toast({ variant: 'destructive', title: 'Error al Crear la Finca', description: 'No se pudo guardar la información en la base de datos.' });
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `productiveUnits (batch operation)`,
+          operation: 'write',
+          requestResourceData: plan
+        }));
+        toast({ variant: 'destructive', title: 'Error al Crear la Finca', description: 'No se pudo guardar la información. Revisa los permisos de la base de datos.' });
     } finally {
         setIsCreating(false);
     }
