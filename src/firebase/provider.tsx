@@ -5,6 +5,7 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore, Unsubscribe, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 
 // Internal state for user authentication
@@ -136,6 +137,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
+      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );

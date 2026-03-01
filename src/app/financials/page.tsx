@@ -36,39 +36,29 @@ export default function FinancialsPage() {
   const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
     console.error(`FinancialsPage Error (${operation} on ${path}):`, error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+    throw error;
   };
 
-  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> => {
+  const addTransaction = (data: Omit<Transaction, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'transactions'));
     const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-      await setDoc(newDocRef, newTransaction);
-      return newTransaction;
-    } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', newTransaction);
-      throw error;
-    }
+    setDoc(newDocRef, newTransaction)
+      .catch(error => handleWriteError(error, newDocRef.path, 'create', newTransaction));
   };
 
-  const updateTransaction = async (data: Transaction) => {
+  const updateTransaction = (data: Transaction) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'transactions', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
+    const payload = { ...data, userId: user.uid };
+    setDoc(docRef, payload, { merge: true })
+      .catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
-  const deleteTransaction = async (id: string) => {
+  const deleteTransaction = (id: string) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'transactions', id);
-    try {
-      await deleteDoc(docRef);
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'delete');
-    }
+    deleteDoc(docRef).catch(error => handleWriteError(error, docRef.path, 'delete'));
   };
 
   const sortedTransactions = useMemo(() => {

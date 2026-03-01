@@ -8,7 +8,7 @@ import { employmentTypes, type Staff, type Task } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Loader2, Trash2 } from "lucide-react";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,12 @@ export default function StaffPage() {
     setFilteredStaff(staffToFilter);
   }, [allStaff, filterType, searchTerm]);
 
+  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
+    console.error(`StaffPage Error (${operation} on ${path}):`, error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+    throw error;
+  };
+
   const handleFilterByType = (type: string) => {
     setFilterType(type);
   };
@@ -72,30 +78,38 @@ export default function StaffPage() {
   const confirmDelete = async () => {
     if (!staffToDelete || !firestore) return;
     
-    try {
-      const assignedTasks = (openTasks || []).filter(task => task.responsibleId === staffToDelete.id);
-      if (assignedTasks.length > 0) {
-          throw new Error(`Este colaborador está asignado a ${assignedTasks.length} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`);
-      }
-
-      const docRef = doc(firestore, 'staff', staffToDelete.id);
-      await deleteDoc(docRef);
-
-      toast({
-        title: "Colaborador eliminado",
-        description: `El colaborador "${staffToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'No se puede eliminar al colaborador',
-        description: error.message || 'Ocurrió un error al intentar eliminar al colaborador.',
-        duration: 6000,
-      });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setStaffToDelete(null);
+    const assignedTasks = (openTasks || []).filter(task => task.responsibleId === staffToDelete.id);
+    if (assignedTasks.length > 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No se puede eliminar al colaborador',
+            description: `Este colaborador está asignado a ${assignedTasks.length} labor(es) no finalizada(s). Reasigna o finaliza estas labores primero.`,
+            duration: 6000,
+        });
+        setIsDeleteDialogOpen(false);
+        setStaffToDelete(null);
+        return;
     }
+
+    const docRef = doc(firestore, 'staff', staffToDelete.id);
+    deleteDoc(docRef)
+        .then(() => {
+            toast({
+                title: "Colaborador eliminado",
+                description: `El colaborador "${staffToDelete.name}" ha sido eliminado.`,
+            });
+        })
+        .catch(error => {
+            handleWriteError(error, docRef.path, 'delete');
+            toast({
+                variant: 'destructive',
+                title: 'Error al eliminar',
+                description: 'No se pudo eliminar al colaborador. Revisa los permisos e inténtalo de nuevo.',
+            });
+        });
+        
+    setIsDeleteDialogOpen(false);
+    setStaffToDelete(null);
   };
 
   const handleFormSubmit = async (values: Omit<Staff, 'id' | 'userId'>) => {
@@ -115,29 +129,26 @@ export default function StaffPage() {
       return;
     }
     
-    try {
-      if (editingStaff) {
-        const docRef = doc(firestore, 'staff', editingStaff.id);
-        await setDoc(docRef, { ...values, userId: user.uid }, { merge: true });
-        toast({
-          title: "¡Colaborador actualizado!",
-          description: "Los detalles del colaborador han sido actualizados.",
-        });
-      } else {
-        const collectionRef = collection(firestore, 'staff');
-        const docRef = doc(collectionRef);
-        await setDoc(docRef, { ...values, id: docRef.id, userId: user.uid });
-        toast({
-          title: "¡Colaborador creado!",
-          description: "El nuevo colaborador ha sido agregado.",
-        });
-      }
-      setIsSheetOpen(false);
-      setEditingStaff(undefined);
-    } catch (e) {
-      console.error("Error saving staff:", e);
-      toast({ variant: 'destructive', title: "Error al guardar", description: "No se pudo guardar el colaborador." });
+    if (editingStaff) {
+      const docRef = doc(firestore, 'staff', editingStaff.id);
+      const payload = { ...values, userId: user.uid };
+      setDoc(docRef, payload, { merge: true })
+        .then(() => {
+          toast({ title: "¡Colaborador actualizado!", description: "Los detalles del colaborador han sido actualizados." });
+        })
+        .catch(error => handleWriteError(error, docRef.path, 'update', payload));
+    } else {
+      const collectionRef = collection(firestore, 'staff');
+      const docRef = doc(collectionRef);
+      const payload = { ...values, id: docRef.id, userId: user.uid };
+      setDoc(docRef, payload)
+        .then(() => {
+          toast({ title: "¡Colaborador creado!", description: "El nuevo colaborador ha sido agregado." });
+        })
+        .catch(error => handleWriteError(error, docRef.path, 'create', payload));
     }
+    setIsSheetOpen(false);
+    setEditingStaff(undefined);
   };
 
   return (

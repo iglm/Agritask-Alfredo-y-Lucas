@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from 'firebase/firestore';
-import { Staff, ProductiveUnit, Task } from '@/lib/types';
+import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { collection, query, where, writeBatch, doc } from 'firebase/firestore';
+import { Staff, ProductiveUnit, Task, StaffAttendance } from '@/lib/types';
 import { Loader2, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -18,9 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceReportGenerator } from "@/components/attendance/attendance-report-generator";
 import { PrintableAttendanceSheet } from "@/components/attendance/printable-attendance-sheet";
 import { PayrollReportGenerator } from "@/components/attendance/payroll-report-generator";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AttendancePage() {
   const { firestore, user } = useFirebase();
+  const { toast } = useToast();
 
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const unitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
@@ -40,6 +42,44 @@ export default function AttendancePage() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
+    console.error(`AttendancePage Error (${operation} on ${path}):`, error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+    throw error;
+  };
+  
+  const saveAttendance = async (records: StaffAttendance[]) => {
+    if (!firestore || !user) {
+        toast({ variant: 'destructive', title: 'Funcionalidad no disponible sin conexión', description: 'Inicia sesión para registrar la asistencia.' });
+        return;
+    }
+    
+    try {
+        const batch = writeBatch(firestore);
+        const attendanceCol = collection(firestore, 'staffAttendance');
+
+        for (const record of records) {
+             const { id, ...data } = record;
+             data.userId = user.uid;
+
+            if (record.id.startsWith('temp-')) { // A temporary ID for new records
+                const docRef = doc(attendanceCol);
+                batch.set(docRef, { ...data, id: docRef.id });
+            } else {
+                const docRef = doc(firestore, 'staffAttendance', record.id);
+                batch.update(docRef, data);
+            }
+        }
+
+        await batch.commit();
+        toast({ title: '¡Asistencia guardada!', description: `Se guardó la asistencia para el ${format(date!, "PPP", { locale: es })}.` });
+    } catch (error: any) {
+        handleWriteError(error, 'staffAttendance', 'write', records);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la asistencia.' });
+    }
+  };
+
 
   const defaultUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : null;
 
@@ -101,6 +141,7 @@ export default function AttendancePage() {
               <AttendanceList 
                   staff={staff || []}
                   selectedDate={date}
+                  onSave={saveAttendance}
               />
           </TabsContent>
           <TabsContent value="reports" className="mt-6">

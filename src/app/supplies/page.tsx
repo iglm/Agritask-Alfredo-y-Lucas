@@ -42,39 +42,27 @@ export default function SuppliesPage() {
   const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
     console.error(`SuppliesPage Error (${operation} on ${path}):`, error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+    throw error;
   };
 
-  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>): Promise<Supply> => {
+  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'supplies'));
     const newSupply: Supply = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-      await setDoc(newDocRef, newSupply);
-      return newSupply;
-    } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', newSupply);
-      throw error;
-    }
+    setDoc(newDocRef, newSupply).catch(error => handleWriteError(error, newDocRef.path, 'create', newSupply));
   };
 
   const updateSupply = async (data: Supply) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'supplies', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
+    const payload = { ...data, userId: user.uid };
+    setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
   const deleteSupply = async (id: string) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'supplies', id);
-    try {
-      await deleteDoc(docRef);
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'delete');
-    }
+    deleteDoc(docRef).catch(error => handleWriteError(error, docRef.path, 'delete'));
   };
   
   const handleAddSupply = () => {

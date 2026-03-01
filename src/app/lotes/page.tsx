@@ -80,16 +80,15 @@ export default function LotsPage() {
   const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
     console.error(`LotsPage Error (${operation} on ${path}):`, error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+    throw error;
   };
 
   const addTask = async (data: Omit<Task, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'tasks'));
     const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-        await setDoc(newDocRef, newTask);
-        return newTask;
-    } catch (error) { handleWriteError(error, newDocRef.path, 'create', newTask); throw error; }
+    setDoc(newDocRef, newTask).catch(error => handleWriteError(error, newDocRef.path, 'create', newTask));
+    return newTask;
   };
 
   // --- Unit Handlers ---
@@ -97,23 +96,15 @@ export default function LotsPage() {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'productiveUnits'));
     const newUnit: ProductiveUnit = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-      await setDoc(newDocRef, newUnit);
-      return newUnit;
-    } catch (error) {
-      handleWriteError(error, newDocRef.path, 'create', newUnit);
-      throw error;
-    }
+    setDoc(newDocRef, newUnit).catch(error => handleWriteError(error, newDocRef.path, 'create', newUnit));
+    return newUnit;
   };
 
   const updateProductiveUnit = async (data: ProductiveUnit) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'productiveUnits', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
+    const payload = { ...data, userId: user.uid };
+    setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
   const deleteProductiveUnit = async (id: string) => {
@@ -121,41 +112,38 @@ export default function LotsPage() {
     const unitRef = doc(firestore, 'productiveUnits', id);
     const associatedLots = (allLots || []).filter(lot => lot.productiveUnitId === id);
 
-    try {
-        const batch = writeBatch(firestore);
-        for (const lot of associatedLots) {
-            const lotRef = doc(firestore, 'lots', lot.id);
-            const sublotsQuery = query(collection(firestore, 'lots', lot.id, 'sublots'));
-            const sublotsSnapshot = await getDocs(sublotsQuery);
-            sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+    const batch = writeBatch(firestore);
+    for (const lot of associatedLots) {
+        const lotRef = doc(firestore, 'lots', lot.id);
+        const sublotsQuery = query(collection(firestore, 'lots', lot.id, 'sublots'));
+        const sublotsSnapshot = await getDocs(sublotsQuery);
+        sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
 
-            const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
-            const tasksSnapshot = await getDocs(tasksQuery);
-            for (const taskDoc of tasksSnapshot.docs) {
-                const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
-                const usagesSnapshot = await getDocs(usagesQuery);
-                usagesSnapshot.forEach(usageDoc => batch.delete(usageDoc.ref));
-                batch.delete(taskDoc.ref);
-            }
-
-            const transactionsQuery = query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
-            const transactionsSnapshot = await getDocs(transactionsQuery);
-            transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
-            
-            batch.delete(lotRef);
+        const tasksQuery = query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
+        const tasksSnapshot = await getDocs(tasksQuery);
+        for (const taskDoc of tasksSnapshot.docs) {
+            const usagesQuery = collection(firestore, 'tasks', taskDoc.id, 'supplyUsages');
+            const usagesSnapshot = await getDocs(usagesQuery);
+            usagesSnapshot.forEach(usageDoc => batch.delete(usageDoc.ref));
+            batch.delete(taskDoc.ref);
         }
-        batch.delete(unitRef);
-        await batch.commit();
 
-        toast({
-            title: "Unidad Productiva eliminada",
-            description: `La unidad y sus ${associatedLots.length} lotes asociados han sido eliminados.`,
-        });
-
-    } catch (error) {
-      handleWriteError(error, unitRef.path, 'delete');
-      throw error;
+        const transactionsQuery = query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', lot.id));
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+        transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        batch.delete(lotRef);
     }
+    batch.delete(unitRef);
+    
+    batch.commit()
+        .then(() => {
+            toast({
+                title: "Unidad Productiva eliminada",
+                description: `La unidad y sus ${associatedLots.length} lotes asociados han sido eliminados.`,
+            });
+        })
+        .catch(error => handleWriteError(error, unitRef.path, 'delete'));
   };
 
   const handleAddUnit = () => {
@@ -172,11 +160,7 @@ export default function LotsPage() {
   };
   const confirmDeleteUnit = async () => {
     if (!unitToDelete) return;
-    try {
-      await deleteProductiveUnit(unitToDelete.id);
-    } catch (error) {
-        console.error("Failed to delete productive unit:", error);
-    }
+    await deleteProductiveUnit(unitToDelete.id);
     setIsUnitDeleteDialogOpen(false);
     setUnitToDelete(null);
   };
@@ -197,35 +181,28 @@ export default function LotsPage() {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'lots'));
     const newLot: Lot = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-      await setDoc(newDocRef, newLot);
-      return newLot;
-    } catch (error) { handleWriteError(error, newDocRef.path, 'create', newLot); throw error; }
+    setDoc(newDocRef, newLot).catch(error => handleWriteError(error, newDocRef.path, 'create', newLot));
+    return newLot;
   };
 
   const updateLot = async (data: Lot) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'lots', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
+    const payload = { ...data, userId: user.uid };
+    setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
   const deleteLot = async (id: string) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const lotRef = doc(firestore, 'lots', id);
-    try {
-      const batch = writeBatch(firestore);
-      
-      const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
-      const sublotsSnapshot = await getDocs(sublotsQuery);
-      sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+    const batch = writeBatch(firestore);
+    
+    const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
+    const sublotsSnapshot = await getDocs(sublotsQuery);
+    sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
 
-      batch.delete(lotRef);
-      await batch.commit();
-    } catch (error) { handleWriteError(error, lotRef.path, 'delete'); throw error; }
+    batch.delete(lotRef);
+    batch.commit().catch(error => handleWriteError(error, lotRef.path, 'delete'));
   };
 
   const handleAddLot = (unitId: string) => {
@@ -266,28 +243,21 @@ export default function LotsPage() {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
     const newSubLot: SubLot = { ...data, id: newDocRef.id, lotId, userId: user.uid };
-     try {
-      await setDoc(newDocRef, newSubLot);
-      return newSubLot;
-    } catch (error) { handleWriteError(error, newDocRef.path, 'create', newSubLot); throw error; }
+    setDoc(newDocRef, newSubLot).catch(error => handleWriteError(error, newDocRef.path, 'create', newSubLot));
+    return newSubLot;
   };
 
   const updateSubLot = async (data: SubLot) => {
     if (!user || !firestore) return;
     const docRef = doc(firestore, 'lots', data.lotId, 'sublots', data.id);
-    try {
-      await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-    } catch (error) {
-      handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
+    const payload = { ...data, userId: user.uid };
+    setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
   };
 
   const deleteSubLot = async (lotId: string, subLotId: string) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const subLotRef = doc(firestore, 'lots', lotId, 'sublots', subLotId);
-    try {
-      await deleteDoc(subLotRef);
-    } catch (error) { handleWriteError(error, subLotRef.path, 'delete'); throw error; }
+    deleteDoc(subLotRef).catch(error => handleWriteError(error, subLotRef.path, 'delete'));
   };
 
 

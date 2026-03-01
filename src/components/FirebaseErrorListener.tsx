@@ -23,7 +23,7 @@ export function FirebaseErrorListener() {
         const isPermissionError = error instanceof FirestorePermissionError;
         
         try {
-            const fingerprint = `${error.name}:${error.message.split('\\n')[0]}`;
+            const fingerprint = `${error.name}:${error.message.split('\n')[0]}`;
             const now = new Date().toISOString();
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
