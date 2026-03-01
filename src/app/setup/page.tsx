@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot, Check, FileJson, Loader2, Sparkles, Wand2, Wheat, X, Users, CheckSquare } from 'lucide-react';
+import { Bot, Check, FileJson, Loader2, Sparkles, Wand2, Wheat, X, Users, CheckSquare, Tractor } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
