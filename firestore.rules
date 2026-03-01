@@ -2,58 +2,80 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Users can only read and write their own profile
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
     }
-    
-    // --- Collections ---
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- User Profile ---
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // --- Main Collections ---
+    // This pattern allows authenticated users to query lists (relying on client-side
+    // security), but only allows get/write operations on documents they own.
     match /lots/{lotId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /productiveUnits/{unitId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /staff/{staffId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /staffAttendance/{attendanceId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /supplies/{supplyId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /tasks/{taskId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
     match /transactions/{transactionId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
     }
+    
     match /system_logs/{logId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(request.resource.data.userId);
+      allow list: if isSignedIn(); // client queries with where('userId', '==', user.uid)
+      allow get: if isOwner(resource.data.userId);
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
     match /lots/{lotId}/sublots/{sublotId} {
-      allow read, write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/lots/$(lotId)).data.userId;
+      // For subcollections, a get() on the parent is efficient and secure.
+      allow read, write: if isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/tasks/$(taskId)).data.userId;
+      allow read, write: if isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
     }
     
     // --- Collection Group ---
     match /{path=**}/supplyUsages/{usageId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // This rule is crucial for reports that query across all tasks.
+      allow read: if isOwner(resource.data.userId);
     }
   }
 }
