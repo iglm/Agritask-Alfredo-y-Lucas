@@ -10,7 +10,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { CalendarIcon, Loader2, PlusCircle, Trash2 } from 'lucide-react';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -36,7 +36,7 @@ const addSupplySchema = z.object({
 type AddSupplyFormValues = z.infer<typeof addSupplySchema>;
 
 export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, deleteSupplyUsage }: SupplyUsageManagerProps) {
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
   
   const [isAdding, setIsAdding] = useState(false);
@@ -57,7 +57,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, 
     }
   }, [watch, setValue]);
 
-  const usagesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks', taskId, 'supplyUsages')) : null, [firestore, taskId]);
+  const usagesQuery = useMemoFirebase(() => firestore && user ? query(collection(firestore, 'tasks', taskId, 'supplyUsages'), where('userId', '==', user.uid)) : null, [firestore, user, taskId]);
   const { data: supplyUsages, isLoading: isLoadingUsages } = useCollection<SupplyUsage>(usagesQuery);
   
   const selectedSupplyId = watch('supplyId');

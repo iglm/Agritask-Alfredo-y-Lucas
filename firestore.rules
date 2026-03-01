@@ -2,66 +2,70 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return request.auth.uid == userId; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
 
     // This function checks the 'userId' field of an existing document.
-    function isExistingDocOwner() {
-      return isSignedIn() && resource.data.userId == request.auth.uid;
+    function isExistingDocOwner(doc) {
+      return isOwner(doc.data.userId);
     }
     // This function checks the 'userId' field of a document being created.
     function isNewDocOwner() {
-      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+      return isOwner(request.resource.data.userId);
     }
 
     // Rule for the user's own profile document
     match /users/{userId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
-    // Secure rules for user-owned collections
+    // Secure rules for TOP-LEVEL user-owned collections
     match /productiveUnits/{unitId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /lots/{lotId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /staff/{staffId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /staffAttendance/{attId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /tasks/{taskId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /supplies/{supplyId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     match /transactions/{transId} {
-      allow read, update, delete: if isExistingDocOwner();
+      allow read, update, delete: if isExistingDocOwner(resource);
       allow create: if isNewDocOwner();
     }
     
-    // Subcollections also need secure rules
+    // Subcollections can be secured by checking ownership of the parent document.
     match /lots/{lotId}/sublots/{sublotId} {
-      allow read, update, delete: if isExistingDocOwner();
-      allow create: if isNewDocOwner();
+      allow read, write: if isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
     }
-    match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, update, delete: if isExistingDocOwner();
-      allow create: if isNewDocOwner();
+
+    // `supplyUsages` uses a collectionGroup query, so it needs a recursive wildcard rule.
+    // This rule also covers direct subcollection access like /tasks/{taskId}/supplyUsages/{usageId}
+    match /{path=**}/supplyUsages/{usageId} {
+      // The client query MUST constrain by userId for this to work on 'list'.
+      allow read: if isOwner(resource.data.userId);
+      // For writes, we check the parent task's owner.
+      allow write: if isOwner(get(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)).data.userId);
     }
 
     // System logs should remain secure
     match /system_logs/{logId} {
       allow create: if isNewDocOwner();
-      allow read: if isExistingDocOwner();
+      allow read: if isExistingDocOwner(resource);
       allow update, delete: if false;
     }
   }
