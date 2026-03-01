@@ -157,9 +157,20 @@ export default function AssistantPage() {
               const responsible = staff?.find(s => s.id === payload.responsibleId);
               if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
 
+              // Calculate planned cost for supplies
+              let plannedSupplyCost = 0;
+              if (payload.plannedSupplies) {
+                for (const planned of payload.plannedSupplies) {
+                    const supplyInfo = supplies?.find(s => s.id === planned.supplyId);
+                    if (supplyInfo) {
+                        plannedSupplyCost += (supplyInfo.costPerUnit || 0) * planned.quantity;
+                    }
+                }
+              }
+
               const taskData = {
                 ...payload,
-                plannedCost: payload.plannedJournals * responsible.baseDailyRate,
+                plannedCost: (payload.plannedJournals * responsible.baseDailyRate) + plannedSupplyCost,
                 supplyCost: 0,
                 actualCost: 0,
                 progress: 0,
@@ -169,7 +180,11 @@ export default function AssistantPage() {
               
               const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
               const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
-              systemMessageContent = `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`;
+              let supplyMessage = '';
+              if (payload.plannedSupplies && payload.plannedSupplies.length > 0) {
+                  supplyMessage = ` con ${payload.plannedSupplies.length} insumo(s) planificado(s).`
+              }
+              systemMessageContent = `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}${supplyMessage}`;
             }
             break;
           

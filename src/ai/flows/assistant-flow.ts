@@ -12,6 +12,11 @@ import { employmentTypes, taskCategories, supplyUnits, incomeCategories, expense
 // Define the schemas for the individual actions.
 
 // -- TASK --
+const PlannedSupplySchema = z.object({
+  supplyId: z.string().describe("The ID of the supply to be used."),
+  quantity: z.number().describe("The quantity of the supply planned for the task."),
+});
+
 const CreateTaskPayloadSchema = z.object({
   type: z.string().describe("El nombre específico de la labor. Ej: 'Fertilización NPK', 'Control de Maleza'."),
   lotId: z.string().describe("El ID del lote donde se realizará la labor."),
@@ -19,6 +24,7 @@ const CreateTaskPayloadSchema = z.object({
   startDate: z.string().describe("La fecha de inicio calculada en formato YYYY-MM-DD."),
   plannedJournals: z.number().describe("El número de jornales (días-hombre) planificados. Por defecto es 1 si no se especifica."),
   category: z.enum(taskCategories).describe("La categoría agronómica de la labor. La IA debe inferir la más apropiada."),
+  plannedSupplies: z.array(PlannedSupplySchema).optional().describe("Una lista de insumos planificados para esta labor, si se mencionan en el comando."),
 });
 
 const CreateTaskActionSchema = z.object({
@@ -124,7 +130,7 @@ const PlanSchema = z.object({
 // -- FLOW --
 const DispatcherInputSchema = z.object({
   command: z.string().describe("El comando de lenguaje natural del usuario."),
-  context: z.string().describe("Un JSON string con arrays de 'productiveUnits', 'lots' y 'staff' para mapear nombres a IDs."),
+  context: z.string().describe("Un JSON string con arrays de 'productiveUnits', 'lots', 'staff' y 'supplies' para mapear nombres a IDs."),
   currentDate: z.string().describe("La fecha actual en formato YYYY-MM-DD para resolver fechas relativas como 'mañana' o 'próximo lunes'."),
 });
 export type DispatcherInput = z.infer<typeof DispatcherInputSchema>;
@@ -148,19 +154,20 @@ const dispatcherPrompt = ai.definePrompt({
 
     STRICT INSTRUCTIONS:
     1.  Your response MUST be a valid JSON object that conforms to the 'PlanSchema'.
-    2.  First, create a concise, conversational 'summary' of the actions you are about to take.
+    2.  First, create a concise, conversational 'summary' of the actions you are about to take. This summary MUST mention any supplies being planned.
     3.  Then, create a 'plan' which is an ARRAY of action objects.
     4.  You can create Productive Units (Fincas), Lots, Staff, Tasks, Supplies (Insumos), and Transactions (Ingresos/Egresos).
-    5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots", "add 50 workers"), you MUST respond with an 'INCOMPREHENSIBLE' action. Your reason should be: "Aún no puedo procesar creaciones masivas. Por favor, crea una entidad a la vez.".
+    5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots", "add 50 workers"), you MUST respond with an 'INCOMPREHENSIBLE' action. Your reason should be: "Aún no puedo procesar creaciones masivas. Para eso, usa el Constructor IA desde el menú principal.".
     6.  For commands involving multiple, distinct actions (e.g., "create a lot and then a task"), create a separate action object for EACH request in the 'plan' array.
-    7.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
+    7.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId', 'supplyId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
     8.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
     9.  Infer logical defaults. For 'CREATE_TASK', 'plannedJournals' defaults to 1. For 'CREATE_STAFF', 'employmentType' defaults to 'Temporal'. For 'CREATE_LOT', if a crop is mentioned, it's a 'Productivo' lot.
     10. For 'CREATE_SUPPLY', infer 'unitOfMeasure' from: [${supplyUnits.join(', ')}].
     11. For 'CREATE_TRANSACTION', infer the 'type'. 'Gasto', 'compra', 'egreso' mean 'Egreso'. 'Venta', 'recibí pago', 'ingreso' mean 'Ingreso'. For 'Ingreso', infer 'category' from: [${incomeCategories.join(', ')}]. For 'Egreso', infer 'category' from: [${expenseCategories.join(', ')}]. If a lot is mentioned, include its 'lotId'. The date defaults to today.
-    12. **DETECT ANALYTICAL QUERIES:** Your role is STRICTLY for data entry commands. If the user asks a question or requests analysis, summary, optimization, or diagnosis (e.g., '¿Hay problemas?', 'Analiza mis costos', 'Optimiza la semana'), you MUST NOT generate a plan. Instead, your response must be a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
+    12. **NEW: Supply Planning in Tasks:** If a 'CREATE_TASK' command mentions supplies (e.g., "con 2 bultos de urea"), you MUST parse the quantity and name, find the 'supplyId' from context, and add it to the 'plannedSupplies' array in the task payload.
+    13. **DETECT ANALYTICAL QUERIES:** Your role is STRICTLY for data entry commands. If the user asks a question or requests analysis, summary, optimization, or diagnosis (e.g., '¿Hay problemas?', 'Analiza mis costos', 'Optimiza la semana'), you MUST NOT generate a plan. Instead, your response must be a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
 
-    CONTEXT DATA (Productive Units, Lots, and Staff):
+    CONTEXT DATA (Productive Units, Lots, Staff, and Supplies):
     \`\`\`json
     {{context}}
     \`\`\`
@@ -169,13 +176,24 @@ const dispatcherPrompt = ai.definePrompt({
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
 
-    // Example: Create Task
-    // User: "Programa una guadañada en El Filo para mañana con Mario"
+    // Example: Create Task with Supplies
+    // User: "Programa una fertilización en El Filo para mañana con Mario, usa 2 bultos de Urea y 1 de Abono NPK"
     {
-      "summary": "Entendido. Voy a programar la labor de guadañada.",
+      "summary": "Entendido. Voy a programar la labor de fertilización, planificando el uso de 2 bultos de Urea y 1 de Abono NPK.",
       "plan": [{
         "action": "CREATE_TASK",
-        "payload": { "type": "Guadañada", "lotId": "id_de_el_filo", "responsibleId": "id_de_mario", "startDate": "...", "plannedJournals": 1, "category": "Mantenimiento" }
+        "payload": { 
+            "type": "Fertilización", 
+            "lotId": "id_de_el_filo", 
+            "responsibleId": "id_de_mario", 
+            "startDate": "...", 
+            "plannedJournals": 1, 
+            "category": "Mantenimiento",
+            "plannedSupplies": [
+                { "supplyId": "id_de_urea", "quantity": 2 },
+                { "supplyId": "id_de_abono_npk", "quantity": 1 }
+            ]
+        }
       }]
     }
     
@@ -186,16 +204,6 @@ const dispatcherPrompt = ai.definePrompt({
         "plan": [{
             "action": "CREATE_SUPPLY",
             "payload": { "name": "Abono NPK", "unitOfMeasure": "Bulto", "costPerUnit": 120000, "currentStock": 20 }
-        }]
-    }
-
-    // Example: Create Transaction (Expense)
-    // User: "Registra un gasto de 80000 en combustible"
-    {
-        "summary": "Ok, registrando un nuevo egreso.",
-        "plan": [{
-            "action": "CREATE_TRANSACTION",
-            "payload": { "type": "Egreso", "description": "Compra de combustible", "amount": 80000, "category": "Transporte", "date": "{{currentDate}}" }
         }]
     }
     
