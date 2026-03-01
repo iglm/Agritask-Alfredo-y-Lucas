@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, SquarePen, Trash2, Building, PlusCircle } from "lucide-react";
 import { ProductiveUnit } from "@/lib/types";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardFooter } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
 
@@ -77,6 +77,14 @@ export function ProductiveUnitTable({ units, onEdit, onDelete, onAdd }: Producti
           </TableBody>
         </Table>
       </CardContent>
+      {units.length > 0 && (
+        <CardFooter className="border-t p-4 justify-end">
+             <Button onClick={onAdd}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Agregar Otra Unidad
+            </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

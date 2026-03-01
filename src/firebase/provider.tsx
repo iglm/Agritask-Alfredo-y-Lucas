@@ -10,7 +10,10 @@ import { useCollection } from './firestore/use-collection';
 
 // CRUD Operations
 const createCRUDFunctions = (firestore: Firestore, user: User) => ({
-  addLot: (data: Omit<Lot, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'lots')), { ...data, userId: user.uid }),
+  addLot: (data: Omit<Lot, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'lots'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateLot: (data: Lot) => setDoc(doc(firestore, 'lots', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteLot: async (id: string) => {
       const batch = writeBatch(firestore);
@@ -21,27 +24,45 @@ const createCRUDFunctions = (firestore: Firestore, user: User) => ({
       batch.delete(lotRef);
       return batch.commit();
   },
-  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'productiveUnits')), { ...data, userId: user.uid }),
+  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'productiveUnits'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateProductiveUnit: (data: ProductiveUnit) => setDoc(doc(firestore, 'productiveUnits', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteProductiveUnit: (id: string) => deleteDoc(doc(firestore, 'productiveUnits', id)),
   
-  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'staff')), { ...data, id: doc(collection(firestore, 'staff')).id, userId: user.uid }),
+  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'staff'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateStaff: (data: Staff) => setDoc(doc(firestore, 'staff', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteStaff: (id: string) => deleteDoc(doc(firestore, 'staff', id)),
   
-  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'supplies')), { ...data, id: doc(collection(firestore, 'supplies')).id, userId: user.uid }),
+  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'supplies'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateSupply: (data: Supply) => setDoc(doc(firestore, 'supplies', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteSupply: (id: string) => deleteDoc(doc(firestore, 'supplies', id)),
   
-  addTask: (data: Omit<Task, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'tasks')), { ...data, id: doc(collection(firestore, 'tasks')).id, userId: user.uid }),
+  addTask: (data: Omit<Task, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'tasks'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateTask: (data: Task) => setDoc(doc(firestore, 'tasks', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteTask: (id: string) => deleteDoc(doc(firestore, 'tasks', id)),
   
-  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => setDoc(doc(collection(firestore, 'transactions')), { ...data, id: doc(collection(firestore, 'transactions')).id, userId: user.uid }),
+  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => {
+    const newDocRef = doc(collection(firestore, 'transactions'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
+  },
   updateTransaction: (data: Transaction) => setDoc(doc(firestore, 'transactions', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteTransaction: (id: string) => deleteDoc(doc(firestore, 'transactions', id)),
 
-  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => setDoc(doc(collection(firestore, 'lots', lotId, 'sublots')), { ...data, lotId, userId: user.uid }),
+  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
+    const newDocRef = doc(collection(firestore, 'lots', lotId, 'sublots'));
+    return setDoc(newDocRef, { ...data, id: newDocRef.id, lotId, userId: user.uid });
+  },
   updateSubLot: (data: SubLot) => setDoc(doc(firestore, 'lots', data.lotId, 'sublots', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteSubLot: (lotId: string, subLotId: string) => deleteDoc(doc(firestore, 'lots', lotId, 'sublots', subLotId)),
 });
