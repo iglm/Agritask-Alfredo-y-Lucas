@@ -1,38 +1,56 @@
-# 🌿 AgriTask Master: Manual de Inicio Rápido
+# 🌿 AgriTask Master: Guía de Inicio Rápido
 
 ¡Bienvenido! Esta herramienta ha sido diseñada para que gestiones tu finca con la misma facilidad con la que envías un mensaje de WhatsApp. Aquí no necesitas ser un experto en sistemas, solo conocer tu tierra.
 
-## 1. Acceso y Configuración Inicial
+## 1. El Inicio Mágico (Para Empezar de Cero)
 
-*   **Inicio de Sesión:** Ingresa con tu cuenta de Google. Esto mantiene tus datos seguros y sincronizados en la nube, y te permite usar la app incluso sin internet.
-*   **Unidad Productiva:** En la sección "Unidad Productiva", registra el nombre de tu finca y su ubicación. Si tienes varias fincas, puedes añadirlas todas.
-*   **Lotes y Unidades de Soporte:** En "Lotes", crea tus terrenos. Diferencia entre:
-    *   **Productivos:** Lotes de café, plátano, etc., donde registrarás cultivos y cosechas.
-    *   **De Soporte:** Áreas como Vías, Vivero o Administración. Esto es clave para que los costos de mantenimiento no se mezclen con los de producción.
-*   **Colaboradores e Insumos:** Antes de empezar, registra a tu equipo en "Colaboradores" y tu inventario en "Insumos".
+¿Nuevo por aquí? Usa el **Constructor IA** para crear toda tu operación en segundos.
 
-## 2. El Corazón de la App: Registrar Labores
+1.  Ve al menú y haz clic en **"Constructor IA"** (el icono de las chispas ✨).
+2.  En el cuadro de texto, **describe tu finca con tus propias palabras.** Sé tan detallado como quieras.
+    > *"Crea la finca 'La Esmeralda' en Jardín, Antioquia. Tiene 20 hectáreas con 8 lotes de café de 2.5 hectáreas cada uno, sembrados hace 3 años. También registra a 10 trabajadores."*
+3.  Presiona **"Generar Plan"**. La IA diseñará tu finca y te mostrará un resumen.
+4.  Si estás de acuerdo, presiona **"Aprobar y Construir"**. ¡Listo! Tu finca está creada.
 
-En el módulo **Labores**, puedes planificar y registrar cada actividad. Al crear una labor, define:
-*   **Datos Básicos:** Qué se va a hacer, en qué lote y quién es el responsable.
-*   **Planificación:** Estima los jornales que tomará. Si es una labor que se repite (ej. una fertilización cada 3 meses), activa la opción **"Labor Recurrente"**. ¡El sistema la programará por ti la próxima vez!
-*   **Insumos:** Asigna los fertilizantes o productos que planeas usar. A medida que los apliques, regístralos en el "Gestor de Insumos" dentro de la labor para que el stock y los costos se actualicen solos.
+## 2. El Día a Día (Asistente de Comandos)
 
-## 3. Asistentes IA y Reportes: Tus Aliados
+Olvídate de los formularios. Para registrar las actividades diarias, solo tienes que dar órdenes.
 
-*   **Panel Principal:** Aquí tienes un resumen diario de tus finanzas (ingresos, costos productivos y de soporte) y las labores de la semana. Usa los **Asistentes de IA** con un clic para:
-    *   **Detectar Anomalías:** Encuentra sobrecostos o retrasos.
-    *   **Auditar Datos:** Busca inconsistencias lógicas en tu planificación.
-    *   **Optimizar Recursos:** Recibe sugerencias para balancear el trabajo de la próxima semana.
-*   **Asistencia y Pagos:** En el módulo "Asistencia", lleva el control diario de tu personal y genera el reporte de **Pre-Nómina** para calcular los pagos de la semana sin errores.
-*   **Reportes:** En esta sección, analiza a fondo tu operación. El gráfico más importante es el de **Rentabilidad por Lote**, que te dirá exactamente cuánto ganas o pierdes en cada uno de tus terrenos productivos.
+1.  En el menú, ve al **"Asistente de Comandos"** (el icono del robot 🤖).
+2.  Escribe lo que necesitas hacer. Puedes dar varias instrucciones a la vez.
+    *   *"Programa una guadañada en El Filo para mañana con Ana."*
+    *   *"Registra un gasto de 150.000 en transporte."*
+    *   *"Añade al inventario el insumo 'Urea' en Bultos a 90.000, tengo 30."*
 
-## 4. 🆘 Botón de Rescate (Si algo falla)
+El asistente ejecutará tus órdenes y te confirmará cada acción.
 
-Si notas que la aplicación se comporta de forma extraña o no carga bien, no te preocupes. Hemos creado una solución de emergencia.
+## 3. Tus Ojos en la Finca (Panel Principal)
 
-*   Si la aplicación falla, verás una pantalla de error con un **botón verde de "Reparar Aplicación"**.
-*   Presiónalo una vez. La app se **limpiará sola (caché y datos locales) y se reiniciará** en su versión más estable, sin borrar los datos de tu finca guardados en la nube.
+El **"Panel"** es tu resumen diario. De un solo vistazo verás tus finanzas y las labores de la semana. Aquí viven tus **Analistas de IA**:
 
----
-**Criterio del Consultor:** Este manual vende la idea de que la app es un socio, no una carga administrativa. Al enfocarte en el reporte diario y la facilidad de uso, eliminas la barrera tecnológica para el agricultor.
+*   **Analista de Anomalías:** Encuentra sobrecostos, retrasos o gastos inesperados.
+*   **Auditor de Planificación:** Busca inconsistencias en tu planificación (ej. un trabajador sin EPS asignado a una tarea de riesgo).
+*   **Optimizador de Recursos:** Revisa la carga de trabajo y el inventario para sugerirte mejoras.
+
+Simplemente haz clic en el botón de cada analista para obtener un reporte inteligente al instante.
+
+## 4. El Taller (Para Ajustes Finos)
+
+¿Necesitas editar un detalle, consultar una tabla o ver toda la información de un lote?
+
+1.  Ve al menú y haz clic en **"Gestión de Datos"** (el icono del archivo 🗂️).
+2.  Desde aquí, tendrás acceso a las secciones de **Lotes, Colaboradores, Labores, Insumos y Finanzas**.
+3.  Estas secciones contienen las tablas y los formularios "de toda la vida" para que puedas ver y editar cualquier registro con el máximo detalle.
+
+## 5. Tu Póliza de Seguros (Respaldo Completo)
+
+Tus datos son tu activo más valioso. Protégelos.
+
+*   En el **Panel Principal**, encontrarás un botón para **"Crear Respaldo Completo"**.
+*   Úsalo periódicamente. Esto descargará **toda la información de tu finca** (lotes, personal, finanzas, etc.) a tu computador en archivos CSV. Es tu copia de seguridad personal.
+
+## 6. 🆘 Botón de Rescate (Si algo falla)
+
+Si la aplicación se comporta de forma extraña, no te preocupes.
+*   En la pantalla de error, verás un **botón verde de "Reparar Aplicación"**.
+*   Presiónalo. La app se **limpiará sola (caché y datos locales) y se reiniciará**, sin borrar los datos guardados en la nube.
