@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Bot, Loader2, Send, User } from 'lucide-react';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { Lot, Staff, Task } from '@/lib/types';
+import { Lot, Staff, Task, ProductiveUnit, employmentTypes } from '@/lib/types';
 import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 
 type ChatMessage = {
@@ -32,13 +32,17 @@ export default function AssistantPage() {
 
   const { firestore, user } = useFirebase();
 
+  // Data queries for context
+  const unitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: units, isLoading: unitsLoading } = useCollection<ProductiveUnit>(unitsQuery);
+
   const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
 
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
 
-  const isPageLoading = lotsLoading || staffLoading;
+  const isPageLoading = unitsLoading || lotsLoading || staffLoading;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -48,8 +52,34 @@ export default function AssistantPage() {
       });
     }
   }, [messages]);
+
+  // Action Handlers
+  const addProductiveUnit = async (data: Omit<ProductiveUnit, 'id' | 'userId'>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'productiveUnits'));
+    const newUnit: ProductiveUnit = { ...data, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newUnit);
+    return newUnit;
+  };
   
-  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
+  const addLot = async (data: Omit<Lot, 'id' | 'userId'>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'lots'));
+    const type = data.crop && data.crop.length > 0 ? 'Productivo' : 'Soporte';
+    const newLot: Lot = { ...data, type, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newLot);
+    return newLot;
+  };
+  
+  const addStaff = async (data: Omit<Staff, 'id' | 'userId'>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'staff'));
+    const newStaff: Staff = { ...data, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newStaff);
+    return newStaff;
+  };
+  
+  const addTask = async (data: Omit<Task, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'tasks'));
     const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
@@ -57,74 +87,79 @@ export default function AssistantPage() {
     return newTask;
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-    };
-
+    const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
       const context = JSON.stringify({
+        productiveUnits: (units || []).map(u => ({ id: u.id, name: u.farmName })),
         lots: (lots || []).map(l => ({ id: l.id, name: l.name })),
         staff: (staff || []).map(s => ({ id: s.id, name: s.name })),
       });
       
       const result: DispatcherOutput = await dispatchAction({ command: input, context });
       
-      // 1. Show the assistant's summary message
       if (result.summary) {
-        const assistantSummaryMessage: ChatMessage = {
-            id: Date.now().toString() + '-summary',
-            role: 'assistant',
-            content: result.summary,
-        };
+        const assistantSummaryMessage: ChatMessage = { id: Date.now().toString() + '-summary', role: 'assistant', content: result.summary };
         setMessages(prev => [...prev, assistantSummaryMessage]);
       }
 
-      // 2. Execute the plan action by action
       for (const action of result.plan) {
-        if (action.action === 'CREATE_TASK') {
+        let systemMessageContent = '';
+
+        switch(action.action) {
+          case 'CREATE_PRODUCTIVE_UNIT':
+            const newUnit = await addProductiveUnit(action.payload);
+            systemMessageContent = `✅ Finca "${newUnit.farmName}" creada.`;
+            break;
+
+          case 'CREATE_LOT':
+            const newLot = await addLot(action.payload);
+            const parentUnitName = units?.find(u => u.id === newLot.productiveUnitId)?.farmName || 'Unidad desconocida';
+            systemMessageContent = `✅ Lote "${newLot.name}" añadido a la finca "${parentUnitName}".`;
+            break;
+            
+          case 'CREATE_STAFF':
+            const newStaff = await addStaff(action.payload);
+            systemMessageContent = `✅ Colaborador "${newStaff.name}" registrado con una tarifa de $${newStaff.baseDailyRate.toLocaleString()}.`;
+            break;
+            
+          case 'CREATE_TASK':
             const { payload } = action;
             const responsible = staff?.find(s => s.id === payload.responsibleId);
-            
             if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
 
             const taskData = {
-            ...payload,
-            plannedCost: payload.plannedJournals * responsible.baseDailyRate,
-            supplyCost: 0,
-            actualCost: 0,
-            progress: 0,
-            status: 'Por realizar' as const,
+              ...payload,
+              plannedCost: payload.plannedJournals * responsible.baseDailyRate,
+              supplyCost: 0,
+              actualCost: 0,
+              progress: 0,
+              status: 'Por realizar' as const,
             };
-
             await addTask(taskData);
             
             const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
             const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
-            
-            const systemMessage: ChatMessage = {
-                id: Date.now().toString() + payload.type,
-                role: 'system',
-                content: `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`,
-            };
-            setMessages(prev => [...prev, systemMessage]);
+            systemMessageContent = `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`;
+            break;
 
-        } else if (action.action === 'INCOMPREHENSIBLE') {
-            const assistantMessage: ChatMessage = {
-                id: Date.now().toString() + '-incomprehensible',
-                role: 'assistant',
-                content: action.payload.reason || "No pude entender parte de tu instrucción.",
-            };
+          case 'INCOMPREHENSIBLE':
+            const assistantMessage: ChatMessage = { id: Date.now().toString() + '-incomprehensible', role: 'assistant', content: action.payload.reason || "No pude entender tu instrucción." };
             setMessages(prev => [...prev, assistantMessage]);
+            break;
+        }
+
+        if (systemMessageContent) {
+            const systemMessage: ChatMessage = { id: Date.now().toString() + action.action, role: 'system', content: systemMessageContent };
+            setMessages(prev => [...prev, systemMessage]);
         }
       }
 
@@ -135,11 +170,7 @@ export default function AssistantPage() {
         title: 'Error del Asistente',
         description: error.message || 'No se pudo procesar tu solicitud.',
       });
-       const errorMessage: ChatMessage = {
-          id: Date.now().toString() + '-error',
-          role: 'assistant',
-          content: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.",
-        };
+       const errorMessage: ChatMessage = { id: Date.now().toString() + '-error', role: 'assistant', content: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -155,10 +186,14 @@ export default function AssistantPage() {
       <PageHeader title="Asistente de Comandos" />
       <Card className="flex-1 flex flex-col">
         <CardHeader>
-          <p className="text-muted-foreground">
-            Escribe comandos en lenguaje natural para realizar acciones. Empieza con la creación de labores, ej: <br />
-            <span className="italic">"Programar fertilización en El Manantial para mañana con Carlos Pérez, 2 jornales"</span>
-          </p>
+          <CardTitle>Tu Asistente de Gestión</CardTitle>
+          <CardDescription>
+            Usa lenguaje natural para crear fincas, lotes, personal y labores. Ejemplos: <br/>
+            <span className="italic text-xs">"Crea la finca La Esmeralda en Salento"</span><br/>
+            <span className="italic text-xs">"Añade un lote de 5 hectáreas llamado El Filo a La Esmeralda"</span><br/>
+            <span className="italic text-xs">"Registra al trabajador Mario, jornal a 55000"</span><br/>
+            <span className="italic text-xs">"Programa una guadañada en El Filo para mañana con Mario"</span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
@@ -168,7 +203,7 @@ export default function AssistantPage() {
                         <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                     <div className="rounded-lg bg-muted p-3">
-                        <p className="text-sm">¡Hola! Soy tu asistente. ¿En qué puedo ayudarte hoy?</p>
+                        <p className="text-sm">¡Hola! Soy tu asistente. ¿Cómo puedo agilizar tu trabajo hoy?</p>
                     </div>
                 </div>
               {messages.map((message) => (
