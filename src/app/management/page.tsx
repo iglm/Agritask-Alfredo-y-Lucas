@@ -3,13 +3,19 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Tractor, Users, CheckSquare, SprayCan, Banknote, CalendarCheck, ArrowRight } from 'lucide-react';
+import { Tractor, Users, CheckSquare, SprayCan, Banknote, CalendarCheck, ArrowRight, Building } from 'lucide-react';
 
 const managementItems = [
   {
+    href: '/units',
+    title: 'Unidades Productivas',
+    description: 'Administra tus fincas o unidades productivas.',
+    icon: <Building className="h-8 w-8 text-primary" />,
+  },
+  {
     href: '/lotes',
     title: 'Gestión de Lotes',
-    description: 'Administra tus fincas, lotes y sub-lotes.',
+    description: 'Administra tus lotes y sub-lotes.',
     icon: <Tractor className="h-8 w-8 text-primary" />,
   },
   {

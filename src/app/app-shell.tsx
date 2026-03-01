@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Gavel, WifiOff, Bot, Sparkles, PieChart, SprayCan, Banknote, CalendarCheck, Building } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Gavel, WifiOff, Bot, Sparkles, PieChart, Archive } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -77,21 +77,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const builderNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
   const assistantNavItem = { href: '/assistant', label: 'Consola de IA', icon: Bot };
   
-  const managementNavItems = [
-    { href: '/units', label: t('nav.units'), icon: Building },
-    { href: '/lotes', label: t('nav.lots'), icon: Tractor },
-    { href: '/staff', label: t('nav.staff'), icon: Users },
-    { href: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
-    { href: '/supplies', label: t('nav.supplies'), icon: SprayCan },
-    { href: '/financials', label: t('nav.financials'), icon: Banknote },
-    { href: '/attendance', label: t('nav.attendance'), icon: CalendarCheck },
-    { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
-  ];
+  const managementNavItem = { href: '/management', label: 'Gestión de Datos', icon: Archive };
+  const calendarNavItem = { href: '/calendar', label: t('nav.calendar'), icon: Calendar };
   
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: PieChart };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
 
-  const allNavItems = [mainNavItem, builderNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, builderNavItem, assistantNavItem, managementNavItem, calendarNavItem, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -175,20 +167,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
             <SidebarSeparator className='my-1' />
             <SidebarMenu>
-              {managementNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={{ children: item.label }}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                 <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(managementNavItem.href)}
+                  tooltip={{ children: managementNavItem.label }}
+                >
+                  <Link href={managementNavItem.href}>
+                    <managementNavItem.icon className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">{managementNavItem.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                 <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(calendarNavItem.href)}
+                  tooltip={{ children: calendarNavItem.label }}
+                >
+                  <Link href={calendarNavItem.href}>
+                    <calendarNavItem.icon className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">{calendarNavItem.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
             <SidebarSeparator className='my-1' />
              <SidebarMenu>
