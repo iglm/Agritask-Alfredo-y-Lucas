@@ -2,29 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Use for CREATE operations. Checks the incoming document.
     function isCreatingOwnDoc() {
       return isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
+    // Use for GET, UPDATE, DELETE. Checks the existing document in the database.
     function isOwnerOfDoc() {
-      return isSignedIn() && resource.data.userId == request.auth.uid;
+      // Robust check: ensure the 'userId' field exists before comparing.
+      // This prevents errors on malformed or old data.
+      return isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
     }
-
+    
     // --- User Profile ---
-    // A user can manage their own profile.
     match /users/{userId} {
-      allow get, update: if isSignedIn() && request.auth.uid == userId;
-      allow list, create, delete: if false;
+      allow get, update, delete: if isSignedIn() && request.auth.uid == userId;
+      // Disallow listing all users or creating profiles arbitrarily.
+      allow list, create: if false;
     }
 
-    // --- Data Collections Pattern ---
-    // list: Allowed for any signed-in user. Client must filter by userId.
-    // get, update, delete: Allowed only for the owner of the document.
+    // --- Standard Data Collections Pattern ---
+    // This pattern is applied to all top-level collections owned by users.
+    // list: Allowed for any signed-in user. Client MUST filter by userId.
+    // get, update, delete: Allowed only for the owner of the specific document.
     // create: Allowed if the new document's userId matches the requester's UID.
     
     match /productiveUnits/{id} {
@@ -64,18 +69,23 @@ service cloud.firestore {
     }
 
     // --- Subcollections ---
-    // Allow full access if the user owns the parent document.
+    // This rule allows read/write access to subcollections if the user
+    // owns the PARENT document. It's more secure than a blanket allow.
+    function isParentOwner(parentCollection, parentId) {
+      return get(/databases/$(database)/documents/$(parentCollection)/$(parentId)).data.userId == request.auth.uid;
+    }
+
     match /lots/{lotId}/sublots/{sublotId} {
-      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/lots/$(lotId)).data.userId == request.auth.uid;
+      allow read, write: if isSignedIn() && isParentOwner('lots', lotId);
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, write: if isSignedIn() && get(/databases/$(database)/documents/tasks/$(taskId)).data.userId == request.auth.uid;
+      allow read, write: if isSignedIn() && isParentOwner('tasks', taskId);
     }
 
     // --- System Logs ---
-    // Clients can create their own logs.
-    // They cannot read, update, or delete any logs.
+    // A special collection where users can only create their own logs.
+    // No one should be able to read, update, or delete them from the client.
     match /system_logs/{logId} {
       allow create: if isCreatingOwnDoc();
       allow read, update, delete: if false;
