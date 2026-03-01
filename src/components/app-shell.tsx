@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Home, CalendarCheck, SprayCan, Banknote, Gavel, WifiOff, Bot, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Archive, Gavel, WifiOff, Bot, Sparkles, PieChart } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -76,17 +76,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
   const setupNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
   const assistantNavItem = { href: '/assistant', label: 'Asistente de Comandos', icon: Bot };
+  
   const managementNavItems = [
-    { href: '/lotes', label: 'Gestión de Lotes', icon: Tractor },
-    { href: '/staff', label: t('nav.staff'), icon: Users },
-    { href: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
-    { href: '/supplies', label: t('nav.supplies'), icon: SprayCan },
-    { href: '/financials', label: t('nav.financials'), icon: Banknote },
+    { href: '/management', label: 'Gestión de Datos', icon: Archive },
     { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
-    { href: '/attendance', label: t('nav.attendance'), icon: CalendarCheck },
   ];
-  const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: LayoutDashboard };
+  
+  const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: PieChart };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
+
   const allNavItems = [mainNavItem, setupNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
