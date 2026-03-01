@@ -1,91 +1,59 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the user is authenticated
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if the authenticated user is the owner of the document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
     
-    // Helper function to check ownership securely, ensuring userId field exists.
-    function isExistingDocOwner() {
-        return isSignedIn() && 'userId' in resource.data && isOwner(resource.data.userId);
-    }
-    
-    // Helper function to check ownership for new documents.
-    function isNewDocOwner() {
-        return isSignedIn() && 'userId' in request.resource.data && isOwner(request.resource.data.userId);
-    }
-
-    // User can manage their own profile
+    // Users can only read and write their own profile
     match /users/{userId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
+    
     // --- Collections ---
-    // This pattern is now robust against documents that might be missing a `userId`.
-    // It enforces that any document read must have a `userId` field that matches the user.
-    // This forces client queries to include `where("userId", "==", request.auth.uid)`.
-
     match /lots/{lotId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /productiveUnits/{unitId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /staff/{staffId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /staffAttendance/{attendanceId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /supplies/{supplyId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /tasks/{taskId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /transactions/{transactionId} {
-      allow create: if isNewDocOwner();
-      allow read, update, delete: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
     match /system_logs/{logId} {
-      allow create: if isNewDocOwner();
-      allow read: if isExistingDocOwner();
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
-    // Permissions for subcollections are based on ownership of the parent document.
-    
     match /lots/{lotId}/sublots/{sublotId} {
-      allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
+      allow read, write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/lots/$(lotId)).data.userId;
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
+      allow read, write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/tasks/$(taskId)).data.userId;
     }
     
     // --- Collection Group ---
     match /{path=**}/supplyUsages/{usageId} {
-      allow read: if isExistingDocOwner();
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }
