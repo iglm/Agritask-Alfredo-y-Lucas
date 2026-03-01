@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Archive, Gavel, WifiOff, Bot, Sparkles, PieChart } from 'lucide-react';
+import { LayoutDashboard, Tractor, Users, Calendar, CheckSquare, LogOut, User as UserIcon, Gavel, WifiOff, Bot, Sparkles, PieChart, Archive } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -77,15 +77,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const builderNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
   const assistantNavItem = { href: '/assistant', label: 'Consola de IA', icon: Bot };
   
-  const managementNavItems = [
-    { href: '/management', label: 'Gestión de Datos', icon: Archive },
-    { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
-  ];
+  const managementNavItem = { href: '/management', label: 'Gestión de Datos', icon: Archive };
+  const calendarNavItem = { href: '/calendar', label: t('nav.calendar'), icon: Calendar };
   
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: PieChart };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
 
-  const allNavItems = [mainNavItem, builderNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, builderNavItem, assistantNavItem, managementNavItem, calendarNavItem, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -142,7 +140,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+            <SidebarMenu>
+              <SidebarMenuItem>
+                 <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(managementNavItem.href)}
+                  tooltip={{ children: managementNavItem.label }}
+                >
+                  <Link href={managementNavItem.href}>
+                    <managementNavItem.icon className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">{managementNavItem.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                 <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(calendarNavItem.href)}
+                  tooltip={{ children: calendarNavItem.label }}
+                >
+                  <Link href={calendarNavItem.href}>
+                    <calendarNavItem.icon className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden">{calendarNavItem.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+             <SidebarMenu>
+                <SidebarMenuItem>
+                   <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(reportsNavItem.href)}
+                    tooltip={{ children: reportsNavItem.label }}
+                  >
+                    <Link href={reportsNavItem.href}>
+                      <reportsNavItem.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden">{reportsNavItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarSeparator className='my-1' />
+            <SidebarMenu>
+                <SidebarMenuItem>
                    <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith(builderNavItem.href)}
@@ -163,38 +206,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href={assistantNavItem.href}>
                       <assistantNavItem.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{assistantNavItem.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-            <SidebarSeparator className='my-1' />
-            <SidebarMenu>
-              {managementNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={{ children: item.label }}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-            <SidebarSeparator className='my-1' />
-             <SidebarMenu>
-                <SidebarMenuItem>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(reportsNavItem.href)}
-                    tooltip={{ children: reportsNavItem.label }}
-                  >
-                    <Link href={reportsNavItem.href}>
-                      <reportsNavItem.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{reportsNavItem.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
