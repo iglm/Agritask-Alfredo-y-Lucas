@@ -12,11 +12,12 @@ La plataforma centraliza toda la operación de la finca, desde la planificación
 
 ## 2. Filosofía Central: El ERP Conversacional
 
-La principal innovación de AgriTask Master es su **interfaz conversacional**. En lugar de navegar por menús y llenar campos, el usuario gestiona su finca dando órdenes en lenguaje natural, como si estuviera hablando con un asistente experto.
+La principal innovación de AgriTask Master es su **interfaz conversacional**. En lugar de navegar por menús y llenar campos, el usuario gestiona su finca dando órdenes en lenguaje natural, como si estuviera hablando con un asistente experto. Hay dos herramientas de IA principales:
 
--   **Entrada de Datos sin Fricción:** Olvídate de los formularios. Comandos como `"Programa una guadañada en El Filo para mañana con Ana"` o `"Registra un gasto de 150.000 en transporte"` son procesados instantáneamente por la IA.
--   **Creación Masiva Inteligente:** El **Constructor IA** permite configurar una finca completa (lotes, personal, plan de labores) a partir de una única descripción en lenguaje natural.
--   **Análisis a Petición:** Los **Agentes de IA** en el panel principal analizan la operación en tiempo real para encontrar anomalías, inconsistencias y oportunidades de optimización con solo un clic.
+1.  **Constructor IA (✨):** La herramienta de "trabajo pesado". Se usa una vez o para grandes cambios. Construye toda la estructura de la finca (lotes, personal, plan de labores) a partir de una única descripción detallada.
+2.  **Asistente de Comandos (🤖):** La herramienta del "día a día". Procesa órdenes rápidas y específicas como `"Programa una guadañada en El Filo para mañana"` o `"Registra un gasto de 150.000 en transporte"`.
+
+Esta especialización asegura que la aplicación sea rápida, eficiente y no se produzcan errores al usar la herramienta incorrecta para la tarea.
 
 ---
 
@@ -24,7 +25,7 @@ La principal innovación de AgriTask Master es su **interfaz conversacional**. E
 
 ### ✨ Constructor IA (El Inicio Mágico)
 
-Es la herramienta para empezar de cero. Permite al usuario describir su finca con sus propias palabras, y la IA genera un plan de construcción completo.
+Es la herramienta para empezar de cero. Permite al usuario describir su finca con sus propias palabras, y la IA genera un plan de construcción completo. **Esta es la herramienta para la creación masiva inicial.**
 
 -   **Función:** Transforma una descripción textual en una estructura de datos completa y lista para usar.
 -   **Ejemplo de Comando:** `"Crea la finca 'La Esmeralda' en Jardín, Antioquia. Tiene 20 hectáreas con 8 lotes de café de 2.5 hectáreas cada uno, sembrados hace 3 años. También registra a 10 trabajadores y programa 3 fertilizaciones al año para los lotes de café."`
@@ -36,7 +37,7 @@ Es la herramienta para empezar de cero. Permite al usuario describir su finca co
 
 ### 🤖 Asistente de Comandos por IA (La Consola Diaria)
 
-El motor de la gestión diaria. Permite ejecutar múltiples acciones de creación, actualización o eliminación con un solo comando.
+El motor de la gestión diaria. Permite ejecutar múltiples acciones de creación, actualización o eliminación con un solo comando. **Esta es la herramienta para acciones rápidas y específicas.**
 
 -   **Función:** Interpreta lenguaje natural y lo traduce en acciones estructuradas en la base de datos.
 -   **Capacidades:**
@@ -45,6 +46,7 @@ El motor de la gestión diaria. Permite ejecutar múltiples acciones de creació
     -   **Gestionar Inventario:** `"Agrega al inventario el insumo 'Glifosato' en Litros a 35.000, tengo 10."`
     -   **Actualizar Entidades:** `"Corrige el área del lote El Mirador a 15 hectáreas."`
     -   **Eliminar Entidades:** `"Borra el lote La Zanja."`
+-   **Distinción Clave:** Este asistente es el "operador diario". Para la creación masiva inicial de la finca, se debe usar el **Constructor IA**. El Asistente de Comandos está optimizado para interpretar y ejecutar acciones individuales o en lotes pequeños de manera instantánea. Si detecta una orden de creación masiva, guiará al usuario hacia la herramienta correcta para evitar errores.
 -   **Contexto Inteligente:** Utiliza los datos existentes (nombres de lotes, personal, insumos) para asociar correctamente las nuevas acciones a los IDs correspondientes.
 
 ### 📊 Panel Principal (Dashboard)
@@ -56,7 +58,7 @@ El centro de mando que ofrece una visión de 360 grados de la operación.
     -   `Ingresos Totales`: Suma de todas las transacciones de tipo "Ingreso".
     -   `Costos Productivos`: Suma de todos los costos (mano de obra e insumos) asociados a lotes de tipo "Productivo".
     -   `Costos de Soporte`: Suma de costos de lotes de "Soporte" y gastos generales no asociados a un lote.
--   **Próximas Labores:** Una lista de las tareas no finalizadas programadas para los próximos 7 días.
+-   **Próximas Labores:** Una lista de las tareas не finalizadas programadas para los próximos 7 días.
 -   **Suite de Agentes de IA:**
     -   **Analista de Anomalías:** Busca sobrecostos en labores (>15%), gastos inesperados, retrasos críticos (especialmente en siembra y cosecha) y concentración de problemas en lotes específicos.
     -   **Auditor de Planificación:** Detecta inconsistencias lógicas como riesgos de seguridad (trabajador sin EPS asignado a una tarea), omisiones en planes de cosecha para cultivos perennes, y falta de planificación en lotes recién sembrados.

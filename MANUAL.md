@@ -2,9 +2,9 @@
 
 ¡Bienvenido! Esta herramienta ha sido diseñada para que gestiones tu finca con la misma facilidad con la que envías un mensaje de WhatsApp. Aquí no necesitas ser un experto en sistemas, solo conocer tu tierra.
 
-## 1. El Inicio Mágico (Para Empezar de Cero)
+## 1. El Inicio Mágico (Constructor IA ✨)
 
-¿Nuevo por aquí? Usa el **Constructor IA** para crear toda tu operación en segundos.
+Esta es la **herramienta de construcción pesada**. Úsala para crear toda tu operación desde cero en segundos.
 
 1.  Ve al menú y haz clic en **"Constructor IA"** (el icono de las chispas ✨).
 2.  En el cuadro de texto, **describe tu finca con tus propias palabras.** Sé tan detallado como quieras.
@@ -12,9 +12,9 @@
 3.  Presiona **"Generar Plan"**. La IA diseñará tu finca y te mostrará un resumen.
 4.  Si estás de acuerdo, presiona **"Aprobar y Construir"**. ¡Listo! Tu finca está creada.
 
-## 2. El Día a Día (Asistente de Comandos)
+## 2. El Día a Día (Asistente de Comandos 🤖)
 
-Olvídate de los formularios. Para registrar las actividades diarias, solo tienes que dar órdenes.
+Esta es tu **herramienta para acciones rápidas**. Olvídate de los formularios. Para registrar las actividades diarias, solo tienes que dar órdenes.
 
 1.  En el menú, ve al **"Asistente de Comandos"** (el icono del robot 🤖).
 2.  Escribe lo que necesitas hacer. Puedes dar varias instrucciones a la vez.
@@ -23,6 +23,8 @@ Olvídate de los formularios. Para registrar las actividades diarias, solo tiene
     *   *"Añade al inventario el insumo 'Urea' en Bultos a 90.000, tengo 30."*
 
 El asistente ejecutará tus órdenes y te confirmará cada acción.
+
+**IMPORTANTE:** Esta consola es para órdenes rápidas y específicas del día a día. **NO** está diseñada para crear fincas enteras o múltiples lotes a la vez. Para eso, usa siempre el **"Constructor IA" (✨)**.
 
 ## 3. Tus Ojos en la Finca (Panel Principal)
 
