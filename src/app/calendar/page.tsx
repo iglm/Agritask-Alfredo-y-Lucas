@@ -4,17 +4,33 @@ import { useState, useEffect } from "react";
 import { InteractiveCalendar } from "@/components/calendar/interactive-calendar";
 import { TaskForm } from "@/components/tasks/task-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAppData } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { Task } from "@/lib/types";
-import { format, addMonths, subMonths } from "date-fns";
+import { Task, Lot, Staff, Supply, SupplyUsage, Transaction } from "@/lib/types";
+import { format, addMonths, subMonths, addDays, addWeeks } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { collection, query, where, doc, setDoc, getDoc, writeBatch, getDocs } from 'firebase/firestore';
 
 export default function CalendarPage() {
-  const { tasks: allTasks, lots, staff, supplies, isLoading, addTask, updateTask } = useAppData();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
+
+  // Data Queries
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: allTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
+  
+  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: lots, isLoading: isLotsLoading } = useCollection<Lot>(lotsQuery);
+
+  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: staff, isLoading: isStaffLoading } = useCollection<Staff>(staffQuery);
+
+  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: supplies, isLoading: isSuppliesLoading } = useCollection<Supply>(suppliesQuery);
+
+  const isLoading = isTasksLoading || isLotsLoading || isStaffLoading || isSuppliesLoading;
 
   const [currentMonth, setCurrentMonth] = useState<Date>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -24,6 +40,127 @@ export default function CalendarPage() {
   useEffect(() => {
     setCurrentMonth(new Date());
   }, []);
+
+  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
+    console.error(`CalendarPage Task Error (${operation} on ${path}):`, error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
+  };
+
+  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'tasks'));
+    const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
+    try {
+        await setDoc(newDocRef, newTask);
+        return newTask;
+    } catch (error) {
+        handleWriteError(error, newDocRef.path, 'create', newTask);
+        throw error;
+    }
+  };
+
+  const updateTask = async (data: Task) => {
+    if (!user || !firestore) return;
+    const docRef = doc(firestore, 'tasks', data.id);
+    try {
+        const originalTask = allTasks?.find(t => t.id === data.id);
+        const isNowFinalized = data.status === 'Finalizado' && originalTask?.status !== 'Finalizado';
+
+        await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+
+        if (isNowFinalized) {
+            const laborCost = data.actualCost - data.supplyCost;
+            if (laborCost > 0) {
+                const transactionData: Omit<Transaction, 'id' | 'userId'> = {
+                    type: 'Egreso',
+                    date: data.endDate || data.startDate,
+                    description: `Costo de mano de obra para la labor: ${data.type}`,
+                    amount: laborCost,
+                    category: 'Mano de Obra',
+                    lotId: data.lotId,
+                };
+                const newTransactionRef = doc(collection(firestore, 'transactions'));
+                await setDoc(newTransactionRef, { ...transactionData, id: newTransactionRef.id, userId: user.uid });
+                toast({ title: 'Cierre Financiero Automático', description: `Se creó un egreso de $${laborCost.toLocaleString()} por la mano de obra.` });
+            }
+        }
+        
+        if (isNowFinalized && data.isRecurring && data.recurrenceFrequency && data.recurrenceInterval && data.recurrenceInterval > 0) {
+            const baseDateString = data.endDate || data.startDate;
+            const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
+            let newStartDate: Date;
+
+            switch (data.recurrenceFrequency) {
+                case 'días': newStartDate = addDays(baseDateForRecurrence, data.recurrenceInterval); break;
+                case 'semanas': newStartDate = addWeeks(baseDateForRecurrence, data.recurrenceInterval); break;
+                case 'meses': newStartDate = addMonths(baseDateForRecurrence, data.recurrenceInterval); break;
+                default: console.error("Invalid recurrence frequency"); return;
+            }
+
+            const { id, userId, endDate, status, progress, supplyCost, actualCost, ...restOfTaskData } = data;
+            const nextTaskData: Omit<Task, 'id' | 'userId'> = { ...restOfTaskData, startDate: format(newStartDate, 'yyyy-MM-dd'), endDate: undefined, status: 'Por realizar', progress: 0, supplyCost: 0, actualCost: 0, observations: `Labor recurrente generada automáticamente.`, dependsOn: undefined, };
+            await addTask(nextTaskData);
+            toast({ title: 'Labor recurrente creada', description: `Se ha programado la siguiente labor "${data.type}" para el ${format(newStartDate, "PPP", { locale: es })}.` });
+        }
+    } catch (error) {
+        handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
+    }
+  };
+
+  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number, date: string): Promise<SupplyUsage> => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const supplyRef = doc(firestore, 'supplies', supplyId);
+    const usageRef = doc(collection(firestore, 'tasks', taskId, 'supplyUsages'));
+    const batch = writeBatch(firestore);
+
+    try {
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyDoc)]);
+        if (!taskDoc.exists() || !supplyDoc.exists()) throw new Error('La labor o el insumo no existen.');
+        const taskData = taskDoc.data() as Task;
+        const supplyData = supplyDoc.data() as Supply;
+        if (quantityUsed > supplyData.currentStock) throw new Error('Stock insuficiente.');
+
+        const costAtTimeOfUse = supplyData.costPerUnit * quantityUsed;
+        const newUsage: SupplyUsage = { id: usageRef.id, userId: user.uid, taskId, supplyId, supplyName: supplyData.name, quantityUsed, costAtTimeOfUse, date };
+        
+        batch.set(usageRef, newUsage);
+        batch.update(taskRef, { supplyCost: (taskData.supplyCost || 0) + costAtTimeOfUse, actualCost: (taskData.actualCost || 0) + costAtTimeOfUse });
+        batch.update(supplyRef, { currentStock: supplyData.currentStock - quantityUsed });
+
+        await batch.commit();
+        return newUsage;
+    } catch (error: any) {
+        handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed, date });
+        throw error;
+    }
+  };
+
+    const deleteSupplyUsage = async (usage: SupplyUsage) => {
+    if (!user || !firestore) return;
+    const { id, taskId, supplyId, quantityUsed, costAtTimeOfUse } = usage;
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const supplyRef = doc(firestore, 'supplies', supplyId);
+    const usageRef = doc(firestore, 'tasks', taskId, 'supplyUsages', id);
+    const batch = writeBatch(firestore);
+
+    try {
+        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyRef)]);
+        if (taskDoc.exists()) {
+            const taskData = taskDoc.data() as Task;
+            batch.update(taskRef, { supplyCost: Math.max(0, (taskData.supplyCost || 0) - costAtTimeOfUse), actualCost: Math.max(0, (taskData.actualCost || 0) - costAtTimeOfUse) });
+        }
+        if (supplyDoc.exists()) {
+            const supplyData = supplyDoc.data() as Supply;
+            batch.update(supplyRef, { currentStock: (supplyData.currentStock || 0) + quantityUsed });
+        }
+        batch.delete(usageRef);
+        await batch.commit();
+    } catch (error: any) {
+        handleWriteError(error, usageRef.path, 'delete');
+        throw error;
+    }
+  };
 
   const goToNextMonth = () => currentMonth && setCurrentMonth(addMonths(currentMonth, 1));
   const goToPreviousMonth = () => currentMonth && setCurrentMonth(subMonths(currentMonth, 1));
@@ -153,7 +290,7 @@ export default function CalendarPage() {
       
       <div className="flex-1 min-h-0">
         <InteractiveCalendar 
-            tasks={allTasks} 
+            tasks={allTasks || []} 
             onDateSelect={handleDateSelect}
             onTaskSelect={handleTaskSelect}
             onTaskDrop={handleTaskDrop}
@@ -175,10 +312,12 @@ export default function CalendarPage() {
           <TaskForm 
             task={taskForForm}
             onSubmit={handleFormSubmit}
-            lots={lots}
-            staff={staff}
-            tasks={allTasks}
-            supplies={supplies}
+            lots={lots || []}
+            staff={staff || []}
+            tasks={allTasks || []}
+            supplies={supplies || []}
+            addSupplyUsage={addSupplyUsage}
+            deleteSupplyUsage={deleteSupplyUsage}
           />
         </DialogContent>
       </Dialog>

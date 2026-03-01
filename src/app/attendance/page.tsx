@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
-import { useAppData } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from 'firebase/firestore';
+import { Staff, ProductiveUnit, Task } from '@/lib/types';
 import { Loader2, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -18,7 +20,17 @@ import { PrintableAttendanceSheet } from "@/components/attendance/printable-atte
 import { PayrollReportGenerator } from "@/components/attendance/payroll-report-generator";
 
 export default function AttendancePage() {
-  const { staff, productiveUnits, tasks, isLoading: isAppLoading } = useAppData();
+  const { firestore, user } = useFirebase();
+
+  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const unitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
+
+  const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
+  const { data: productiveUnits, isLoading: unitsLoading } = useCollection<ProductiveUnit>(unitsQuery);
+  const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
+  const isAppLoading = staffLoading || unitsLoading || tasksLoading;
+
   const [date, setDate] = useState<Date>();
 
   useEffect(() => {
@@ -87,21 +99,21 @@ export default function AttendancePage() {
                   </Popover>
               </div>
               <AttendanceList 
-                  staff={staff}
+                  staff={staff || []}
                   selectedDate={date}
               />
           </TabsContent>
           <TabsContent value="reports" className="mt-6">
-              <AttendanceReportGenerator staff={staff} />
+              <AttendanceReportGenerator staff={staff || []} />
           </TabsContent>
           <TabsContent value="payroll" className="mt-6">
-            <PayrollReportGenerator staff={staff} tasks={tasks} />
+            <PayrollReportGenerator staff={staff || []} tasks={tasks || []} />
           </TabsContent>
         </Tabs>
       </div>
       <div className="hidden print:block">
         <PrintableAttendanceSheet 
-            staff={staff}
+            staff={staff || []}
             date={date}
             productiveUnit={defaultUnit}
         />
