@@ -188,6 +188,21 @@ export async function dispatchAction(input: Omit<DispatcherInput, 'currentDate'>
         ...input,
         currentDate: today.toISOString().split('T')[0],
     };
+
+    const lowerCaseCommand = input.command.toLowerCase();
+    // Check for keywords that strongly suggest a bulk/farm creation task
+    if ((lowerCaseCommand.includes('crea una finca') || lowerCaseCommand.includes('crea la finca')) && lowerCaseCommand.includes('lotes')) {
+      return {
+        summary: "Parece que estás intentando usar el Constructor IA.",
+        plan: [{
+          action: "INCOMPREHENSIBLE",
+          payload: {
+            reason: "Esta consola es para acciones rápidas (ej. crear una labor). Para crear una finca completa, por favor usa el 'Constructor IA' desde el menú principal."
+          }
+        }]
+      }
+    }
+
   return commandDispatcherFlow(contextWithDate);
 }
 
@@ -263,5 +278,3 @@ const commandDispatcherFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
