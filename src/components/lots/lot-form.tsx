@@ -23,6 +23,8 @@ const lotFormSchema = z.object({
   crop: z.string().optional(),
   variety: z.string().optional(),
   areaHectares: z.coerce.number().positive({ message: "El área debe ser un número positivo." }),
+  location: z.string().optional(),
+  technicalNotes: z.string().optional(),
   soilType: z.string().optional(),
   phAverage: z.coerce.number().optional(),
   sowingDate: z.date().optional(),
@@ -31,7 +33,6 @@ const lotFormSchema = z.object({
   distanceBetweenRows: z.coerce.number().optional(),
   totalTrees: z.coerce.number().optional(),
   accumulatedMortality: z.coerce.number().optional(),
-  technicalNotes: z.string().optional(),
 }).refine(data => {
     if (data.totalTrees && data.areaHectares && data.sowingDensity) {
         return data.totalTrees <= (data.areaHectares * data.sowingDensity) + 1;
@@ -79,6 +80,7 @@ export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: Lot
       crop: lot?.crop ?? "",
       variety: lot?.variety ?? "",
       areaHectares: lot?.areaHectares ?? '',
+      location: lot?.location ?? "",
       sowingDate: getInitialDate(lot?.sowingDate),
       sowingDensity: lot?.sowingDensity ?? '',
       distanceBetweenPlants: lot?.distanceBetweenPlants ?? '',
@@ -208,7 +210,19 @@ export function LotForm({ lot, productiveUnitId, onSubmit: handleOnSubmit }: Lot
                           </FormItem>
                         )}
                       />
-                    
+                    <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Ubicación (Vereda/Sector)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ej: Vereda La Cuchilla" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField
                       control={form.control}
                       name="technicalNotes"

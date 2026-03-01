@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
   const assistantNavItem = { href: '/assistant', label: 'Asistente', icon: Bot };
   const managementNavItems = [
-    { href: '/lotes', label: t('nav.lots'), icon: Tractor },
+    { href: '/lotes', label: 'Gestión de Lotes', icon: Tractor },
     { href: '/staff', label: t('nav.staff'), icon: Users },
     { href: '/tasks', label: t('nav.tasks'), icon: CheckSquare },
     { href: '/supplies', label: t('nav.supplies'), icon: SprayCan },

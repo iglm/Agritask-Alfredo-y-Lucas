@@ -163,8 +163,8 @@ export const handleExportAll = async (
         console.error("Error durante la exportación completa:", error);
         toast({
             variant: "destructive",
-            title: "Error al exportar",
-            description: "Ocurrió un error al generar el respaldo completo.",
+            title: "Error de Exportación",
+            description: "No se pudo completar el respaldo. Por favor, inténtalo de nuevo.",
         });
     }
 };

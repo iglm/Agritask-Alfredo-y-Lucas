@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { LotsTable } from "@/components/lots/lots-table";
 import { LotForm } from "@/components/lots/lot-form";
 import { ProductiveUnitForm } from "@/components/productive-unit/productive-unit-form";
@@ -19,7 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Home, PlusCircle } from "lucide-react";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, addProductiveUnit, updateProductiveUnit, deleteProductiveUnit, firestore, user } = useAppData();
+  const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, addProductiveUnit, updateProductiveUnit, deleteProductiveUnit } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
@@ -260,7 +260,7 @@ export default function LotsPage() {
         <SheetContent className="sm:max-w-2xl"><SheetHeader><SheetTitle>{editingUnit ? 'Editar Unidad' : 'Nueva Unidad'}</SheetTitle></SheetHeader><ProductiveUnitForm productiveUnit={editingUnit} onSubmit={handleUnitFormSubmit} /></SheetContent>
       </Sheet>
       <Sheet open={isLotSheetOpen} onOpenChange={setIsLotSheetOpen}>
-        <SheetContent><SheetHeader><SheetTitle>{editingLot ? 'Editar Lote' : 'Nuevo Lote'}</SheetTitle></SheetHeader><LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnitId={currentUnitId} /></SheetContent>
+        <SheetContent className="sm:max-w-2xl"><SheetHeader><SheetTitle>{editingLot ? 'Editar Lote' : 'Nuevo Lote'}</SheetTitle></SheetHeader><LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnitId={currentUnitId} /></SheetContent>
       </Sheet>
       <Sheet open={isSubLotSheetOpen} onOpenChange={setIsSubLotSheetOpen}>
         <SheetContent><SheetHeader><SheetTitle>{editingSubLot ? 'Editar Sub-lote' : 'Nuevo Sub-lote'}</SheetTitle><SheetDescription>Añadiendo a {currentLot?.name}</SheetDescription></SheetHeader><SubLotForm subLot={editingSubLot} onSubmit={handleSubLotFormSubmit} /></SheetContent>
