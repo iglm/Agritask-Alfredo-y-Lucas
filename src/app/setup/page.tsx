@@ -5,12 +5,12 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot, Check, FileJson, Loader2, Sparkles, Wand2, Wheat, X } from 'lucide-react';
+import { Bot, Check, FileJson, Loader2, Sparkles, Wand2, Wheat, X, Users, CheckSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { ProductiveUnit, Lot, Staff } from '@/lib/types';
-import { writeBatch, collection, doc } from 'firebase/firestore';
+import { ProductiveUnit, Lot, Staff, Task } from '@/lib/types';
+import { writeBatch, collection, doc, query, where, getDocs } from 'firebase/firestore';
 
 export default function SetupPage() {
   const { firestore, user } = useFirebase();
@@ -54,12 +54,14 @@ export default function SetupPage() {
         const unitRef = doc(collection(firestore, 'productiveUnits'));
         const newUnit: ProductiveUnit = {
             ...plan.productiveUnit,
+            farmName: plan.productiveUnit.farmName || 'Mi Finca',
             id: unitRef.id,
             userId: user.uid,
         };
         batch.set(unitRef, newUnit);
 
-        // 2. Create Lots
+        // 2. Create Lots & map their names to their future IDs
+        const createdLotMap = new Map<string, string>();
         if (plan.lots) {
             for (const lotData of plan.lots) {
                 const lotRef = doc(collection(firestore, 'lots'));
@@ -72,12 +74,19 @@ export default function SetupPage() {
                     type: lotData.crop ? 'Productivo' : 'Soporte',
                 };
                 batch.set(lotRef, newLot);
+                // Ensure lot name is not undefined before setting it in map
+                if (lotData.name) {
+                    createdLotMap.set(lotData.name, lotRef.id);
+                }
             }
         }
         
-        // 3. Create Staff
-        if (plan.staff) {
-            for (const staffData of plan.staff) {
+        // 3. Create Staff & determine the default responsible for tasks
+        let defaultResponsibleId: string | null = null;
+        let defaultDailyRate: number = 50000;
+
+        if (plan.staff && plan.staff.length > 0) {
+            for (const [index, staffData] of plan.staff.entries()) {
                 const staffRef = doc(collection(firestore, 'staff'));
                  const newStaff: Staff = {
                     ...staffData,
@@ -85,14 +94,63 @@ export default function SetupPage() {
                     userId: user.uid,
                 };
                 batch.set(staffRef, newStaff);
+                if (index === 0) {
+                    defaultResponsibleId = staffRef.id;
+                    defaultDailyRate = staffData.baseDailyRate;
+                }
+            }
+        } else {
+            const staffQuery = query(collection(firestore, 'staff'), where('userId', '==', user.uid));
+            const existingStaffSnapshot = await getDocs(staffQuery);
+            if (!existingStaffSnapshot.empty) {
+                const firstStaffDoc = existingStaffSnapshot.docs[0];
+                defaultResponsibleId = firstStaffDoc.id;
+                defaultDailyRate = (firstStaffDoc.data() as Staff).baseDailyRate;
+            }
+        }
+        
+        if ((plan.tasks && plan.tasks.length > 0) && !defaultResponsibleId) {
+            toast({ variant: 'destructive', title: 'No hay personal disponible', description: 'No se pueden crear labores sin colaboradores. Por favor, añádelos en tu descripción o regístralos manualmente.' });
+            setIsCreating(false);
+            return;
+        }
+
+        // 4. Create Tasks
+        if (plan.tasks && defaultResponsibleId) {
+            for (const taskData of plan.tasks) {
+                const lotId = createdLotMap.get(taskData.lotName);
+                if (!lotId) {
+                    console.warn(`Could not find lot with name "${taskData.lotName}" to create a task. Skipping.`);
+                    continue;
+                }
+
+                const taskRef = doc(collection(firestore, 'tasks'));
+                const newTask: Omit<Task, 'id'| 'userId'> = {
+                    lotId: lotId,
+                    category: taskData.category,
+                    type: taskData.type,
+                    responsibleId: defaultResponsibleId,
+                    startDate: taskData.startDate,
+                    status: 'Por realizar',
+                    progress: 0,
+                    plannedJournals: taskData.plannedJournals,
+                    observations: taskData.observations || '',
+                    plannedCost: taskData.plannedJournals * defaultDailyRate,
+                    supplyCost: 0,
+                    actualCost: 0,
+                    isRecurring: taskData.isRecurring,
+                    recurrenceInterval: taskData.recurrenceInterval,
+                    recurrenceFrequency: taskData.recurrenceFrequency,
+                };
+                batch.set(taskRef, newTask);
             }
         }
 
         await batch.commit();
 
         toast({
-            title: "¡Finca Construida!",
-            description: "La nueva unidad productiva, lotes y personal han sido creados con éxito.",
+            title: "¡Operación Construida!",
+            description: `Se crearon ${plan.lots?.length || 0} lotes, ${plan.staff?.length || 0} colaboradores y ${plan.tasks?.length || 0} labores.`,
         });
         setPlan(null);
         setDescription('');
@@ -104,7 +162,7 @@ export default function SetupPage() {
           operation: 'write',
           requestResourceData: plan
         }));
-        toast({ variant: 'destructive', title: 'Error al Crear la Finca', description: 'No se pudo guardar la información. Revisa los permisos de la base de datos.' });
+        toast({ variant: 'destructive', title: 'Error al Crear la Operación', description: 'No se pudo guardar la información. Revisa los permisos de la base de datos.' });
     } finally {
         setIsCreating(false);
     }
@@ -173,6 +231,10 @@ export default function SetupPage() {
                      <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground"/>
                         <span>Personal a registrar: <span className="font-semibold">{plan.staff?.length || 0}</span></span>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-muted-foreground"/>
+                        <span>Labores a programar: <span className="font-semibold">{plan.tasks?.length || 0}</span></span>
                     </div>
                     <div className="flex gap-4 pt-4">
                         <Button onClick={handleExecutePlan} disabled={isCreating} className="w-full" size="lg">

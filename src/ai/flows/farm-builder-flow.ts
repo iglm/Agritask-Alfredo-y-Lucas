@@ -9,6 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { employmentTypes } from '@/lib/types';
 import { subMonths, format } from 'date-fns';
+import { cultivationPlans } from '@/ai/knowledge/agronomic-plans';
 
 // Schemas for what can be created. Optional fields are for the AI to infer.
 const ProductiveUnitCreateSchema = z.object({
@@ -32,6 +33,18 @@ const StaffCreateSchema = z.object({
   contact: z.string().optional().describe("Número de contacto del colaborador, si se menciona."),
 });
 
+const TaskCreateSchema = z.object({
+  lotName: z.string().describe("The name of the lot this task belongs to, which must match one of the lots being created in the same plan."),
+  category: z.enum(["Preparación", "Siembra", "Mantenimiento", "Cosecha", "Post-Cosecha", "Otro"]),
+  type: z.string().describe("Specific name of the task, e.g., 'Primera Fertilización NPK'."),
+  startDate: z.string().describe("Suggested start date in YYYY-MM-DD format."),
+  plannedJournals: z.number().describe("Estimated man-days for the task."),
+  observations: z.string().optional().describe("Agronomic justification for the task."),
+  isRecurring: z.boolean().optional().describe("If the task is recurring."),
+  recurrenceInterval: z.number().optional().describe("The interval for the recurrence."),
+  recurrenceFrequency: z.enum(['días', 'semanas', 'meses']).optional().describe("The frequency of the recurrence."),
+});
+
 
 // The final output schema for the entire plan
 const FarmPlanSchema = z.object({
@@ -39,6 +52,7 @@ const FarmPlanSchema = z.object({
     productiveUnit: ProductiveUnitCreateSchema.describe("La finca principal a crear. Solo puede haber una."),
     lots: z.array(LotCreateSchema).optional().describe("Una lista de lotes a crear dentro de la finca."),
     staff: z.array(StaffCreateSchema).optional().describe("Una lista de colaboradores a registrar."),
+    tasks: z.array(TaskCreateSchema).optional().describe("A list of standard agronomic tasks to create for the new productive lots."),
 });
 
 
@@ -46,6 +60,7 @@ const FarmPlanSchema = z.object({
 const FarmBuilderInputSchema = z.object({
   description: z.string().describe("La descripción en lenguaje natural que proporciona el usuario."),
   currentDate: z.string().describe("La fecha actual en formato YYYY-MM-DD para resolver fechas relativas como '10 meses de sembrado'."),
+  agronomicKnowledgeBase: z.string().describe("A JSON string of standard agronomic plans for various crops."),
 });
 
 export type FarmBuilderInput = z.infer<typeof FarmBuilderInputSchema>;
@@ -56,6 +71,7 @@ export async function buildFarmFromDescription(input: Pick<FarmBuilderInput, 'de
     const contextWithDate = {
         ...input,
         currentDate: today.toISOString().split('T')[0],
+        agronomicKnowledgeBase: JSON.stringify(cultivationPlans),
     };
   return farmBuilderFlow(contextWithDate);
 }
@@ -69,23 +85,29 @@ const farmBuilderPrompt = ai.definePrompt({
 
     **CRITICAL DIRECTIVES:**
     1.  **Primary Goal:** Your output MUST be a single, valid JSON object that strictly adheres to the 'FarmPlanSchema'.
-    2.  **Entity Extraction:** You must parse the user's description to create a plan containing ONE 'productiveUnit', and OPTIONALLY, arrays of 'lots' and 'staff'. You MUST ignore any instructions related to creating specific recurring tasks (like fertilizations, weedings), financial entries, or supplies. Your scope is limited to Productive Units, Lots, and Staff.
-    3.  **Calculations & Logic:**
-        *   If the user specifies a total area and a number of lots, you MUST calculate the area for each lot by dividing the total area by the number of lots.
-        *   If a farm name is not provided, you MUST create a default name like 'Finca [Nombre del Municipio]' or 'Mi Finca'.
+    2.  **Entity Extraction:** You must parse the user's description to create a plan containing ONE 'productiveUnit', and OPTIONALLY, arrays of 'lots' and 'staff'.
+    3.  **Task Generation (VERY IMPORTANT):** 
+        *   If the user creates lots with a specific crop (e.g., 'Café', 'Plátano'), you MUST use the provided 'agronomicKnowledgeBase' to automatically generate a standard 12-month task plan for **each** of those new lots. For each task in the knowledge base, you MUST calculate its 'startDate' based on the lot's 'sowingDate' and the task's 'timing' (e.g., "week 8" after sowing). You MUST also calculate 'plannedJournals' by multiplying 'baseJournalsPerHa' by the lot's 'areaHectares'. Copy 'category', 'type', and 'observations' directly. The generated task's 'lotName' must match the name of the lot being created.
+        *   If the user's description includes explicit recurring tasks (e.g., "3 fertilizaciones al año", "guadañada cada 2 meses"), you MUST create these as separate recurring tasks for the relevant lots. You should infer the category and calculate the recurrence. For "3 al año", that would be an interval of 4 and a frequency of 'meses'. The startDate should be a sensible date after the lot's sowingDate.
+    4.  **Calculations & Logic:**
+        *   If the user specifies a total area and a number of lots, you MUST calculate the area for each lot.
+        *   If a farm name is not provided, you MUST create a default name.
         *   If the user specifies a relative sowing date (e.g., "10 meses de sembrado"), you MUST calculate the exact date based on the 'currentDate' ({{currentDate}}) and format it as 'YYYY-MM-DD'.
-        *   Generate descriptive names for lots and staff if not provided (e.g., "Lote 1", "Lote 2", "Colaborador 1").
-    4.  **Defaults:**
+        *   Generate descriptive names for lots and staff if not provided.
+    5.  **Defaults:**
         *   If a salary ('jornal') for a worker is not specified, you MUST use a default 'baseDailyRate' of 45000.
         *   For staff, the default 'employmentType' MUST be 'Temporal'.
-    5.  **Safety Rails (VERY IMPORTANT):**
-        *   You are STRICTLY FORBIDDEN from generating more than 25 lots in a single plan.
-        *   You are STRICTLY FORBIDDEN from generating more than 25 staff members in a single plan.
-        *   If the user's request exceeds these limits, you MUST inform them of the limitation in the 'summary' field and generate a plan with the maximum allowed number (25). Example summary: "Entendido. Crearé la finca con 25 de los 81 lotes solicitados, ya que el máximo por ahora es 25."
-    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the plan. If you ignored parts of the request (like creating tasks), you MUST mention it. For example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores. La creación de labores recurrentes o insumos aún no está soportada y esa parte fue ignorada."
+    6.  **Safety Rails:**
+        *   You are STRICTLY FORBIDDEN from generating more than 25 lots or 25 staff members in a single plan. If the request exceeds these limits, inform them in the 'summary' and generate a plan with the maximum allowed.
+    7.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the plan. You MUST mention if you are adding tasks from the agronomic plan or from the user's description. Example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores. Además, generaré el plan de labores estándar para los lotes y las tareas recurrentes que mencionaste."
 
     **USER DESCRIPTION:**
     "{{description}}"
+
+    **AGRONOMIC KNOWLEDGE BASE (Source of Truth for Standard Task Generation):**
+    \`\`\`json
+    {{{agronomicKnowledgeBase}}}
+    \`\`\`
   `,
 });
 
