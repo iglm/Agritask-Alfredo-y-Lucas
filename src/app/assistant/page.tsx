@@ -79,40 +79,53 @@ export default function AssistantPage() {
       
       const result: DispatcherOutput = await dispatchAction({ command: input, context });
       
-      if (result.action === 'CREATE_TASK') {
-        const { payload } = result;
-        const responsible = staff?.find(s => s.id === payload.responsibleId);
-        
-        if (!responsible) throw new Error('Responsable no encontrado en el contexto.');
-
-        const taskData = {
-          ...payload,
-          plannedCost: payload.plannedJournals * responsible.baseDailyRate,
-          supplyCost: 0,
-          actualCost: 0,
-          progress: 0,
-          status: 'Por realizar' as const,
+      // 1. Show the assistant's summary message
+      if (result.summary) {
+        const assistantSummaryMessage: ChatMessage = {
+            id: Date.now().toString() + '-summary',
+            role: 'assistant',
+            content: result.summary,
         };
+        setMessages(prev => [...prev, assistantSummaryMessage]);
+      }
 
-        await addTask(taskData);
-        
-        const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
-        const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
-        
-        const systemMessage: ChatMessage = {
-          id: Date.now().toString() + '-system',
-          role: 'system',
-          content: `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`,
-        };
-        setMessages(prev => [...prev, systemMessage]);
+      // 2. Execute the plan action by action
+      for (const action of result.plan) {
+        if (action.action === 'CREATE_TASK') {
+            const { payload } = action;
+            const responsible = staff?.find(s => s.id === payload.responsibleId);
+            
+            if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
 
-      } else if (result.action === 'INCOMPREHENSIBLE') {
-        const assistantMessage: ChatMessage = {
-          id: Date.now().toString() + '-assistant',
-          role: 'assistant',
-          content: result.payload.reason || "No pude entender tu instrucción. Por favor, sé más específico. Asegúrate de incluir el nombre de la labor, el lote, el responsable y la fecha.",
-        };
-        setMessages(prev => [...prev, assistantMessage]);
+            const taskData = {
+            ...payload,
+            plannedCost: payload.plannedJournals * responsible.baseDailyRate,
+            supplyCost: 0,
+            actualCost: 0,
+            progress: 0,
+            status: 'Por realizar' as const,
+            };
+
+            await addTask(taskData);
+            
+            const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
+            const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
+            
+            const systemMessage: ChatMessage = {
+                id: Date.now().toString() + payload.type,
+                role: 'system',
+                content: `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`,
+            };
+            setMessages(prev => [...prev, systemMessage]);
+
+        } else if (action.action === 'INCOMPREHENSIBLE') {
+            const assistantMessage: ChatMessage = {
+                id: Date.now().toString() + '-incomprehensible',
+                role: 'assistant',
+                content: action.payload.reason || "No pude entender parte de tu instrucción.",
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+        }
       }
 
     } catch (error: any) {
@@ -123,7 +136,7 @@ export default function AssistantPage() {
         description: error.message || 'No se pudo procesar tu solicitud.',
       });
        const errorMessage: ChatMessage = {
-          id: Date.now().toString() + '-assistant',
+          id: Date.now().toString() + '-error',
           role: 'assistant',
           content: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo.",
         };
