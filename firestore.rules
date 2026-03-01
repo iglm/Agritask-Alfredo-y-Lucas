@@ -20,32 +20,39 @@ service cloud.firestore {
 
     // Secure rules for TOP-LEVEL user-owned collections
     match /productiveUnits/{unitId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /lots/{lotId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /staff/{staffId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /staffAttendance/{attId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /tasks/{taskId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /supplies/{supplyId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     match /transactions/{transId} {
-      allow read, update, delete: if isExistingDocOwner(resource);
+      allow read: if isSignedIn();
       allow create: if isNewDocOwner();
+      allow update, delete: if isExistingDocOwner(resource);
     }
     
     // Subcollections can be secured by checking ownership of the parent document.
