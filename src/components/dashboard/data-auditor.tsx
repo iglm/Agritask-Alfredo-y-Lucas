@@ -15,6 +15,8 @@ interface DataAuditorProps {
   lots: Lot[];
   tasks: Task[];
   staff: Staff[];
+  isAiProcessing: boolean;
+  setIsAiProcessing: (isProcessing: boolean) => void;
 }
 
 const severityConfig = {
@@ -26,13 +28,13 @@ const severityConfig = {
     icon: <FileQuestion className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />,
     badgeClass: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
   },
-  Bajo: {
+  Baja: {
     icon: <FileQuestion className="h-4 w-4 text-blue-600 dark:text-blue-500" />,
     badgeClass: 'border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-400',
   },
 };
 
-export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
+export function DataAuditor({ lots, tasks, staff, isAiProcessing, setIsAiProcessing }: DataAuditorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DataAuditOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,7 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
     }
       
     setIsLoading(true);
+    setIsAiProcessing(true);
     setError(null);
     setResult(null);
 
@@ -73,6 +76,7 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
       });
     } finally {
       setIsLoading(false);
+      setIsAiProcessing(false);
     }
   };
 
@@ -88,7 +92,7 @@ export function DataAuditor({ lots, tasks, staff }: DataAuditorProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleAudit} disabled={isLoading} className="w-full">
+        <Button onClick={handleAudit} disabled={isLoading || isAiProcessing} className="w-full">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

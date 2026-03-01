@@ -50,9 +50,11 @@ interface ResourceOptimizerProps {
   tasks: Task[];
   staff: Staff[];
   supplies: Supply[];
+  isAiProcessing: boolean;
+  setIsAiProcessing: (isProcessing: boolean) => void;
 }
 
-export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerProps) {
+export function ResourceOptimizer({ tasks, staff, supplies, isAiProcessing, setIsAiProcessing }: ResourceOptimizerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ResourceOptimizerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +99,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
     }
       
     setIsLoading(true);
+    setIsAiProcessing(true);
     setError(null);
     setResult(null);
     setCompletedActions([]);
@@ -118,6 +121,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
       });
     } finally {
       setIsLoading(false);
+      setIsAiProcessing(false);
     }
   };
 
@@ -157,7 +161,7 @@ export function ResourceOptimizer({ tasks, staff, supplies }: ResourceOptimizerP
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleOptimization} disabled={isLoading} className="w-full">
+        <Button onClick={handleOptimization} disabled={isLoading || isAiProcessing} className="w-full">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

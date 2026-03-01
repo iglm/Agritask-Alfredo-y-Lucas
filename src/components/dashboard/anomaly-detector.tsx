@@ -14,6 +14,8 @@ interface AnomalyDetectorProps {
   lots: Lot[];
   tasks: Task[];
   transactions: Transaction[];
+  isAiProcessing: boolean;
+  setIsAiProcessing: (isProcessing: boolean) => void;
 }
 
 const severityConfig = {
@@ -31,7 +33,7 @@ const severityConfig = {
   },
 };
 
-export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorProps) {
+export function AnomalyDetector({ lots, tasks, transactions, isAiProcessing, setIsAiProcessing }: AnomalyDetectorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnomalyDetectionOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorPr
     }
       
     setIsLoading(true);
+    setIsAiProcessing(true);
     setError(null);
     setResult(null);
 
@@ -66,6 +69,7 @@ export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorPr
       });
     } finally {
       setIsLoading(false);
+      setIsAiProcessing(false);
     }
   };
 
@@ -81,7 +85,7 @@ export function AnomalyDetector({ lots, tasks, transactions }: AnomalyDetectorPr
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button onClick={handleDetection} disabled={isLoading} className="w-full">
+        <Button onClick={handleDetection} disabled={isLoading || isAiProcessing} className="w-full">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

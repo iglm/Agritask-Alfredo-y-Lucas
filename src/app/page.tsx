@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const { t, formatCurrency } = useLocalization();
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   
   const { 
     totalLots, 
@@ -155,9 +156,27 @@ export default function DashboardPage() {
       </div>
 
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <AnomalyDetector lots={lots} tasks={tasks} transactions={transactions} />
-          <DataAuditor lots={lots} tasks={tasks} staff={staff} />
-          <ResourceOptimizer tasks={tasks} staff={staff} supplies={supplies} />
+          <AnomalyDetector 
+            lots={lots} 
+            tasks={tasks} 
+            transactions={transactions} 
+            isAiProcessing={isAiProcessing}
+            setIsAiProcessing={setIsAiProcessing}
+          />
+          <DataAuditor 
+            lots={lots} 
+            tasks={tasks} 
+            staff={staff}
+            isAiProcessing={isAiProcessing}
+            setIsAiProcessing={setIsAiProcessing}
+          />
+          <ResourceOptimizer 
+            tasks={tasks} 
+            staff={staff} 
+            supplies={supplies}
+            isAiProcessing={isAiProcessing}
+            setIsAiProcessing={setIsAiProcessing}
+          />
       </div>
     </div>
   );
