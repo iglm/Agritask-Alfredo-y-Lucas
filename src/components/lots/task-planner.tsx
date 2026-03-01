@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Lot } from "@/lib/types";
-import { useAppData } from "@/firebase";
+import { Lot, Staff, Task } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { generateTaskPlan, TaskPlannerOutput } from "@/ai/flows/task-planner-flow";
 import {
@@ -25,18 +24,19 @@ import { Badge } from "../ui/badge";
 interface TaskPlannerProps {
   lot: Lot;
   children: React.ReactNode;
+  staff: Staff[];
+  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<Task>;
 }
 
 type ProposedTask = TaskPlannerOutput['plannedTasks'][0];
 
-export function TaskPlanner({ lot, children }: TaskPlannerProps) {
+export function TaskPlanner({ lot, children, staff, addTask }: TaskPlannerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [plan, setPlan] = useState<ProposedTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { addTask, staff } = useAppData();
   const { toast } = useToast();
 
   const handleGeneratePlan = async () => {

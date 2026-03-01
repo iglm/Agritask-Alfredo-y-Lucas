@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/components/auth/auth-provider';
-import { DataProvider } from '@/firebase/data-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { SafeHydrationWrapper } from '@/components/safe-hydration-wrapper';
@@ -46,11 +45,9 @@ export default function RootLayout({
             >
               <FirebaseClientProvider>
                 <AuthProvider>
-                  <DataProvider>
                     <LocalizationProvider>
                       <AppShell>{children}</AppShell>
                     </LocalizationProvider>
-                  </DataProvider>
                 </AuthProvider>
               </FirebaseClientProvider>
               <Toaster />

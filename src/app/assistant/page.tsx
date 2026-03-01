@@ -6,7 +6,6 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Bot, Loader2, Send, User } from 'lucide-react';
-import { useAppData } from '@/firebase';
 import { dispatchAction, DispatcherOutput } from '@/ai/flows/assistant-flow';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +13,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { Lot, Staff, Task } from '@/lib/types';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 
 type ChatMessage = {
   id: string;
@@ -25,12 +27,20 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { lots, staff, addTask } = useAppData();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  const { firestore, user } = useFirebase();
+
+  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
+
+  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
+
+  const isPageLoading = lotsLoading || staffLoading;
+
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({
         top: scrollAreaRef.current.scrollHeight,
@@ -38,6 +48,14 @@ export default function AssistantPage() {
       });
     }
   }, [messages]);
+  
+  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'tasks'));
+    const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newTask);
+    return newTask;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,15 +73,15 @@ export default function AssistantPage() {
 
     try {
       const context = JSON.stringify({
-        lots: lots.map(l => ({ id: l.id, name: l.name })),
-        staff: staff.map(s => ({ id: s.id, name: s.name })),
+        lots: (lots || []).map(l => ({ id: l.id, name: l.name })),
+        staff: (staff || []).map(s => ({ id: s.id, name: s.name })),
       });
       
       const result: DispatcherOutput = await dispatchAction({ command: input, context });
       
       if (result.action === 'CREATE_TASK') {
         const { payload } = result;
-        const responsible = staff.find(s => s.id === payload.responsibleId);
+        const responsible = staff?.find(s => s.id === payload.responsibleId);
         
         if (!responsible) throw new Error('Responsable no encontrado en el contexto.');
 
@@ -78,7 +96,7 @@ export default function AssistantPage() {
 
         await addTask(taskData);
         
-        const lotName = lots.find(l => l.id === payload.lotId)?.name || 'Desconocido';
+        const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
         const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
         
         const systemMessage: ChatMessage = {
@@ -114,6 +132,10 @@ export default function AssistantPage() {
       setIsLoading(false);
     }
   };
+
+  if (isPageLoading) {
+      return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -180,9 +202,9 @@ export default function AssistantPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Escribe tu comando aquí..."
-              disabled={isLoading}
+              disabled={isLoading || isPageLoading}
             />
-            <Button type="submit" disabled={isLoading || !input.trim()}>
+            <Button type="submit" disabled={isLoading || isPageLoading || !input.trim()}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>

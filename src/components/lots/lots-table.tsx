@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, SquarePen, Trash2, Tractor, PlusCircle, ChevronDown, Loader2, Bot, BarChart, HardHat, Sprout } from "lucide-react";
-import { Lot, SubLot, Task, Transaction } from "@/lib/types";
+import { Lot, SubLot, Task, Transaction, Staff } from "@/lib/types";
 import { Card, CardContent } from "../ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EmptyState } from "../ui/empty-state";
@@ -21,12 +21,14 @@ type LotsTableProps = {
   lots: Lot[];
   tasks: Task[];
   transactions: Transaction[];
+  staff: Staff[];
   onEditLot: (lot: Lot) => void;
   onDeleteLot: (lot: Lot) => void;
   onAddLot: () => void;
   onAddSubLot: (lot: Lot) => void;
   onEditSubLot: (subLot: SubLot) => void;
   onDeleteSubLot: (lotId: string, subLotId: string, name: string) => void;
+  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<Task>;
   isInsideCard?: boolean;
 };
 
@@ -101,7 +103,7 @@ const SubLotsList: React.FC<{
 };
 
 
-export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot, isInsideCard }: LotsTableProps) {
+export function LotsTable({ lots, tasks, transactions, staff, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot, addTask, isInsideCard }: LotsTableProps) {
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
 
   const toggleRow = (lotId: string) => {
@@ -194,7 +196,7 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
                                     Reporte de Rentabilidad
                                 </DropdownMenuItem>
                             </ProfitabilityReportDialog>
-                            <TaskPlanner lot={lot}>
+                            <TaskPlanner lot={lot} staff={staff} addTask={addTask}>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={lot.type !== 'Productivo'}>
                                     <Bot className="mr-2 h-4 w-4" />
                                     Agente Planificador

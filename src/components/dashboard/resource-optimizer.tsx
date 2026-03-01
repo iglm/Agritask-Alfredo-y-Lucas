@@ -11,9 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { addDays, startOfToday, isWithinInterval, parseISO, isValid } from 'date-fns';
-import { useAppData } from '@/firebase';
 
-// Re-map the configuration to the new action types
 const actionConfig = {
   reassignTask: {
     icon: <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-500" />,
@@ -32,7 +30,6 @@ const severityConfig = {
   Baja: 'border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-400',
 };
 
-// Define the payload types for type safety in the component
 type ReassignTaskPayload = {
   taskId: string;
   fromStaffId: string;
@@ -54,9 +51,10 @@ interface ResourceOptimizerProps {
   supplies: Supply[];
   isAiProcessing: boolean;
   setIsAiProcessing: (isProcessing: boolean) => void;
+  updateTask: (task: Task) => Promise<void>;
 }
 
-export function ResourceOptimizer({ title, description, tasks, staff, supplies, isAiProcessing, setIsAiProcessing }: ResourceOptimizerProps) {
+export function ResourceOptimizer({ title, description, tasks, staff, supplies, isAiProcessing, setIsAiProcessing, updateTask }: ResourceOptimizerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ResourceOptimizerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +62,6 @@ export function ResourceOptimizer({ title, description, tasks, staff, supplies, 
 
   const { toast } = useToast();
   const router = useRouter();
-  const { updateTask } = useAppData();
-
 
   const handleOptimization = async () => {
     if (staff.length === 0) {
