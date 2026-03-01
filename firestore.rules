@@ -1,90 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Helper Functions ---
+    // Helper function to check if the user is authenticated
     function isSignedIn() {
       return request.auth != null;
     }
-    // Checks if the UID in a document matches the logged-in user
-    function isOwner(doc) {
-      return isSignedIn() && doc.userId == request.auth.uid;
+
+    // Helper function to check if the authenticated user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // --- User Profile ---
-    // A user can only manage their own profile.
+    // User can manage their own profile
     match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
 
-    // --- Top-level collections ---
-    // The pattern is:
-    // - Anyone signed in can query the collection (list).
-    //   The client is responsible for adding `where('userId', '==', auth.uid)`.
-    // - Only the owner can get, create, update, or delete a specific document.
+    // --- Collections ---
+    // General pattern:
+    // - To create a document, the new document's `userId` must match the user's UID.
+    // - To read, update, or delete a document, the existing document's `userId` must match the user's UID.
+    // - To list (query) a collection, the query MUST include a `where("userId", "==", request.auth.uid)` clause.
 
     match /lots/{lotId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
     match /productiveUnits/{unitId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
-    
+
     match /staff/{staffId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
     match /staffAttendance/{attendanceId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
     match /supplies/{supplyId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
     match /tasks/{taskId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
     match /transactions/{transactionId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
 
-    // --- System Logs ---
     match /system_logs/{logId} {
-      allow list, get: if isOwner(resource.data);
-      allow create: if isOwner(request.resource.data);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
+    // Permissions for subcollections are inherited from their parent documents.
+    // We verify the user owns the parent document before allowing access.
+    
     match /lots/{lotId}/sublots/{sublotId} {
-      allow read, write: if isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data);
+      allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
     }
-    
+
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, write: if isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data);
-    }
-    
-    // --- Collection Group Rule ---
-    // This is needed for the report on `reports/page.tsx`
-    match /{path=**}/supplyUsages/{usageId} {
-      allow list: if isSignedIn();
+      allow read, write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
     }
   }
 }
