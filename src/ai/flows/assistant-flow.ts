@@ -158,6 +158,7 @@ const dispatcherPrompt = ai.definePrompt({
     9.  Infer logical defaults. For 'CREATE_TASK', 'plannedJournals' defaults to 1. For 'CREATE_STAFF', 'employmentType' defaults to 'Temporal'. For 'CREATE_LOT', if a crop is mentioned, it's a 'Productivo' lot.
     10. For 'CREATE_SUPPLY', infer 'unitOfMeasure' from: [${supplyUnits.join(', ')}].
     11. For 'CREATE_TRANSACTION', infer the 'type'. 'Gasto', 'compra', 'egreso' mean 'Egreso'. 'Venta', 'recibí pago', 'ingreso' mean 'Ingreso'. For 'Ingreso', infer 'category' from: [${incomeCategories.join(', ')}]. For 'Egreso', infer 'category' from: [${expenseCategories.join(', ')}]. If a lot is mentioned, include its 'lotId'. The date defaults to today.
+    12. **DETECT ANALYTICAL QUERIES:** Your role is STRICTLY for data entry commands. If the user asks a question or requests analysis, summary, optimization, or diagnosis (e.g., '¿Hay problemas?', 'Analiza mis costos', 'Optimiza la semana'), you MUST NOT generate a plan. Instead, your response must be a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
 
     CONTEXT DATA (Productive Units, Lots, and Staff):
     \`\`\`json
@@ -167,6 +168,16 @@ const dispatcherPrompt = ai.definePrompt({
     User's Command: "{{command}}"
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
+
+    // Example: Create Task
+    // User: "Programa una guadañada en El Filo para mañana con Mario"
+    {
+      "summary": "Entendido. Voy a programar la labor de guadañada.",
+      "plan": [{
+        "action": "CREATE_TASK",
+        "payload": { "type": "Guadañada", "lotId": "id_de_el_filo", "responsibleId": "id_de_mario", "startDate": "...", "plannedJournals": 1, "category": "Mantenimiento" }
+      }]
+    }
     
     // Example: Create Supply
     // User: "Registra el insumo 'Abono NPK' en Bultos a 120000, tengo 20"
@@ -188,13 +199,13 @@ const dispatcherPrompt = ai.definePrompt({
         }]
     }
     
-    // Example: Create Transaction (Income)
-    // User: "Añade un ingreso de 500000 por venta de café del lote El Mirador"
+    // Example: Deflect Analysis Query
+    // User: "¿Hay alguna anomalía en mis costos?"
     {
-        "summary": "Registrando ingreso por venta de café.",
+        "summary": "Esa es una pregunta para otro agente.",
         "plan": [{
-            "action": "CREATE_TRANSACTION",
-            "payload": { "type": "Ingreso", "description": "Venta de café", "amount": 500000, "category": "Venta de Cosecha", "lotId": "id_de_el_mirador", "date": "{{currentDate}}" }
+            "action": "INCOMPREHENSIBLE",
+            "payload": { "reason": "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal." }
         }]
     }
   `,
