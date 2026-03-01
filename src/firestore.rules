@@ -1,39 +1,94 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return request.auth.uid == userId; }
-    function isExistingDocOwner() { return isSignedIn() && isOwner(resource.data.userId); }
-    function isNewDocOwner() { return isSignedIn() && request.resource.data.userId == request.auth.uid; }
 
-    // User profile remains secure
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Use for CREATE operations. Checks the incoming document.
+    function isCreatingOwnDoc() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Use for GET, UPDATE, DELETE. Checks the existing document in the database.
+    function isOwnerOfDoc() {
+      // Robust check: ensure the 'userId' field exists before comparing.
+      // This prevents errors on malformed or old data.
+      return isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
+    }
+    
+    // --- User Profile ---
     match /users/{userId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow get, update, delete: if isSignedIn() && request.auth.uid == userId;
+      // Disallow listing all users or creating profiles arbitrarily.
+      allow list, create: if false;
     }
 
-    // Permissive rules for top-level collections as requested
-    match /lots/{docId} { allow read, write: if isSignedIn(); }
-    match /productiveUnits/{docId} { allow read, write: if isSignedIn(); }
-    match /staff/{docId} { allow read, write: if isSignedIn(); }
-    match /staffAttendance/{docId} { allow read, write: if isSignedIn(); }
-    match /supplies/{docId} { allow read, write: if isSignedIn(); }
-    match /tasks/{docId} { allow read, write: if isSignedIn(); }
-    match /transactions/{docId} { allow read, write: if isSignedIn(); }
+    // --- Standard Data Collections Pattern ---
+    // This pattern is applied to all top-level collections owned by users.
+    // list: Allowed for any signed-in user. Client MUST filter by userId.
+    // get, update, delete: Allowed only for the owner of the specific document.
+    // create: Allowed if the new document's userId matches the requester's UID.
+    
+    match /productiveUnits/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /lots/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /staff/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /staffAttendance/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /tasks/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /supplies/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
+    match /transactions/{id} {
+      allow list: if isSignedIn();
+      allow get, update, delete: if isOwnerOfDoc();
+      allow create: if isCreatingOwnDoc();
+    }
 
-    // Secure rule for system logs
+    // --- Subcollections ---
+    // This rule allows read/write access to subcollections if the user
+    // owns the PARENT document. It's more secure than a blanket allow.
+    function isParentOwner(parentCollection, parentId) {
+      return get(/databases/$(database)/documents/$(parentCollection)/$(parentId)).data.userId == request.auth.uid;
+    }
+
+    match /lots/{lotId}/sublots/{sublotId} {
+      allow read, write: if isSignedIn() && isParentOwner('lots', lotId);
+    }
+
+    match /tasks/{taskId}/supplyUsages/{usageId} {
+      allow read, write: if isSignedIn() && isParentOwner('tasks', taskId);
+    }
+
+    // --- System Logs ---
+    // A special collection where users can only create their own logs.
+    // No one should be able to read, update, or delete them from the client.
     match /system_logs/{logId} {
-      allow create: if isNewDocOwner();
-      allow read: if isExistingDocOwner();
-      allow update, delete: if false;
-    }
-
-    // Permissive rules for subcollections to allow direct access AND collection group queries
-    // This specifically addresses the error on 'supplyUsages'
-    match /{path=**}/sublots/{sublotId} {
-        allow read, write: if isSignedIn();
-    }
-    match /{path=**}/supplyUsages/{usageId} {
-        allow read, write: if isSignedIn();
+      allow create: if isCreatingOwnDoc();
+      allow read, update, delete: if false;
     }
   }
 }
