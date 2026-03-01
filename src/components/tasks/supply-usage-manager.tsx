@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAppData, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { Supply, SupplyUsage, Task } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -23,6 +23,8 @@ interface SupplyUsageManagerProps {
   taskId: string;
   allSupplies: Supply[];
   task: Partial<Task>;
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<SupplyUsage>;
+  deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
 }
 
 const addSupplySchema = z.object({
@@ -33,9 +35,8 @@ const addSupplySchema = z.object({
 
 type AddSupplyFormValues = z.infer<typeof addSupplySchema>;
 
-export function SupplyUsageManager({ taskId, allSupplies, task }: SupplyUsageManagerProps) {
+export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, deleteSupplyUsage }: SupplyUsageManagerProps) {
   const { firestore } = useFirebase();
-  const { addSupplyUsage, deleteSupplyUsage } = useAppData();
   const { toast } = useToast();
   
   const [isAdding, setIsAdding] = useState(false);

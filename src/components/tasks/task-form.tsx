@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies, PlannedSupply } from "@/lib/types"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies, PlannedSupply, type SupplyUsage } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
 import { format, isValid, parseISO } from "date-fns"
@@ -62,6 +62,8 @@ type TaskFormProps = {
   staff: Staff[];
   tasks: Task[];
   supplies: Supply[];
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<SupplyUsage>;
+  deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
 };
 
 const getInitialDate = (dateValue: any): Date | undefined => {
@@ -83,7 +85,7 @@ const getInitialDate = (dateValue: any): Date | undefined => {
   return undefined;
 };
 
-export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupplyUsage, deleteSupplyUsage }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     // Initialize dates as undefined to prevent hydration errors.
@@ -542,6 +544,8 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies }: TaskF
                 taskId={task.id}
                 allSupplies={supplies}
                 task={task}
+                addSupplyUsage={addSupplyUsage}
+                deleteSupplyUsage={deleteSupplyUsage}
             />
         )}
         
