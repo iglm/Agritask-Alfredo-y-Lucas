@@ -6,76 +6,92 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    // Secure function to check ownership on existing documents.
+    // First checks if 'userId' field exists, then compares it.
+    function isOwnerOfExisting() {
+      return isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
+    }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    // Secure function to check ownership for new documents.
+    // First checks if 'userId' field exists, then compares it.
+    function isOwnerOfNew() {
+      return isSignedIn() && 'userId' in request.resource.data && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Secure function to check ownership of a parent document for subcollection rules.
+    function isParentOwner(parentPath) {
+      return isSignedIn() && get(parentPath).data.userId == request.auth.uid;
     }
 
     // --- User Profile ---
+    // This is keyed by user ID, so the rule is simpler.
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
     // --- Main Collections ---
-    // This pattern allows authenticated users to query lists (relying on client-side
-    // security), but only allows get/write operations on documents they own.
+    // Apply the robust ownership pattern to all user-owned collections.
     match /lots/{lotId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /productiveUnits/{unitId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /staff/{staffId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /staffAttendance/{attendanceId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /supplies/{supplyId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /tasks/{taskId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      // This is the specific rule that was failing.
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     match /transactions/{transactionId} {
-      allow list: if isSignedIn();
-      allow get, update, delete: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNew();
+      allow update, delete: if isOwnerOfExisting();
     }
     
+    // System logs are append-only and private.
     match /system_logs/{logId} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow list: if isSignedIn(); // client queries with where('userId', '==', user.uid)
-      allow get: if isOwner(resource.data.userId);
+      allow create: if isOwnerOfNew();
+      allow read: if isOwnerOfExisting();
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
     match /lots/{lotId}/sublots/{sublotId} {
-      // For subcollections, a get() on the parent is efficient and secure.
-      allow read, write: if isOwner(get(/databases/$(database)/documents/lots/$(lotId)).data.userId);
+      // Allow read/write if the user owns the parent lot.
+      allow read, write: if isParentOwner(/databases/$(database)/documents/lots/$(lotId));
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      allow read, write: if isOwner(get(/databases/$(database)/documents/tasks/$(taskId)).data.userId);
+      // Allow read/write if the user owns the parent task.
+      allow read, write: if isParentOwner(/databases/$(database)/documents/tasks/$(taskId));
     }
     
     // --- Collection Group ---
     match /{path=**}/supplyUsages/{usageId} {
       // This rule is crucial for reports that query across all tasks.
-      allow read: if isOwner(resource.data.userId);
+      // It must be secure and robust.
+      allow read: if isOwnerOfExisting();
     }
   }
 }
