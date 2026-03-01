@@ -43,7 +43,7 @@ export function TransactionForm({ transaction, onSubmit, lots, productiveUnits }
       type: transaction?.type ?? "Ingreso",
       date: transaction?.date ? parseISO(transaction.date) : undefined,
       description: transaction?.description ?? "",
-      amount: transaction?.amount ?? '',
+      amount: transaction?.amount ?? undefined,
       category: transaction?.category ?? "",
       lotId: transaction?.lotId ?? "none",
     },

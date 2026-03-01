@@ -27,6 +27,7 @@ type LotsTableProps = {
   onAddSubLot: (lot: Lot) => void;
   onEditSubLot: (subLot: SubLot) => void;
   onDeleteSubLot: (lotId: string, subLotId: string, name: string) => void;
+  isInsideCard?: boolean;
 };
 
 const SubLotsList: React.FC<{ 
@@ -100,7 +101,7 @@ const SubLotsList: React.FC<{
 };
 
 
-export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot }: LotsTableProps) {
+export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, onAddLot, onAddSubLot, onEditSubLot, onDeleteSubLot, isInsideCard }: LotsTableProps) {
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
 
   const toggleRow = (lotId: string) => {
@@ -118,8 +119,10 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
     },
   };
 
+  const TableWrapper = isInsideCard ? React.Fragment : Card;
+
   return (
-    <Card>
+    <TableWrapper>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
@@ -278,6 +281,6 @@ export function LotsTable({ lots, tasks, transactions, onEditLot, onDeleteLot, o
           </TableBody>
         </Table>
       </CardContent>
-    </Card>
+    </TableWrapper>
   );
 }

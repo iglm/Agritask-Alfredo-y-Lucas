@@ -1,192 +1,180 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { LotsTable } from "@/components/lots/lots-table";
 import { LotForm } from "@/components/lots/lot-form";
+import { ProductiveUnitForm } from "@/components/productive-unit/productive-unit-form";
 import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
-import { Lot, SubLot } from "@/lib/types";
+import { Lot, SubLot, ProductiveUnit } from "@/lib/types";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Home, PlusCircle } from "lucide-react";
 
 export default function LotsPage() {
-  const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, firestore, user } = useAppData();
+  const { lots: allLots, tasks: allTasks, transactions: allTransactions, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, addProductiveUnit, updateProductiveUnit, deleteProductiveUnit, firestore, user } = useAppData();
   const { toast } = useToast();
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
   const [isSubLotSheetOpen, setIsSubLotSheetOpen] = useState(false);
-  const [filteredLots, setFilteredLots] = useState<Lot[]>([]);
+  const [isUnitSheetOpen, setIsUnitSheetOpen] = useState(false);
   
   const [editingLot, setEditingLot] = useState<Lot | undefined>(undefined);
   const [editingSubLot, setEditingSubLot] = useState<SubLot | undefined>(undefined);
-  const [currentLot, setCurrentLot] = useState<Lot | undefined>(undefined); // To know which lot to add the sublot to
+  const [editingUnit, setEditingUnit] = useState<ProductiveUnit | undefined>(undefined);
+  
+  const [currentLot, setCurrentLot] = useState<Lot | undefined>(undefined);
+  const [currentUnitId, setCurrentUnitId] = useState<string | null>(null);
 
   const [lotToDelete, setLotToDelete] = useState<Lot | null>(null);
   const [subLotToDelete, setSubLotToDelete] = useState<{lotId: string, subLotId: string, name: string} | null>(null);
+  const [unitToDelete, setUnitToDelete] = useState<ProductiveUnit | null>(null);
 
   const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
-  
+  const [isUnitDeleteDialogOpen, setIsUnitDeleteDialogOpen] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (allLots) {
-      const filtered = allLots.filter(lot => 
-        lot.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredLots(filtered);
+  const { unitsWithLots, unassignedLots } = useMemo(() => {
+    const lowerCaseSearch = searchTerm.toLowerCase();
+
+    const filteredLots = (allLots || []).filter(lot => lot.name.toLowerCase().includes(lowerCaseSearch));
+    const filteredUnitIds = new Set(filteredLots.map(lot => lot.productiveUnitId));
+    
+    const filteredUnits = (allUnits || []).filter(unit => 
+        unit.farmName?.toLowerCase().includes(lowerCaseSearch) || filteredUnitIds.has(unit.id)
+    );
+
+    const unitsWithLots = filteredUnits.map(unit => ({
+        ...unit,
+        lots: filteredLots.filter(lot => lot.productiveUnitId === unit.id),
+    }));
+
+    const unassignedLots = filteredLots.filter(lot => !lot.productiveUnitId);
+
+    return { unitsWithLots, unassignedLots };
+  }, [allLots, allUnits, searchTerm]);
+
+  // --- Unit Handlers ---
+  const handleAddUnit = () => {
+    setEditingUnit(undefined);
+    setIsUnitSheetOpen(true);
+  };
+  const handleEditUnit = (unit: ProductiveUnit) => {
+    setEditingUnit(unit);
+    setIsUnitSheetOpen(true);
+  };
+  const handleDeleteUnitRequest = (unit: ProductiveUnit) => {
+    setUnitToDelete(unit);
+    setIsUnitDeleteDialogOpen(true);
+  };
+  const confirmDeleteUnit = async () => {
+    if (!unitToDelete) return;
+    try {
+      await deleteProductiveUnit(unitToDelete.id);
+    } catch (error) {
+        console.error("Failed to delete productive unit:", error);
     }
-  }, [allLots, searchTerm]);
+    setIsUnitDeleteDialogOpen(false);
+    setUnitToDelete(null);
+  };
+  const handleUnitFormSubmit = (values: Omit<ProductiveUnit, 'id' | 'userId'>) => {
+    if (editingUnit) {
+      updateProductiveUnit({ ...values, id: editingUnit.id, userId: editingUnit.userId });
+      toast({ title: "¡Unidad actualizada!" });
+    } else {
+      addProductiveUnit(values);
+      toast({ title: "¡Unidad creada!" });
+    }
+    setIsUnitSheetOpen(false);
+    setEditingUnit(undefined);
+  };
 
   // --- Lot Handlers ---
-  const handleAddLot = async () => {
-    if (!allUnits || allUnits.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "Primero crea una Unidad Productiva",
-            description: "Necesitas registrar al menos una unidad productiva antes de poder añadir un lote.",
-        });
-        return;
-    }
+  const handleAddLot = (unitId: string) => {
+    setCurrentUnitId(unitId);
     setEditingLot(undefined);
     setIsLotSheetOpen(true);
   };
-  
   const handleEditLot = (lot: Lot) => {
+    setCurrentUnitId(lot.productiveUnitId);
     setEditingLot(lot);
     setIsLotSheetOpen(true);
   }
-
   const handleDeleteLotRequest = (lot: Lot) => {
     setLotToDelete(lot);
     setIsLotDeleteDialogOpen(true);
   };
-
   const confirmDeleteLot = async () => {
     if (!lotToDelete) return;
-    try {
-      await deleteLot(lotToDelete.id);
-      toast({
-        title: "Lote eliminado",
-        description: `El lote "${lotToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el lote. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsLotDeleteDialogOpen(false);
-      setLotToDelete(null);
-    }
+    await deleteLot(lotToDelete.id);
+    toast({ title: "Lote eliminado" });
+    setIsLotDeleteDialogOpen(false);
+    setLotToDelete(null);
   };
-
   const handleLotFormSubmit = async (values: Omit<Lot, 'id' | 'userId'>) => {
-    try {
-      if (editingLot) {
-        await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
-        toast({
-          title: "¡Lote actualizado!",
-          description: "Los detalles del lote han sido actualizados.",
-        });
-      } else {
-        await addLot(values);
-        toast({
-          title: "¡Lote creado!",
-          description: "El nuevo lote ha sido agregado a tu lista.",
-        });
-      }
-      setIsLotSheetOpen(false);
-      setEditingLot(undefined);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: error.message || "No se pudo guardar el lote. Por favor, inténtalo de nuevo.",
-      });
+    if (editingLot) {
+      await updateLot({ ...values, id: editingLot.id, userId: editingLot.userId });
+      toast({ title: "¡Lote actualizado!" });
+    } else {
+      await addLot(values);
+      toast({ title: "¡Lote creado!" });
     }
+    setIsLotSheetOpen(false);
+    setEditingLot(undefined);
   };
   
   // --- SubLot Handlers ---
-
   const handleAddSubLot = (lot: Lot) => {
     setCurrentLot(lot);
     setEditingSubLot(undefined);
     setIsSubLotSheetOpen(true);
   }
-
   const handleEditSubLot = (subLot: SubLot) => {
     const parentLot = allLots?.find(l => l.id === subLot.lotId);
     setCurrentLot(parentLot);
     setEditingSubLot(subLot);
     setIsSubLotSheetOpen(true);
   }
-
   const handleDeleteSubLotRequest = (lotId: string, subLotId: string, name: string) => {
     setSubLotToDelete({ lotId, subLotId, name });
     setIsSubLotDeleteDialogOpen(true);
   };
-
   const confirmDeleteSubLot = async () => {
     if (!subLotToDelete) return;
-    try {
-      await deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
-      toast({
-        title: "Sub-lote eliminado",
-        description: `El sub-lote "${subLotToDelete.name}" ha sido eliminado.`,
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el sub-lote. Inténtalo de nuevo.",
-      });
-    } finally {
-      setIsSubLotDeleteDialogOpen(false);
-      setSubLotToDelete(null);
-    }
+    await deleteSubLot(subLotToDelete.lotId, subLotToDelete.subLotId);
+    toast({ title: "Sub-lote eliminado" });
+    setIsSubLotDeleteDialogOpen(false);
+    setSubLotToDelete(null);
   };
-  
   const handleSubLotFormSubmit = async (values: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => {
     if (!currentLot) return;
-    try {
-      if (editingSubLot) {
-        await updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
-        toast({
-          title: "¡Sub-lote actualizado!",
-          description: "Los detalles del sub-lote han sido actualizados.",
-        });
-      } else {
-        await addSubLot(currentLot.id, values);
-        toast({
-          title: "¡Sub-lote creado!",
-          description: "El nuevo sub-lote ha sido agregado.",
-        });
-      }
-      setIsSubLotSheetOpen(false);
-      setEditingSubLot(undefined);
-      setCurrentLot(undefined);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Algo salió mal.",
-        description: error.message || "No se pudo guardar el sub-lote. Por favor, inténtalo de nuevo.",
-      });
+    if (editingSubLot) {
+      await updateSubLot({ ...values, id: editingSubLot.id, lotId: currentLot.id, userId: editingSubLot.userId });
+      toast({ title: "¡Sub-lote actualizado!" });
+    } else {
+      await addSubLot(currentLot.id, values);
+      toast({ title: "¡Sub-lote creado!" });
     }
+    setIsSubLotSheetOpen(false);
+    setEditingSubLot(undefined);
+    setCurrentLot(undefined);
   };
 
   return (
     <div>
-      <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Nuevo Lote" onActionButtonClick={handleAddLot}>
+      <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Unidad Productiva" onActionButtonClick={handleAddUnit}>
         <div className="flex items-center gap-2">
             <Input 
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar finca o lote..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[200px]"
@@ -199,81 +187,95 @@ export default function LotsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <LotsTable 
-          lots={filteredLots} 
-          tasks={allTasks}
-          transactions={allTransactions}
-          onEditLot={handleEditLot} 
-          onDeleteLot={handleDeleteLotRequest}
-          onAddLot={handleAddLot}
-          onAddSubLot={handleAddSubLot}
-          onEditSubLot={handleEditSubLot}
-          onDeleteSubLot={handleDeleteSubLotRequest}
-        />
+        <div className="space-y-6">
+          {unitsWithLots.length === 0 && unassignedLots.length === 0 && (
+             <EmptyState
+                icon={<Home className="h-10 w-10" />}
+                title="Añade tu primera unidad productiva"
+                description="Registra tus fincas o unidades de negocio para empezar a organizar tu operación."
+                action={
+                  <Button onClick={handleAddUnit}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Agregar Unidad
+                  </Button>
+                }
+              />
+          )}
+
+          {unitsWithLots.map(unit => (
+            <Card key={unit.id}>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle>{unit.farmName}</CardTitle>
+                <div className="flex gap-2">
+                   <Button variant="outline" size="sm" onClick={() => handleAddLot(unit.id)}>
+                      Añadir Lote
+                   </Button>
+                   <Button variant="ghost" size="sm" onClick={() => handleEditUnit(unit)}>Editar Unidad</Button>
+                   <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteUnitRequest(unit)}>Eliminar Unidad</Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <LotsTable 
+                    lots={unit.lots} 
+                    tasks={allTasks}
+                    transactions={allTransactions}
+                    onEditLot={handleEditLot}
+                    onDeleteLot={handleDeleteLotRequest}
+                    onAddLot={() => handleAddLot(unit.id)}
+                    onAddSubLot={handleAddSubLot}
+                    onEditSubLot={handleEditSubLot}
+                    onDeleteSubLot={handleDeleteSubLotRequest}
+                    isInsideCard={true}
+                />
+              </CardContent>
+            </Card>
+          ))}
+
+          {unassignedLots.length > 0 && (
+              <Card>
+              <CardHeader>
+                  <CardTitle>Lotes Sin Unidad Asignada</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <LotsTable 
+                    lots={unassignedLots}
+                    tasks={allTasks}
+                    transactions={allTransactions}
+                    onEditLot={handleEditLot}
+                    onDeleteLot={handleDeleteLotRequest}
+                    onAddLot={() => toast({variant: "destructive", title: "Acción no permitida", description: "Crea lotes desde una unidad productiva."})}
+                    onAddSubLot={handleAddSubLot}
+                    onEditSubLot={handleEditSubLot}
+                    onDeleteSubLot={handleDeleteSubLotRequest}
+                    isInsideCard={true}
+                   />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
+      {/* Sheets and Dialogs */}
+      <Sheet open={isUnitSheetOpen} onOpenChange={setIsUnitSheetOpen}>
+        <SheetContent className="sm:max-w-2xl"><SheetHeader><SheetTitle>{editingUnit ? 'Editar Unidad' : 'Nueva Unidad'}</SheetTitle></SheetHeader><ProductiveUnitForm productiveUnit={editingUnit} onSubmit={handleUnitFormSubmit} /></SheetContent>
+      </Sheet>
       <Sheet open={isLotSheetOpen} onOpenChange={setIsLotSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{editingLot ? 'Editar Lote' : 'Crear un Nuevo Lote'}</SheetTitle>
-            <SheetDescription>
-              {editingLot ? 'Actualiza los detalles de este lote.' : 'Completa los detalles para el nuevo lote.'}
-            </SheetDescription>
-          </SheetHeader>
-          <LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnits={allUnits} />
-        </SheetContent>
+        <SheetContent><SheetHeader><SheetTitle>{editingLot ? 'Editar Lote' : 'Nuevo Lote'}</SheetTitle></SheetHeader><LotForm lot={editingLot} onSubmit={handleLotFormSubmit} productiveUnitId={currentUnitId} /></SheetContent>
+      </Sheet>
+      <Sheet open={isSubLotSheetOpen} onOpenChange={setIsSubLotSheetOpen}>
+        <SheetContent><SheetHeader><SheetTitle>{editingSubLot ? 'Editar Sub-lote' : 'Nuevo Sub-lote'}</SheetTitle><SheetDescription>Añadiendo a {currentLot?.name}</SheetDescription></SheetHeader><SubLotForm subLot={editingSubLot} onSubmit={handleSubLotFormSubmit} /></SheetContent>
       </Sheet>
       
-      <Sheet open={isSubLotSheetOpen} onOpenChange={(isOpen) => { setIsSubLotSheetOpen(isOpen); if (!isOpen) { setEditingSubLot(undefined); setCurrentLot(undefined); }}}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{editingSubLot ? 'Editar Sub-lote' : 'Crear un Nuevo Sub-lote'}</SheetTitle>
-            <SheetDescription>
-              Añadiendo un sub-lote a <span className="font-semibold">{currentLot?.name}</span>.
-            </SheetDescription>
-          </SheetHeader>
-          <SubLotForm subLot={editingSubLot} onSubmit={handleSubLotFormSubmit} />
-        </SheetContent>
-      </Sheet>
-
-      <AlertDialog open={isLotDeleteDialogOpen} onOpenChange={setIsLotDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción es irreversible. Se eliminará permanentemente el lote "{lotToDelete?.name}", junto con todos sus sub-lotes, labores y registros financieros asociados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteLot} className="bg-destructive hover:bg-destructive/90">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Sí, eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      {/* Deletion Dialogs */}
+      <AlertDialog open={isUnitDeleteDialogOpen} onOpenChange={setIsUnitDeleteDialogOpen}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará la unidad "{unitToDelete?.farmName}" y **todos** sus lotes, labores y finanzas asociados. Esta acción es irreversible.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteUnit} className="bg-destructive hover:bg-destructive/90">Eliminar Todo</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
-
-       <AlertDialog open={isSubLotDeleteDialogOpen} onOpenChange={setIsSubLotDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el sub-lote
-              <span className="font-bold"> {subLotToDelete?.name}</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteSubLot} className="bg-destructive hover:bg-destructive/90">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Sí, eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialog open={isLotDeleteDialogOpen} onOpenChange={setIsLotDeleteDialogOpen}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el lote "{lotToDelete?.name}" y sus datos asociados (sub-lotes, labores, etc.).</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteLot} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isSubLotDeleteDialogOpen} onOpenChange={setIsSubLotDeleteDialogOpen}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Seguro?</AlertDialogTitle><AlertDialogDescription>Se eliminará el sub-lote "{subLotToDelete?.name}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={confirmDeleteSubLot} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
     </div>
   );
 }
-
-    

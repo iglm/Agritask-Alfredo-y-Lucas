@@ -73,7 +73,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = language;
   }, [language]);
 
-  const productiveUnitNavItem = { href: '/productive-unit', label: t('nav.productive_unit'), icon: Home };
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
   const assistantNavItem = { href: '/assistant', label: 'Asistente', icon: Bot };
   const managementNavItems = [
@@ -87,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: LayoutDashboard };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
-  const allNavItems = [productiveUnitNavItem, mainNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -131,21 +130,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(productiveUnitNavItem.href)}
-                    tooltip={{ children: productiveUnitNavItem.label }}
-                  >
-                    <Link href={productiveUnitNavItem.href}>
-                      <productiveUnitNavItem.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{productiveUnitNavItem.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-            <SidebarSeparator className='my-1' />
             <SidebarMenu>
                 <SidebarMenuItem>
                    <SidebarMenuButton

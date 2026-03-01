@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const formSchema = z.object({
-  farmName: z.string().optional(),
+  farmName: z.string().min(1, "El nombre de la finca es obligatorio."),
   country: z.string().optional(),
   department: z.string().optional(),
   municipality: z.string().optional(),
@@ -44,10 +44,10 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
       crops: productiveUnit?.crops?.join(', ') ?? "",
       varieties: productiveUnit?.varieties?.join(', ') ?? "",
       altitudeRange: productiveUnit?.altitudeRange ?? "",
-      averageTemperature: productiveUnit?.averageTemperature ?? '',
+      averageTemperature: productiveUnit?.averageTemperature ?? undefined,
       projectStartDate: productiveUnit?.projectStartDate ?? "",
-      totalFarmArea: productiveUnit?.totalFarmArea ?? '',
-      cultivatedArea: productiveUnit?.cultivatedArea ?? '',
+      totalFarmArea: productiveUnit?.totalFarmArea ?? undefined,
+      cultivatedArea: productiveUnit?.cultivatedArea ?? undefined,
     },
   });
 
@@ -65,7 +65,7 @@ export function ProductiveUnitForm({ productiveUnit, onSubmit }: ProductiveUnitF
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 pt-4 max-h-[80vh] overflow-y-auto pr-4">
         
         <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3']} className="w-full">
             <AccordionItem value="item-1">
