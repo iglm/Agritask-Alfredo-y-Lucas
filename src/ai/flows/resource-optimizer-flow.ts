@@ -49,7 +49,7 @@ const OptimizationSuggestionSchema = z.object({
 
 // Define the input schema for the flow
 const ResourceOptimizerInputSchema = z.object({
-  jsonData: z.string().describe("A JSON string containing arrays of 'tasks' (for the upcoming period), 'staff', and 'supplies' from the farm management system. Tasks may include 'downtimeMinutes'."),
+  jsonData: z.string().describe("A JSON string containing arrays of 'tasks' (for the upcoming period), 'staff', and 'supplies' from the farm management system. Tasks may include 'downtimeMinutes' and a 'plannedSupplies' array."),
   workWeekJournals: z.number().describe("The standard number of work-days (jornales) in a week for a single worker, e.g., 5."),
 });
 export type ResourceOptimizerInput = z.infer<typeof ResourceOptimizerInputSchema>;
@@ -89,12 +89,6 @@ const optimizerPrompt = ai.definePrompt({
     -   The standard work week is {{workWeekJournals}} man-days (jornales) per collaborator.
 
     KEY INSTRUCTIONS:
-    -   **Downtime Analysis (Action: \`informational\`):**
-        -   Analyze the \`downtimeMinutes\` field in tasks. Look for patterns: if a specific task type (e.g., 'Fumigación') or a collaborator consistently accumulates significant downtime.
-        -   If a pattern is found, generate an informational suggestion with 'Media' severity.
-        -   **Required Payload:** \`details\` with a message like "A 60-minute average downtime was detected in 'Fumigación' tasks. Suggestion: Review logistics of mixture preparation or equipment status to improve efficiency."
-        -   **\`explanation\`:** "Downtime pattern detected in Fumigación tasks. Logistical review suggested."
-
     -   **Workload Analysis (Action: \`reassignTask\`):**
         -   Sum the \`plannedJournals\` for tasks assigned to each collaborator.
         -   If a significant imbalance is found, generate a \`reassignTask\` action with 'Baja' severity.
@@ -106,12 +100,18 @@ const optimizerPrompt = ai.definePrompt({
         -   Compare the required total with the supply's \`currentStock\`.
         -   If stock is insufficient, generate a \`createPurchaseOrder\` action with 'Alta' severity.
         -   **Required Payload:** \`supplyId\`, \`supplyName\`, \`requiredQuantity\`, \`currentStock\`.
-        -   **\`explanation\`:** Be specific. E.g., "Stock Alert: 150 Kg of Abono 15-15-15 are needed, but only 50 Kg are in inventory."
+        -   **\`explanation\`:** Be specific. E.g., "Alerta de Stock: Se necesitan 150 Kg de Abono 15-15-15, pero solo hay 50 Kg en inventario."
+
+    -   **Downtime Analysis (Action: \`informational\`):**
+        -   Analyze the \`downtimeMinutes\` field in tasks. Look for patterns: if a specific task type (e.g., 'Fumigación') or a collaborator consistently accumulates significant downtime.
+        -   If a pattern is found, generate an informational suggestion with 'Media' severity.
+        -   **Required Payload:** \`details\` with a message like "Se detectó un tiempo muerto promedio de 60 minutos en labores de 'Fumigación'. Sugerencia: Revisar logística de preparación de mezclas o estado de equipos para mejorar eficiencia."
+        -   **\`explanation\`:** "Patrón de tiempo muerto detectado en labores de Fumigación. Se sugiere revisión logística."
 
     -   **Cost Deviation Analysis (Action: \`informational\`):**
         -   Compare the \`actualCost\` with the \`plannedCost\` of completed tasks.
         -   If a deviation over 20% is found in a finished task, generate an informational suggestion with 'Media' severity.
-        -   **Required Payload:** \`details\` with a message like "The '...' task had a cost overrun of X%. Analyze if it was due to extra man-days or unplanned supply expenses."
+        -   **Required Payload:** \`details\` with a message like "La labor '...' tuvo un sobrecosto del X%. Analizar si fue por jornales extra o gastos no planeados en insumos."
     
     Data to analyze:
     {{{jsonData}}}
