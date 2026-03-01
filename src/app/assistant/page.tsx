@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { Lot, Staff, Task, ProductiveUnit, employmentTypes } from '@/lib/types';
+import { Lot, Staff, Task, ProductiveUnit, Supply, Transaction, employmentTypes } from '@/lib/types';
 import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 
 type ChatMessage = {
@@ -41,8 +41,11 @@ export default function AssistantPage() {
 
   const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
+  
+  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
+  const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
 
-  const isPageLoading = unitsLoading || lotsLoading || staffLoading;
+  const isPageLoading = unitsLoading || lotsLoading || staffLoading || suppliesLoading;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -87,6 +90,22 @@ export default function AssistantPage() {
     return newTask;
   };
 
+  const addSupply = async (data: Omit<Supply, 'id' | 'userId'>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'supplies'));
+    const newSupply: Supply = { ...data, initialStock: data.currentStock, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newSupply);
+    return newSupply;
+  };
+
+  const addTransaction = async (data: Omit<Transaction, 'id' | 'userId'>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const newDocRef = doc(collection(firestore, 'transactions'));
+    const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
+    await setDoc(newDocRef, newTransaction);
+    return newTransaction;
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +121,7 @@ export default function AssistantPage() {
         productiveUnits: (units || []).map(u => ({ id: u.id, name: u.farmName })),
         lots: (lots || []).map(l => ({ id: l.id, name: l.name })),
         staff: (staff || []).map(s => ({ id: s.id, name: s.name })),
+        supplies: (supplies || []).map(s => ({id: s.id, name: s.name})),
       });
       
       const result: DispatcherOutput = await dispatchAction({ command: input, context });
@@ -132,23 +152,42 @@ export default function AssistantPage() {
             break;
             
           case 'CREATE_TASK':
-            const { payload } = action;
-            const responsible = staff?.find(s => s.id === payload.responsibleId);
-            if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
+            {
+              const { payload } = action;
+              const responsible = staff?.find(s => s.id === payload.responsibleId);
+              if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
 
-            const taskData = {
-              ...payload,
-              plannedCost: payload.plannedJournals * responsible.baseDailyRate,
-              supplyCost: 0,
-              actualCost: 0,
-              progress: 0,
-              status: 'Por realizar' as const,
-            };
-            await addTask(taskData);
-            
-            const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
-            const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
-            systemMessageContent = `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`;
+              const taskData = {
+                ...payload,
+                plannedCost: payload.plannedJournals * responsible.baseDailyRate,
+                supplyCost: 0,
+                actualCost: 0,
+                progress: 0,
+                status: 'Por realizar' as const,
+              };
+              await addTask(taskData);
+              
+              const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
+              const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
+              systemMessageContent = `✅ Labor "${payload.type}" creada para el lote '${lotName}' el ${formattedDate}.`;
+            }
+            break;
+          
+          case 'CREATE_SUPPLY':
+            const newSupply = await addSupply(action.payload);
+            systemMessageContent = `✅ Insumo "${newSupply.name}" creado con un stock de ${newSupply.currentStock} ${newSupply.unitOfMeasure}.`;
+            break;
+
+          case 'CREATE_TRANSACTION':
+            {
+              const { payload: transPayload } = action;
+              const newTransaction = await addTransaction({
+                  ...transPayload,
+                  date: format(new Date(transPayload.date.replace(/-/g, '/')), 'yyyy-MM-dd')
+              });
+              const lotName = newTransaction.lotId ? lots?.find(l => l.id === newTransaction.lotId)?.name : 'General';
+              systemMessageContent = `✅ ${newTransaction.type} de $${newTransaction.amount.toLocaleString()} registrado: "${newTransaction.description}" (Lote: ${lotName}).`;
+            }
             break;
 
           case 'INCOMPREHENSIBLE':
@@ -188,11 +227,7 @@ export default function AssistantPage() {
         <CardHeader>
           <CardTitle>Tu Asistente de Gestión</CardTitle>
           <CardDescription>
-            Usa lenguaje natural para crear fincas, lotes, personal y labores. Ejemplos: <br/>
-            <span className="italic text-xs">"Crea la finca La Esmeralda en Salento"</span><br/>
-            <span className="italic text-xs">"Añade un lote de 5 hectáreas llamado El Filo a La Esmeralda"</span><br/>
-            <span className="italic text-xs">"Registra al trabajador Mario, jornal a 55000"</span><br/>
-            <span className="italic text-xs">"Programa una guadañada en El Filo para mañana con Mario"</span>
+            Usa lenguaje natural para crear fincas, lotes, personal, labores, insumos y finanzas.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">

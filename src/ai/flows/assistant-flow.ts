@@ -7,7 +7,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import { employmentTypes, taskCategories } from '@/lib/types';
+import { employmentTypes, taskCategories, supplyUnits, incomeCategories, expenseCategories } from '@/lib/types';
 
 // Define the schemas for the individual actions.
 
@@ -67,6 +67,35 @@ const CreateStaffActionSchema = z.object({
     payload: CreateStaffPayloadSchema,
 });
 
+// -- SUPPLY --
+const CreateSupplyPayloadSchema = z.object({
+    name: z.string().describe("El nombre del insumo. Ej: 'Urea', 'Glifosato'."),
+    unitOfMeasure: z.enum(supplyUnits).describe("La unidad de medida. Debe ser una de las opciones válidas."),
+    costPerUnit: z.number().describe("El costo por cada unidad del insumo."),
+    currentStock: z.number().describe("La cantidad inicial en inventario."),
+});
+
+const CreateSupplyActionSchema = z.object({
+    action: z.literal("CREATE_SUPPLY"),
+    payload: CreateSupplyPayloadSchema,
+});
+
+
+// -- TRANSACTION --
+const CreateTransactionPayloadSchema = z.object({
+    type: z.enum(["Ingreso", "Egreso"]).describe("El tipo de transacción, inferido del comando del usuario ('gasto', 'compra' son Egresos; 'venta', 'pago recibido' son Ingresos)."),
+    description: z.string().describe("La descripción del movimiento."),
+    amount: z.number().describe("El monto de la transacción."),
+    category: z.string().describe("La categoría inferida de la transacción. Debe ser una de las categorías válidas para el tipo."),
+    lotId: z.string().optional().describe("El ID del lote asociado, si se menciona. Si es un gasto general, se omite."),
+    date: z.string().describe("La fecha de la transacción en formato YYYY-MM-DD. Por defecto es la fecha actual si no se especifica."),
+});
+
+const CreateTransactionActionSchema = z.object({
+    action: z.literal("CREATE_TRANSACTION"),
+    payload: CreateTransactionPayloadSchema,
+});
+
 
 // -- UNION & PLAN --
 const IncomprehensibleActionSchema = z.object({
@@ -81,6 +110,8 @@ const ActionSchema = z.union([
     CreateProductiveUnitActionSchema, 
     CreateLotActionSchema,
     CreateStaffActionSchema,
+    CreateSupplyActionSchema,
+    CreateTransactionActionSchema,
     IncomprehensibleActionSchema
 ]);
 
@@ -119,12 +150,14 @@ const dispatcherPrompt = ai.definePrompt({
     1.  Your response MUST be a valid JSON object that conforms to the 'PlanSchema'.
     2.  First, create a concise, conversational 'summary' of the actions you are about to take.
     3.  Then, create a 'plan' which is an ARRAY of action objects.
-    4.  You can create Productive Units (Fincas), Lots, Staff, and Tasks.
+    4.  You can create Productive Units (Fincas), Lots, Staff, Tasks, Supplies (Insumos), and Transactions (Ingresos/Egresos).
     5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots", "add 50 workers"), you MUST respond with an 'INCOMPREHENSIBLE' action. Your reason should be: "Aún no puedo procesar creaciones masivas. Por favor, crea una entidad a la vez.".
     6.  For commands involving multiple, distinct actions (e.g., "create a lot and then a task"), create a separate action object for EACH request in the 'plan' array.
     7.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
     8.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
     9.  Infer logical defaults. For 'CREATE_TASK', 'plannedJournals' defaults to 1. For 'CREATE_STAFF', 'employmentType' defaults to 'Temporal'. For 'CREATE_LOT', if a crop is mentioned, it's a 'Productivo' lot.
+    10. For 'CREATE_SUPPLY', infer 'unitOfMeasure' from: [${supplyUnits.join(', ')}].
+    11. For 'CREATE_TRANSACTION', infer the 'type'. 'Gasto', 'compra', 'egreso' mean 'Egreso'. 'Venta', 'recibí pago', 'ingreso' mean 'Ingreso'. For 'Ingreso', infer 'category' from: [${incomeCategories.join(', ')}]. For 'Egreso', infer 'category' from: [${expenseCategories.join(', ')}]. If a lot is mentioned, include its 'lotId'. The date defaults to today.
 
     CONTEXT DATA (Productive Units, Lots, and Staff):
     \`\`\`json
@@ -135,59 +168,33 @@ const dispatcherPrompt = ai.definePrompt({
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
     
-    // Example: Create Productive Unit
-    // User: "Crea la finca La Esperanza en Jardín, Antioquia"
+    // Example: Create Supply
+    // User: "Registra el insumo 'Abono NPK' en Bultos a 120000, tengo 20"
     {
-        "summary": "Entendido. Creando la unidad productiva 'La Esperanza'.",
+        "summary": "Entendido. Voy a registrar el 'Abono NPK' en tu inventario.",
         "plan": [{
-            "action": "CREATE_PRODUCTIVE_UNIT",
-            "payload": { "farmName": "La Esperanza", "municipality": "Jardín", "department": "Antioquia" }
+            "action": "CREATE_SUPPLY",
+            "payload": { "name": "Abono NPK", "unitOfMeasure": "Bulto", "costPerUnit": 120000, "currentStock": 20 }
         }]
     }
 
-    // Example: Create Lot
-    // User: "Añade un lote de 5 hectáreas llamado El Filo a la finca La Esperanza, cultiva café."
+    // Example: Create Transaction (Expense)
+    // User: "Registra un gasto de 80000 en combustible"
     {
-        "summary": "Ok, voy a añadir el lote 'El Filo' a 'La Esperanza'.",
+        "summary": "Ok, registrando un nuevo egreso.",
         "plan": [{
-            "action": "CREATE_LOT",
-            "payload": { "name": "El Filo", "productiveUnitId": "id_de_la_esperanza", "areaHectares": 5, "crop": "Café" }
-        }]
-    }
-
-    // Example: Create Staff
-    // User: "Registra al trabajador Mario, jornal a 55000"
-    {
-        "summary": "Registrando al nuevo colaborador Mario.",
-        "plan": [{
-            "action": "CREATE_STAFF",
-            "payload": { "name": "Mario", "baseDailyRate": 55000, "employmentType": "Temporal" }
+            "action": "CREATE_TRANSACTION",
+            "payload": { "type": "Egreso", "description": "Compra de combustible", "amount": 80000, "category": "Transporte", "date": "{{currentDate}}" }
         }]
     }
     
-    // Example: Create multiple Tasks
-    // User: "Programa guadaña en El Filo para mañana con Mario, y una fertilización en La Cima el viernes con Ana"
+    // Example: Create Transaction (Income)
+    // User: "Añade un ingreso de 500000 por venta de café del lote El Mirador"
     {
-        "summary": "Claro, programaré 2 labores: una guadañada y una fertilización.",
-        "plan": [
-            {
-                "action": "CREATE_TASK",
-                "payload": { "type": "Guadaña", "lotId": "id_el_filo", "responsibleId": "id_mario", "startDate": "...", "plannedJournals": 1, "category": "Mantenimiento" }
-            },
-            {
-                "action": "CREATE_TASK",
-                "payload": { "type": "Fertilización", "lotId": "id_la_cima", "responsibleId": "id_ana", "startDate": "...", "plannedJournals": 1, "category": "Mantenimiento" }
-            }
-        ]
-    }
-    
-    // Example: Bulk creation (NOT SUPPORTED)
-    // User: "crea 10 lotes y 50 trabajadores"
-    {
-        "summary": "Lo siento, todavía no puedo procesar solicitudes masivas.",
+        "summary": "Registrando ingreso por venta de café.",
         "plan": [{
-            "action": "INCOMPREHENSIBLE",
-            "payload": { "reason": "Aún no puedo procesar creaciones masivas. Por favor, crea una entidad a la vez." }
+            "action": "CREATE_TRANSACTION",
+            "payload": { "type": "Ingreso", "description": "Venta de café", "amount": 500000, "category": "Venta de Cosecha", "lotId": "id_de_el_mirador", "date": "{{currentDate}}" }
         }]
     }
   `,
