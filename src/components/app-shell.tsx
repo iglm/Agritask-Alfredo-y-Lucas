@@ -74,8 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   const mainNavItem = { href: '/', label: t('nav.dashboard'), icon: LayoutDashboard };
-  const setupNavItem = { href: '/setup', label: 'Constructor IA', icon: Sparkles };
-  const assistantNavItem = { href: '/assistant', label: 'Asistente de Comandos', icon: Bot };
+  const assistantNavItem = { href: '/assistant', label: 'Consola de IA', icon: Bot };
   
   const managementNavItems = [
     { href: '/management', label: 'Gestión de Datos', icon: Archive },
@@ -85,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const reportsNavItem = { href: '/reports', label: t('nav.reports'), icon: PieChart };
   const legalNavItem = { href: '/legal', label: t('nav.legal'), icon: Gavel };
 
-  const allNavItems = [mainNavItem, setupNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
+  const allNavItems = [mainNavItem, assistantNavItem, ...managementNavItems, reportsNavItem, legalNavItem];
 
   const handleSignOut = async () => {
     try {
@@ -139,18 +138,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link href={mainNavItem.href}>
                       <mainNavItem.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{mainNavItem.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                   <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(setupNavItem.href)}
-                    tooltip={{ children: setupNavItem.label }}
-                  >
-                    <Link href={setupNavItem.href}>
-                      <setupNavItem.icon className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden">{setupNavItem.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -269,3 +256,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

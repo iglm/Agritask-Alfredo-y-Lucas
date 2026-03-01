@@ -3,30 +3,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot, Loader2, Send, User } from 'lucide-react';
+import { Bot, Loader2, Send } from 'lucide-react';
 import { dispatchAction, DispatcherOutput } from '@/ai/flows/assistant-flow';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { Lot, Staff, Task, ProductiveUnit, Supply, Transaction, employmentTypes } from '@/lib/types';
-import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { Lot, Staff, Task, ProductiveUnit, Supply, Transaction, SubLot } from '@/lib/types';
+import { collection, query, where, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 
-type ChatMessage = {
+type ExecutionLog = {
   id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
+  type: 'summary' | 'action' | 'error';
+  message: string;
 };
 
 export default function AssistantPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [command, setCommand] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [executionLog, setExecutionLog] = useState<ExecutionLog[]>([]);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -44,8 +42,11 @@ export default function AssistantPage() {
   
   const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
+  
+  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('status', '!=', 'Finalizado')) : null, [firestore, user]);
+  const { data: openTasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
 
-  const isPageLoading = unitsLoading || lotsLoading || staffLoading || suppliesLoading;
+  const isPageLoading = unitsLoading || lotsLoading || staffLoading || suppliesLoading || tasksLoading;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -54,9 +55,13 @@ export default function AssistantPage() {
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [executionLog]);
 
-  // Action Handlers
+  const logMessage = (type: ExecutionLog['type'], message: string) => {
+    setExecutionLog(prev => [...prev, { id: Date.now().toString(), type, message }]);
+  };
+  
+  // --- Action Handlers ---
   const addProductiveUnit = async (data: Omit<ProductiveUnit, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
     const newDocRef = doc(collection(firestore, 'productiveUnits'));
@@ -73,6 +78,36 @@ export default function AssistantPage() {
     await setDoc(newDocRef, newLot);
     return newLot;
   };
+
+  const updateLot = async (id: string, updates: Partial<Lot>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const docRef = doc(firestore, 'lots', id);
+    await setDoc(docRef, updates, { merge: true });
+    return { id, ...updates };
+  };
+
+  const deleteLot = async (id: string) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const lotRef = doc(firestore, 'lots', id);
+    const batch = writeBatch(firestore);
+    
+    const sublotsQuery = query(collection(firestore, 'lots', id, 'sublots'));
+    const sublotsSnapshot = await getDocs(sublotsQuery);
+    sublotsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+    const tasksQuerySnapshot = await getDocs(query(collection(firestore, 'tasks'), where('userId', '==', user.uid), where('lotId', '==', id)));
+    for (const taskDoc of tasksQuerySnapshot.docs) {
+        const usagesSnapshot = await getDocs(collection(firestore, 'tasks', taskDoc.id, 'supplyUsages'));
+        usagesSnapshot.forEach(usageDoc => batch.delete(usageDoc.ref));
+        batch.delete(taskDoc.ref);
+    }
+
+    const transactionsQuerySnapshot = await getDocs(query(collection(firestore, 'transactions'), where('userId', '==', user.uid), where('lotId', '==', id)));
+    transactionsQuerySnapshot.forEach(doc => batch.delete(doc.ref));
+    
+    batch.delete(lotRef);
+    await batch.commit();
+  };
   
   const addStaff = async (data: Omit<Staff, 'id' | 'userId'>) => {
     if (!user || !firestore) throw new Error("Not authenticated");
@@ -80,6 +115,12 @@ export default function AssistantPage() {
     const newStaff: Staff = { ...data, id: newDocRef.id, userId: user.uid };
     await setDoc(newDocRef, newStaff);
     return newStaff;
+  };
+
+  const updateStaff = async (id: string, updates: Partial<Staff>) => {
+    if (!user || !firestore) throw new Error("Not authenticated");
+    const docRef = doc(firestore, 'staff', id);
+    await setDoc(docRef, updates, { merge: true });
   };
   
   const addTask = async (data: Omit<Task, 'id' | 'userId'>) => {
@@ -109,12 +150,10 @@ export default function AssistantPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!command.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
     setIsLoading(true);
+    setExecutionLog([]);
 
     try {
       const context = JSON.stringify({
@@ -124,11 +163,10 @@ export default function AssistantPage() {
         supplies: (supplies || []).map(s => ({id: s.id, name: s.name})),
       });
       
-      const result: DispatcherOutput = await dispatchAction({ command: input, context });
+      const result: DispatcherOutput = await dispatchAction({ command, context });
       
       if (result.summary) {
-        const assistantSummaryMessage: ChatMessage = { id: Date.now().toString() + '-summary', role: 'assistant', content: result.summary };
-        setMessages(prev => [...prev, assistantSummaryMessage]);
+        logMessage('summary', result.summary);
       }
 
       for (const action of result.plan) {
@@ -145,10 +183,32 @@ export default function AssistantPage() {
             const parentUnitName = units?.find(u => u.id === newLot.productiveUnitId)?.farmName || 'Unidad desconocida';
             systemMessageContent = `✅ Lote "${newLot.name}" añadido a la finca "${parentUnitName}".`;
             break;
+          
+          case 'UPDATE_LOT':
+            const { id: lotIdToUpdate, updates: lotUpdates } = action.payload;
+            await updateLot(lotIdToUpdate, lotUpdates);
+            const updatedLotFields = Object.keys(lotUpdates).join(', ');
+            const updatedLotName = lots?.find(l => l.id === lotIdToUpdate)?.name || lotIdToUpdate;
+            systemMessageContent = `✅ Lote "${updatedLotName}" actualizado. Campos modificados: ${updatedLotFields}.`;
+            break;
             
+          case 'DELETE_LOT':
+            const { id: lotIdToDelete, name: lotNameToDelete } = action.payload;
+            await deleteLot(lotIdToDelete);
+            systemMessageContent = `✅ Lote "${lotNameToDelete}" y todos sus datos asociados han sido eliminados.`;
+            break;
+
           case 'CREATE_STAFF':
             const newStaff = await addStaff(action.payload);
             systemMessageContent = `✅ Colaborador "${newStaff.name}" registrado con una tarifa de $${newStaff.baseDailyRate.toLocaleString()}.`;
+            break;
+
+          case 'UPDATE_STAFF':
+            const { id: staffIdToUpdate, updates: staffUpdates } = action.payload;
+            await updateStaff(staffIdToUpdate, staffUpdates);
+            const updatedStaffFields = Object.keys(staffUpdates).join(', ');
+            const updatedStaffName = staff?.find(s => s.id === staffIdToUpdate)?.name || staffIdToUpdate;
+            systemMessageContent = `✅ Colaborador "${updatedStaffName}" actualizado. Campos modificados: ${updatedStaffFields}.`;
             break;
             
           case 'CREATE_TASK':
@@ -157,7 +217,6 @@ export default function AssistantPage() {
               const responsible = staff?.find(s => s.id === payload.responsibleId);
               if (!responsible) throw new Error(`Responsable con ID '${payload.responsibleId}' no encontrado.`);
 
-              // Calculate planned cost for supplies
               let plannedSupplyCost = 0;
               if (payload.plannedSupplies) {
                 for (const planned of payload.plannedSupplies) {
@@ -206,26 +265,24 @@ export default function AssistantPage() {
             break;
 
           case 'INCOMPREHENSIBLE':
-            const assistantMessage: ChatMessage = { id: Date.now().toString() + '-incomprehensible', role: 'assistant', content: action.payload.reason || "No pude entender tu instrucción." };
-            setMessages(prev => [...prev, assistantMessage]);
+            logMessage('error', action.payload.reason || "No pude entender tu instrucción.");
             break;
         }
 
         if (systemMessageContent) {
-            const systemMessage: ChatMessage = { id: Date.now().toString() + action.action, role: 'system', content: systemMessageContent };
-            setMessages(prev => [...prev, systemMessage]);
+            logMessage('action', systemMessageContent);
         }
       }
 
     } catch (error: any) {
       console.error('Error dispatching action:', error);
+      const errorMessage = error.message || 'No se pudo procesar tu solicitud.';
+      logMessage('error', errorMessage);
       toast({
         variant: 'destructive',
-        title: 'Error del Asistente',
-        description: error.message || 'No se pudo procesar tu solicitud.',
+        title: 'Error de la Consola de IA',
+        description: errorMessage,
       });
-       const errorMessage: ChatMessage = { id: Date.now().toString() + '-error', role: 'assistant', content: "Ocurrió un error al procesar tu solicitud. Por favor, inténtalo de nuevo." };
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -237,77 +294,64 @@ export default function AssistantPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Asistente de Comandos" />
+      <PageHeader title="Consola de IA" />
       <Card className="flex-1 flex flex-col">
         <CardHeader>
-          <CardTitle>Asistente de Comandos</CardTitle>
+          <CardTitle>Consola de IA</CardTitle>
           <CardDescription>
-            Usa lenguaje natural para registrar datos rápidamente. Crea fincas, lotes, personal, labores y más.
+            Usa lenguaje natural para crear, modificar o eliminar registros. Describe una o varias acciones y la IA las ejecutará por ti.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
-            <div className="space-y-6">
-                <div className="flex items-start gap-3">
-                    <Avatar className="h-9 w-9 border-2 border-primary">
-                        <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                    <div className="rounded-lg bg-muted p-3">
-                        <p className="text-sm">¡Hola! Soy tu Asistente de Comandos. Dime qué necesitas registrar y lo haré por ti.</p>
-                    </div>
+        <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+             <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
+                <Textarea
+                    value={command}
+                    onChange={(e) => setCommand(e.target.value)}
+                    placeholder="Ej: 'Programa una guadañada en El Filo para mañana con Ana y corrige el área del lote El Mirador a 12 hectáreas.'"
+                    disabled={isLoading || isPageLoading}
+                    className="flex-1 text-base"
+                    rows={4}
+                />
+                <Button type="submit" disabled={isLoading || isPageLoading || !command.trim()} className="self-end">
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    <span className="ml-2">Enviar Comando</span>
+                </Button>
+            </form>
+            <ScrollArea className="flex-1 border rounded-md p-4" ref={scrollAreaRef}>
+                <div className="space-y-4">
+                    {executionLog.length === 0 && (
+                         <div className="flex flex-col items-center justify-center text-center h-full p-8 text-muted-foreground">
+                            <Bot className="h-12 w-12 mb-4" />
+                            <p className="font-medium">Esperando tus instrucciones</p>
+                            <p className="text-sm">El resultado de tus comandos aparecerá aquí.</p>
+                        </div>
+                    )}
+                    {executionLog.map((log) => (
+                        <div key={log.id} className="text-sm">
+                        {log.type === 'summary' && (
+                            <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                <p className="italic text-muted-foreground">{log.message}</p>
+                            </div>
+                        )}
+                        {log.type === 'action' && (
+                            <p className="font-mono text-green-600 dark:text-green-400">
+                                <span className="font-bold mr-2">[ÉXITO]</span> {log.message}
+                            </p>
+                        )}
+                        {log.type === 'error' && (
+                            <p className="font-mono text-destructive">
+                                 <span className="font-bold mr-2">[ERROR]</span> {log.message}
+                            </p>
+                        )}
+                        </div>
+                    ))}
                 </div>
-              {messages.map((message) => (
-                <div key={message.id} className={cn("flex items-start gap-3", message.role === 'user' && "justify-end")}>
-                  {message.role === 'user' && (
-                     <div className="rounded-lg bg-primary text-primary-foreground p-3 max-w-sm">
-                        <p className="text-sm">{message.content}</p>
-                    </div>
-                  )}
-                   <Avatar className={cn("h-9 w-9", message.role === 'user' ? 'bg-secondary' : 'border-2 border-primary')}>
-                        <AvatarFallback className={cn(message.role === 'user' ? 'bg-secondary' : 'bg-primary text-primary-foreground')}>
-                            {message.role === 'user' ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
-                        </AvatarFallback>
-                    </Avatar>
-
-                   {message.role === 'assistant' && (
-                     <div className="rounded-lg bg-muted p-3 max-w-sm">
-                        <p className="text-sm">{message.content}</p>
-                    </div>
-                  )}
-                  {message.role === 'system' && (
-                    <div className="w-full text-center text-xs text-green-600 font-semibold">
-                      <p>{message.content}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex items-start gap-3">
-                    <Avatar className="h-9 w-9 border-2 border-primary">
-                        <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                    <div className="rounded-lg bg-muted p-3">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+            </ScrollArea>
         </CardContent>
-        <CardFooter className="pt-6">
-          <form onSubmit={handleSubmit} className="w-full flex items-center gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escribe tu comando aquí..."
-              disabled={isLoading || isPageLoading}
-            />
-            <Button type="submit" disabled={isLoading || isPageLoading || !input.trim()}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </form>
-        </CardFooter>
       </Card>
     </div>
   );
 }
+
+    

@@ -59,6 +59,32 @@ const CreateLotActionSchema = z.object({
     payload: CreateLotPayloadSchema,
 });
 
+const UpdateLotPayloadSchema = z.object({
+    id: z.string().describe("The ID of the lot to update."),
+    updates: z.object({
+        name: z.string().optional(),
+        areaHectares: z.number().optional(),
+        crop: z.string().optional(),
+        variety: z.string().optional(),
+        location: z.string().optional(),
+    }).describe("An object containing only the fields to be updated.")
+});
+
+const UpdateLotActionSchema = z.object({
+    action: z.literal("UPDATE_LOT"),
+    payload: UpdateLotPayloadSchema,
+});
+
+const DeleteLotPayloadSchema = z.object({
+    id: z.string().describe("The ID of the lot to delete."),
+    name: z.string().describe("The name of the lot for confirmation summary.")
+});
+
+const DeleteLotActionSchema = z.object({
+    action: z.literal("DELETE_LOT"),
+    payload: DeleteLotPayloadSchema,
+});
+
 
 // -- STAFF --
 const CreateStaffPayloadSchema = z.object({
@@ -72,6 +98,23 @@ const CreateStaffActionSchema = z.object({
     action: z.literal("CREATE_STAFF"),
     payload: CreateStaffPayloadSchema,
 });
+
+const UpdateStaffPayloadSchema = z.object({
+    id: z.string().describe("The ID of the staff member to update."),
+    updates: z.object({
+        name: z.string().optional(),
+        baseDailyRate: z.number().optional(),
+        employmentType: z.enum(employmentTypes).optional(),
+        contact: z.string().optional(),
+        eps: z.string().optional(),
+    }).describe("An object containing only the fields to be updated.")
+});
+
+const UpdateStaffActionSchema = z.object({
+    action: z.literal("UPDATE_STAFF"),
+    payload: UpdateStaffPayloadSchema,
+});
+
 
 // -- SUPPLY --
 const CreateSupplyPayloadSchema = z.object({
@@ -115,14 +158,17 @@ const ActionSchema = z.union([
     CreateTaskActionSchema, 
     CreateProductiveUnitActionSchema, 
     CreateLotActionSchema,
+    UpdateLotActionSchema,
+    DeleteLotActionSchema,
     CreateStaffActionSchema,
+    UpdateStaffActionSchema,
     CreateSupplyActionSchema,
     CreateTransactionActionSchema,
     IncomprehensibleActionSchema
 ]);
 
 const PlanSchema = z.object({
-    summary: z.string().describe("Un resumen en lenguaje natural de las acciones que la IA va a ejecutar. Ej: 'Entendido, crearé la finca La Esperanza.' o 'Claro, voy a crear 2 labores.'"),
+    summary: z.string().describe("Un resumen en lenguaje natural de las acciones que la IA va a ejecutar. Ej: 'Entendido, crearé la finca La Esperanza.' o 'Claro, voy a crear 2 labores y actualizar un lote.'"),
     plan: z.array(ActionSchema).describe("Un array de acciones estructuradas que se ejecutarán secuencialmente.")
 });
 
@@ -154,19 +200,17 @@ const dispatcherPrompt = ai.definePrompt({
 
     STRICT INSTRUCTIONS:
     1.  Your response MUST be a valid JSON object that conforms to the 'PlanSchema'.
-    2.  First, create a concise, conversational 'summary' of the actions you are about to take. This summary MUST mention any supplies being planned.
-    3.  Then, create a 'plan' which is an ARRAY of action objects.
-    4.  You can create Productive Units (Fincas), Lots, Staff, Tasks, Supplies (Insumos), and Transactions (Ingresos/Egresos).
+    2.  First, create a concise, conversational 'summary' of the actions you are about to take.
+    3.  Then, create a 'plan' which is an ARRAY of action objects for creation, update, or deletion.
+    4.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId', 'supplyId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
     5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots", "add 50 workers"), you MUST respond with an 'INCOMPREHENSIBLE' action. Your reason should be: "Aún no puedo procesar creaciones masivas. Para eso, usa el Constructor IA desde el menú principal.".
-    6.  For commands involving multiple, distinct actions (e.g., "create a lot and then a task"), create a separate action object for EACH request in the 'plan' array.
-    7.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId', 'supplyId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
-    8.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
-    9.  Infer logical defaults. For 'CREATE_TASK', 'plannedJournals' defaults to 1. For 'CREATE_STAFF', 'employmentType' defaults to 'Temporal'. For 'CREATE_LOT', if a crop is mentioned, it's a 'Productivo' lot.
-    10. For 'CREATE_SUPPLY', infer 'unitOfMeasure' from: [${supplyUnits.join(', ')}].
-    11. For 'CREATE_TRANSACTION', infer the 'type'. 'Gasto', 'compra', 'egreso' mean 'Egreso'. 'Venta', 'recibí pago', 'ingreso' mean 'Ingreso'. For 'Ingreso', infer 'category' from: [${incomeCategories.join(', ')}]. For 'Egreso', infer 'category' from: [${expenseCategories.join(', ')}]. If a lot is mentioned, include its 'lotId'. The date defaults to today.
-    12. **Supply Planning in Tasks:** If a 'CREATE_TASK' command mentions supplies (e.g., "con 2 bultos de urea"), you MUST parse the quantity and name, find the 'supplyId' from context, and add it to the 'plannedSupplies' array in the task payload.
-    13. **DETECT ANALYTICAL QUERIES:** Your role is STRICTLY for data entry commands. If the user asks a question or requests analysis, summary, optimization, or diagnosis (e.g., '¿Hay problemas?', 'Analiza mis costos', 'Optimiza la semana'), you MUST NOT generate a plan. Instead, your response must be a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
-
+    6.  For commands involving multiple, distinct actions (e.g., "create a lot and then update a worker"), create a separate action object for EACH request in the 'plan' array.
+    7.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
+    8.  **Handle Updates:** If the command implies modification ("corrige", "cambia", "actualiza"), generate an 'UPDATE_LOT' or 'UPDATE_STAFF' action. Find the entity's ID from context. The 'updates' object in the payload MUST ONLY contain the fields being changed.
+    9.  **Handle Deletions:** If the command implies deletion ("borra", "elimina", "quita"), generate a 'DELETE_LOT' action. Find the entity's ID and name from context. DO NOT allow deletion of staff or productive units via this command.
+    10. **Supply Planning:** If a 'CREATE_TASK' command mentions supplies (e.g., "con 2 bultos de urea"), parse quantity and name, find the 'supplyId' from context, and add it to 'plannedSupplies'.
+    11. **DETECT ANALYTICAL QUERIES:** Your role is for data entry/modification. If the user asks a question or requests analysis, summary, or optimization (e.g., '¿Hay problemas?', 'Analiza mis costos'), you MUST respond with a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar y modificar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
+    
     CONTEXT DATA (Productive Units, Lots, Staff, and Supplies):
     \`\`\`json
     {{context}}
@@ -176,45 +220,30 @@ const dispatcherPrompt = ai.definePrompt({
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
 
-    // Example: Create Task with Supplies
-    // User: "Programa una fertilización en El Filo para mañana con Mario, usa 2 bultos de Urea y 1 de Abono NPK"
+    // Example: Update Lot
+    // User: "Corrige el área del lote El Filo a 12 hectáreas."
     {
-      "summary": "Entendido. Voy a programar la labor de fertilización, planificando el uso de 2 bultos de Urea y 1 de Abono NPK.",
+      "summary": "Confirmado, actualizaré el área del lote El Filo.",
       "plan": [{
-        "action": "CREATE_TASK",
+        "action": "UPDATE_LOT",
         "payload": { 
-            "type": "Fertilización", 
-            "lotId": "id_de_el_filo", 
-            "responsibleId": "id_de_mario", 
-            "startDate": "...", 
-            "plannedJournals": 1, 
-            "category": "Mantenimiento",
-            "plannedSupplies": [
-                { "supplyId": "id_de_urea", "quantity": 2 },
-                { "supplyId": "id_de_abono_npk", "quantity": 1 }
-            ]
+            "id": "id_de_el_filo", 
+            "updates": { "areaHectares": 12 }
         }
       }]
     }
-    
-    // Example: Create Supply
-    // User: "Registra el insumo 'Abono NPK' en Bultos a 120000, tengo 20"
+
+    // Example: Delete Lot
+    // User: "Por favor borra el lote La Zanja"
     {
-        "summary": "Entendido. Voy a registrar el 'Abono NPK' en tu inventario.",
-        "plan": [{
-            "action": "CREATE_SUPPLY",
-            "payload": { "name": "Abono NPK", "unitOfMeasure": "Bulto", "costPerUnit": 120000, "currentStock": 20 }
-        }]
-    }
-    
-    // Example: Deflect Analysis Query
-    // User: "¿Hay alguna anomalía en mis costos?"
-    {
-        "summary": "Esa es una pregunta para otro agente.",
-        "plan": [{
-            "action": "INCOMPREHENSIBLE",
-            "payload": { "reason": "Esa es una excelente pregunta, pero mi especialidad es registrar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal." }
-        }]
+      "summary": "Atención: Se procederá a eliminar el lote 'La Zanja' y todos sus datos asociados.",
+      "plan": [{
+        "action": "DELETE_LOT",
+        "payload": {
+          "id": "id_de_la_zanja",
+          "name": "La Zanja"
+        }
+      }]
     }
   `,
 });
@@ -234,3 +263,5 @@ const commandDispatcherFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
