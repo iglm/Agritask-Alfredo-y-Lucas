@@ -225,9 +225,9 @@ export default function AssistantPage() {
       <PageHeader title="Asistente de Comandos" />
       <Card className="flex-1 flex flex-col">
         <CardHeader>
-          <CardTitle>Tu Asistente de Gestión</CardTitle>
+          <CardTitle>Asistente de Comandos</CardTitle>
           <CardDescription>
-            Usa lenguaje natural para crear fincas, lotes, personal, labores, insumos y finanzas.
+            Usa lenguaje natural para registrar datos rápidamente. Crea fincas, lotes, personal, labores y más.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
@@ -238,7 +238,7 @@ export default function AssistantPage() {
                         <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                     <div className="rounded-lg bg-muted p-3">
-                        <p className="text-sm">¡Hola! Soy tu asistente. ¿Cómo puedo agilizar tu trabajo hoy?</p>
+                        <p className="text-sm">¡Hola! Soy tu Asistente de Comandos. Dime qué necesitas registrar y lo haré por ti.</p>
                     </div>
                 </div>
               {messages.map((message) => (

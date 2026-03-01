@@ -15,7 +15,7 @@
 
 Olvídate de los formularios. La forma más rápida de trabajar es hablándole a la aplicación.
 
-*   **Accede al Asistente:** En el menú principal, haz clic en el icono del robot (🤖) llamado **"Asistente"**.
+*   **Accede al Asistente:** En el menú principal, haz clic en el icono del robot (🤖) llamado **"Asistente de Comandos"**.
 *   **Da Órdenes Directas:** Escribe lo que necesitas hacer en lenguaje natural. Por ejemplo:
     > *"Programar fertilización en El Manantial para mañana con Carlos Pérez, 2 jornales."*
 *   **Magia Automática:** El asistente leerá tu instrucción, entenderá los detalles y creará la labor por ti sin que tengas que llenar un solo campo.
