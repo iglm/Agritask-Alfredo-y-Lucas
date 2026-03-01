@@ -7,91 +7,86 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Secure function to check ownership on existing documents.
-    // First checks if 'userId' field exists, then compares it.
-    function isOwnerOfExisting() {
+    // Secure function to check ownership on a document that is being read, updated, or deleted.
+    // It is "robust" because it first checks for the existence of the 'userId' field before comparing it.
+    // This prevents errors if old or malformed data exists without a userId.
+    function isOwnerOfExistingDoc() {
       return isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
     }
 
-    // Secure function to check ownership for new documents.
-    // First checks if 'userId' field exists, then compares it.
-    function isOwnerOfNew() {
+    // Secure function to check ownership for a document that is being created.
+    // Ensures any new data is correctly tagged with the owner's ID.
+    function isOwnerOfNewDoc() {
       return isSignedIn() && 'userId' in request.resource.data && request.resource.data.userId == request.auth.uid;
     }
 
-    // Secure function to check ownership of a parent document for subcollection rules.
+    // Secure function to check ownership of a parent document, for subcollection rules.
     function isParentOwner(parentPath) {
-      return isSignedIn() && get(parentPath).data.userId == request.auth.uid;
+      let parentDoc = get(parentPath);
+      return isSignedIn() && 'userId' in parentDoc.data && parentDoc.data.userId == request.auth.uid;
     }
 
     // --- User Profile ---
-    // This is keyed by user ID, so the rule is simpler.
     match /users/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
     // --- Main Collections ---
-    // Apply the robust ownership pattern to all user-owned collections.
+    // This robust pattern is applied to all user-owned data collections.
+    // The `read` rule covers both `get` (single doc) and `list` (query) operations safely.
     match /lots/{lotId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /productiveUnits/{unitId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /staff/{staffId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /staffAttendance/{attendanceId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /supplies/{supplyId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /tasks/{taskId} {
-      // This is the specific rule that was failing.
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     match /transactions/{transactionId} {
-      allow read: if isOwnerOfExisting();
-      allow create: if isOwnerOfNew();
-      allow update, delete: if isOwnerOfExisting();
+      allow read, update, delete: if isOwnerOfExistingDoc();
+      allow create: if isOwnerOfNewDoc();
     }
     
     // System logs are append-only and private.
     match /system_logs/{logId} {
-      allow create: if isOwnerOfNew();
-      allow read: if isOwnerOfExisting();
+      allow create: if isOwnerOfNewDoc();
+      allow read: if isOwnerOfExistingDoc();
       allow update, delete: if false; // Logs are immutable
     }
 
     // --- Subcollections ---
     match /lots/{lotId}/sublots/{sublotId} {
-      // Allow read/write if the user owns the parent lot.
+      // Allow full access if the user owns the parent lot.
       allow read, write: if isParentOwner(/databases/$(database)/documents/lots/$(lotId));
     }
 
     match /tasks/{taskId}/supplyUsages/{usageId} {
-      // Allow read/write if the user owns the parent task.
+      // Allow full access if the user owns the parent task.
       allow read, write: if isParentOwner(/databases/$(database)/documents/tasks/$(taskId));
     }
     
     // --- Collection Group ---
     match /{path=**}/supplyUsages/{usageId} {
-      // This rule is crucial for reports that query across all tasks.
-      // It must be secure and robust.
-      allow read: if isOwnerOfExisting();
+      // This rule is for collection group queries (e.g., in reports).
+      // The `isOwnerOfExistingDoc` check is safe because `supplyUsage` documents
+      // have their own `userId` field.
+      allow read: if isOwnerOfExistingDoc();
     }
   }
 }
