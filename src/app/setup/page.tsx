@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor } from 'lucide-react';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase } from '@/firebase';
-import { Lot, Staff, Task, ProductiveUnit } from '@/lib/types';
+import { useAppData } from '@/firebase';
+import { Lot, Staff, Task } from '@/lib/types';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
@@ -19,7 +19,7 @@ export default function SetupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, productiveUnits, isLoading: appDataLoading } = useAppData();
   const router = useRouter();
 
   const addUnit = (batch: any, data: any) => {
@@ -70,6 +70,15 @@ export default function SetupPage() {
   const handleGeneratePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
+
+    if (productiveUnits && productiveUnits.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Límite alcanzado",
+        description: "Ya tienes una unidad productiva. El Constructor IA solo se puede usar para la configuración inicial.",
+      });
+      return;
+    }
     
     setIsLoading(true);
     setPlan(null);
@@ -97,6 +106,16 @@ export default function SetupPage() {
         toast({ variant: 'destructive', title: 'Error', description: 'No hay un plan para construir o no se ha iniciado sesión.' });
         return;
     }
+
+    if (productiveUnits && productiveUnits.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Límite alcanzado",
+        description: "Ya existe una unidad productiva. No se puede crear otra.",
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
         const batch = writeBatch(firestore);
@@ -154,6 +173,10 @@ export default function SetupPage() {
         setIsCreating(false);
     }
   };
+  
+  if (appDataLoading) {
+      return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div>

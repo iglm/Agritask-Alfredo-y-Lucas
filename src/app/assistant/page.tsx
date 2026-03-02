@@ -175,6 +175,10 @@ export default function AssistantPage() {
 
         switch(action.action) {
           case 'CREATE_PRODUCTIVE_UNIT':
+            if (units && units.length > 0) {
+              logMessage('error', 'Límite alcanzado: Solo se permite una unidad productiva por cuenta.');
+              continue;
+            }
             const newUnit = await addProductiveUnit(action.payload);
             systemMessageContent = `✅ Finca "${newUnit.farmName}" creada.`;
             break;

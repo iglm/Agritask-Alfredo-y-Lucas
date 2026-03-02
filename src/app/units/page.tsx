@@ -21,6 +21,14 @@ export default function ProductiveUnitsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleAddUnit = () => {
+    if (allUnits && allUnits.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Límite de Unidades Productivas alcanzado",
+        description: "Solo se permite una unidad productiva por cuenta.",
+      });
+      return;
+    }
     setEditingUnit(null);
     setIsSheetOpen(true);
   };
