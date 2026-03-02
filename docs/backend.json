@@ -469,7 +469,7 @@
     "Supply": {
       "title": "Supply",
       "type": "object",
-      "description": "Represents a supply item in the inventory.",
+      "description": "Represents a supply item that can be consumed in a task.",
       "properties": {
         "id": {
           "type": "string"
@@ -496,12 +496,6 @@
         "costPerUnit": {
           "type": "number"
         },
-        "initialStock": {
-          "type": "number"
-        },
-        "currentStock": {
-          "type": "number"
-        },
         "supplier": {
           "type": "string"
         }
@@ -511,7 +505,7 @@
         "userId",
         "name",
         "unitOfMeasure",
-        "currentStock"
+        "costPerUnit"
       ]
     },
     "SupplyUsage": {

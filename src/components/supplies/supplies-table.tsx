@@ -25,7 +25,6 @@ export function SuppliesTable({ supplies, onEdit, onDelete, onAdd }: SuppliesTab
               <TableHead>Unidad</TableHead>
               <TableHead className="hidden md:table-cell">Proveedor</TableHead>
               <TableHead className="text-right">Costo Unitario</TableHead>
-              <TableHead className="text-right">Stock Actual</TableHead>
               <TableHead className="w-[50px]"><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -38,8 +37,7 @@ export function SuppliesTable({ supplies, onEdit, onDelete, onAdd }: SuppliesTab
                     <Badge variant="secondary">{supply.unitOfMeasure}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">{supply.supplier || 'N/A'}</TableCell>
-                  <TableCell className="text-right">${supply.costPerUnit.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{supply.currentStock}</TableCell>
+                  <TableCell className="text-right">${supply.costPerUnit.toLocaleString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -64,11 +62,11 @@ export function SuppliesTable({ supplies, onEdit, onDelete, onAdd }: SuppliesTab
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-96 p-0">
+                <TableCell colSpan={5} className="h-96 p-0">
                   <EmptyState
                     icon={<SprayCan className="h-10 w-10" />}
                     title="Añade tu primer insumo"
-                    description="Registra tus fertilizantes, pesticidas y otros productos para controlar tu inventario y costos."
+                    description="Registra tus fertilizantes, pesticidas y otros productos para controlar sus costos en las labores."
                     action={
                       <Button onClick={onAdd}>
                         <PlusCircle className="mr-2 h-4 w-4" />

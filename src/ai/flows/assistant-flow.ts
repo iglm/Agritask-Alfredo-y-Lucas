@@ -121,7 +121,6 @@ const CreateSupplyPayloadSchema = z.object({
     name: z.string().describe("El nombre del insumo. Ej: 'Urea', 'Glifosato'."),
     unitOfMeasure: z.enum(supplyUnits).describe("La unidad de medida. Debe ser una de las opciones válidas."),
     costPerUnit: z.number().describe("El costo por cada unidad del insumo."),
-    currentStock: z.number().describe("La cantidad inicial en inventario."),
 });
 
 const CreateSupplyActionSchema = z.object({
@@ -234,6 +233,20 @@ const dispatcherPrompt = ai.definePrompt({
     User's Command: "{{command}}"
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
+
+    // Example: Create Supply
+    // User: "Registra el insumo 'Urea' en Bultos a 90.000."
+    {
+      "summary": "Entendido. Registraré el insumo 'Urea'.",
+      "plan": [{
+        "action": "CREATE_SUPPLY",
+        "payload": {
+          "name": "Urea",
+          "unitOfMeasure": "Bulto",
+          "costPerUnit": 90000
+        }
+      }]
+    }
 
     // Example: Update Lot
     // User: "Corrige el área del lote El Filo a 12 hectáreas."

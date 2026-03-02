@@ -66,17 +66,9 @@ export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, 
   const onAddSupply = async (values: AddSupplyFormValues) => {
     setIsAdding(true);
     try {
-      if (selectedSupply && values.quantityUsed > selectedSupply.currentStock) {
-        toast({
-          variant: 'destructive',
-          title: 'Stock insuficiente',
-          description: `Solo tienes ${selectedSupply.currentStock} ${selectedSupply.unitOfMeasure} de ${selectedSupply.name} en el inventario.`,
-        });
-        return;
-      }
       await addSupplyUsage(taskId, values.supplyId, values.quantityUsed, format(values.date, 'yyyy-MM-dd'));
       reset({ supplyId: '', quantityUsed: '', date: new Date() });
-      toast({ title: 'Insumo añadido', description: 'El costo de la labor y el inventario han sido actualizados.' });
+      toast({ title: 'Insumo añadido', description: 'El costo de la labor ha sido actualizado.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error al añadir insumo', description: error.message });
     } finally {
@@ -87,7 +79,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, 
   const onDeleteSupply = async (usage: SupplyUsage) => {
     try {
       await deleteSupplyUsage(usage);
-      toast({ title: 'Insumo eliminado', description: 'El costo de la labor y el inventario han sido revertidos.' });
+      toast({ title: 'Insumo eliminado', description: 'El costo de la labor ha sido revertido.' });
     } catch (error: any) {
        toast({ variant: 'destructive', title: 'Error al eliminar insumo', description: error.message });
     }
@@ -95,7 +87,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, 
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="font-medium">Gestor de Insumos</h3>
+      <h3 className="font-medium">Gestor de Insumos Consumidos</h3>
       <form onSubmit={handleSubmit(onAddSupply)} className="flex flex-col md:flex-row md:items-end gap-2">
         <div className="flex-1">
           <label className="text-sm font-medium">Insumo</label>
@@ -107,7 +99,7 @@ export function SupplyUsageManager({ taskId, allSupplies, task, addSupplyUsage, 
                 <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
                   {allSupplies.map(supply => (
-                    <SelectItem key={supply.id} value={supply.id}>{supply.name} ({supply.currentStock} {supply.unitOfMeasure} disp.)</SelectItem>
+                    <SelectItem key={supply.id} value={supply.id}>{supply.name} ({supply.unitOfMeasure})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

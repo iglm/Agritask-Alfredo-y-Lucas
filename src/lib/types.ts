@@ -114,8 +114,6 @@ export type Supply = {
   name: string;
   unitOfMeasure: 'Kg' | 'gr' | 'Lt' | 'ml / cc' | 'Unidad' | 'Bulto' | 'Galón' | 'Caja';
   costPerUnit: number;
-  initialStock: number;
-  currentStock: number;
   supplier?: string;
 };
 

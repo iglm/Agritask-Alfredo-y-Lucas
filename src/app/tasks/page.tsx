@@ -133,23 +133,11 @@ export default function TasksPage() {
         const batch = writeBatch(firestore);
         const usagesQuery = collection(firestore, 'tasks', id, 'supplyUsages');
         const usagesSnapshot = await getDocs(usagesQuery);
-        const stockUpdates = new Map<string, number>();
-
+        
         usagesSnapshot.forEach(usageDoc => {
-            const usageData = usageDoc.data() as SupplyUsage;
-            const currentStockUpdate = stockUpdates.get(usageData.supplyId) || 0;
-            stockUpdates.set(usageData.supplyId, currentStockUpdate + usageData.quantityUsed);
             batch.delete(usageDoc.ref);
         });
-        
-        for (const [supplyId, quantityToRevert] of stockUpdates.entries()) {
-            const supplyRef = doc(firestore, 'supplies', supplyId);
-            const supplyDoc = await getDoc(supplyRef);
-            if (supplyDoc.exists()) {
-                const supplyData = supplyDoc.data() as Supply;
-                batch.update(supplyRef, { currentStock: supplyData.currentStock + quantityToRevert });
-            }
-        }
+
         batch.delete(taskRef);
         await batch.commit();
     } catch (error) {
@@ -169,14 +157,12 @@ export default function TasksPage() {
         if (!taskDoc.exists() || !supplyDoc.exists()) throw new Error('La labor o el insumo no existen.');
         const taskData = taskDoc.data() as Task;
         const supplyData = supplyDoc.data() as Supply;
-        if (quantityUsed > supplyData.currentStock) throw new Error('Stock insuficiente.');
 
         const costAtTimeOfUse = supplyData.costPerUnit * quantityUsed;
         const newUsage: SupplyUsage = { id: usageRef.id, userId: user.uid, taskId, supplyId, supplyName: supplyData.name, quantityUsed, costAtTimeOfUse, date };
         
         batch.set(usageRef, newUsage);
         batch.update(taskRef, { supplyCost: (taskData.supplyCost || 0) + costAtTimeOfUse, actualCost: (taskData.actualCost || 0) + costAtTimeOfUse });
-        batch.update(supplyRef, { currentStock: supplyData.currentStock - quantityUsed });
 
         await batch.commit();
         return newUsage;
@@ -188,21 +174,16 @@ export default function TasksPage() {
 
   const deleteSupplyUsage = async (usage: SupplyUsage) => {
     if (!user || !firestore) return;
-    const { id, taskId, supplyId, quantityUsed, costAtTimeOfUse } = usage;
+    const { id, taskId, costAtTimeOfUse } = usage;
     const taskRef = doc(firestore, 'tasks', taskId);
-    const supplyRef = doc(firestore, 'supplies', supplyId);
     const usageRef = doc(firestore, 'tasks', taskId, 'supplyUsages', id);
     const batch = writeBatch(firestore);
 
     try {
-        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyDoc)]);
+        const taskDoc = await getDoc(taskRef);
         if (taskDoc.exists()) {
             const taskData = taskDoc.data() as Task;
             batch.update(taskRef, { supplyCost: Math.max(0, (taskData.supplyCost || 0) - costAtTimeOfUse), actualCost: Math.max(0, (taskData.actualCost || 0) - costAtTimeOfUse) });
-        }
-        if (supplyDoc.exists()) {
-            const supplyData = supplyDoc.data() as Supply;
-            batch.update(supplyRef, { currentStock: (supplyData.currentStock || 0) + quantityUsed });
         }
         batch.delete(usageRef);
         await batch.commit();

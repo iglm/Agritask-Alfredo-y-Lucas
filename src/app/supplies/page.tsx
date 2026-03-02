@@ -116,7 +116,7 @@ export default function SuppliesPage() {
       addSupply(values);
       toast({
         title: "¡Insumo creado!",
-        description: "El nuevo insumo ha sido agregado al inventario.",
+        description: "El nuevo insumo ha sido agregado al catálogo.",
       });
     }
     setIsSheetOpen(false);
@@ -149,7 +149,7 @@ export default function SuppliesPage() {
           <SheetHeader>
             <SheetTitle>{editingSupply ? 'Editar Insumo' : 'Agregar Nuevo Insumo'}</SheetTitle>
             <SheetDescription>
-              {editingSupply ? 'Actualiza los detalles de este insumo.' : 'Rellena los detalles para el nuevo insumo.'}
+              {editingSupply ? 'Actualiza los detalles de este insumo.' : 'Define un nuevo insumo y su costo para usarlo en tus labores.'}
             </SheetDescription>
           </SheetHeader>
           <SupplyForm supply={editingSupply} onSubmit={handleFormSubmit} />
@@ -161,7 +161,7 @@ export default function SuppliesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente el insumo <span className="font-bold">{supplyToDelete?.name}</span>.
+              Esta acción eliminará permanentemente el insumo <span className="font-bold">{supplyToDelete?.name}</span>. No se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -12,8 +12,7 @@ import { supplyUnits, type Supply } from "@/lib/types"
 const supplyFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   unitOfMeasure: z.enum(supplyUnits, { required_error: "Selecciona una unidad de medida." }),
-  costPerUnit: z.coerce.number().min(0, { message: "El costo no puede ser negativo." }).default(0),
-  currentStock: z.coerce.number().min(0, "El stock no puede ser negativo."),
+  costPerUnit: z.coerce.number().min(0, { message: "El costo no puede ser negativo." }),
   supplier: z.string().optional(),
 });
 
@@ -27,24 +26,16 @@ type SupplyFormProps = {
 export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
   const form = useForm<SupplyFormValues>({
     resolver: zodResolver(supplyFormSchema),
-    defaultValues: supply ? {
-      ...supply,
-      currentStock: supply.currentStock || supply.initialStock,
-      costPerUnit: supply.costPerUnit ?? '',
-    } : {
+    defaultValues: supply || {
       name: "",
       unitOfMeasure: "Unidad",
       costPerUnit: '',
-      currentStock: '',
       supplier: "",
     },
   });
 
   const handleFormSubmit = (values: SupplyFormValues) => {
-    onSubmit({
-      ...values,
-      initialStock: supply?.initialStock ?? values.currentStock, // Preserve initial or set new
-    });
+    onSubmit(values);
   }
 
   return (
@@ -93,41 +84,26 @@ export function SupplyForm({ supply, onSubmit }: SupplyFormProps) {
                 <FormItem>
                 <FormLabel>Costo por Unidad</FormLabel>
                 <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" step="any" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-            control={form.control}
-            name="currentStock"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Stock Actual</FormLabel>
-                <FormControl>
-                    <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-             <FormField
-            control={form.control}
-            name="supplier"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Proveedor (Opcional)</FormLabel>
-                <FormControl>
-                    <Input placeholder="Ej: Agro-insumos SAS" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
+        <FormField
+        control={form.control}
+        name="supplier"
+        render={({ field }) => (
+            <FormItem>
+            <FormLabel>Proveedor (Opcional)</FormLabel>
+            <FormControl>
+                <Input placeholder="Ej: Agro-insumos SAS" {...field} value={field.value ?? ''} />
+            </FormControl>
+            <FormMessage />
+            </FormItem>
+        )}
+        />
         
         <Button type="submit" className="w-full">{supply ? "Actualizar Insumo" : "Crear Insumo"}</Button>
       </form>

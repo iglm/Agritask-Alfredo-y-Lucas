@@ -20,7 +20,7 @@ Esta es tu **herramienta para acciones rápidas**. Olvídate de los formularios.
 2.  Escribe lo que necesitas hacer. Puedes dar varias instrucciones a la vez.
     *   *"Programa una guadañada en El Filo para mañana con Ana."*
     *   *"Registra un gasto de 150.000 en transporte."*
-    *   *"Añade al inventario el insumo 'Urea' en Bultos a 90.000, tengo 30."*
+    *   *"Registra el insumo 'Urea' en Bultos con un costo de 90.000."*
 
 El asistente ejecutará tus órdenes y te confirmará cada acción.
 

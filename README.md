@@ -42,7 +42,7 @@ El motor de la gestión diaria. Permite ejecutar múltiples acciones de creació
 -   **Capacidades:**
     -   **Crear Labores:** `"Programar fertilización en El Manantial para mañana con Carlos Pérez, 2 jornales y usar 5 bultos de urea."`
     -   **Registrar Finanzas:** `"Añade un ingreso de 1.200.000 por venta de café y un gasto de 80.000 en gasolina."`
-    -   **Gestionar Inventario:** `"Agrega al inventario el insumo 'Glifosato' en Litros a 35.000, tengo 10."`
+    -   **Gestionar Insumos:** `"Registra el insumo 'Glifosato' en Litros con un costo de 35.000."`
     -   **Actualizar Entidades:** `"Corrige el área del lote El Mirador a 15 hectáreas."`
     -   **Eliminar Entidades:** `"Borra el lote La Zanja."`
 -   **Contexto Inteligente:** Utiliza los datos existentes (nombres de lotes, personal, insumos) para asociar correctamente las nuevas acciones a los IDs correspondientes.
@@ -60,7 +60,7 @@ El centro de mando que ofrece una visión de 360 grados de la operación.
 -   **Suite de Agentes de IA:**
     -   **Analista de Anomalías:** Busca sobrecostos en labores (>15%), gastos inesperados, retrasos críticos (especialmente en siembra y cosecha) y concentración de problemas en lotes específicos.
     -   **Auditor de Planificación:** Detecta inconsistencias lógicas como riesgos de seguridad (trabajador sin EPS asignado a una tarea), omisiones en planes de cosecha para cultivos perennes, y falta de planificación en lotes recién sembrados.
-    -   **Optimizador de Recursos:** Analiza la carga de trabajo de la próxima semana y sugiere reasignaciones si un colaborador está sobrecargado. Alerta sobre insuficiencia de inventario para las labores planificadas.
+    -   **Optimizador de Recursos:** Analiza la carga de trabajo de la próxima semana y sugiere reasignaciones si un colaborador está sobrecargado.
 -   **Respaldo Completo:** Un botón para exportar **toda la información** (unidades, lotes, sub-lotes, personal, labores, transacciones, etc.) a archivos CSV descargables.
 
 ### 🗂️ Gestión de Lotes
@@ -84,15 +84,15 @@ El corazón operativo de la aplicación.
 -   **Recurrencia Automática:** Al finalizar una labor marcada como recurrente (ej. fertilización cada 3 meses), el sistema **crea y programa automáticamente la siguiente ocurrencia** de esa labor.
 -   **Gestión de Insumos Integrada:**
     -   **Planificación:** Permite asignar qué insumos y qué cantidad se planea usar en una labor.
-    -   **Consumo Real:** Un gestor dedicado permite registrar el consumo real de insumos durante la labor. Esto **actualiza automáticamente el inventario** y el costo real de la tarea.
+    -   **Consumo Real:** Un gestor dedicado permite registrar el consumo real de insumos durante la labor. Esto **actualiza automáticamente el costo real de la tarea**.
 -   **Métricas de Eficiencia:** Campos específicos para `Cantidad Cosechada (Kg)` y `Tiempo de Inactividad (minutos)` para análisis de rendimiento.
 
-### 📦 Gestión de Insumos (Inventario)
+### 📦 Gestión de Insumos
 
-Control total sobre los recursos materiales.
+Control sobre los recursos materiales.
 
--   **Registro de Productos:** Permite registrar insumos con unidad de medida, costo unitario, stock inicial y proveedor.
--   **Control de Stock Automático:** El stock se descuenta en tiempo real a medida que se registran consumos en las labores.
+-   **Registro de Productos:** Permite registrar insumos con unidad de medida y costo unitario para ser utilizados en las labores.
+-   **Cálculo de Costos Automático:** El costo de los insumos consumidos se suma automáticamente al costo total de la labor.
 
 ### 💰 Gestión Financiera
 

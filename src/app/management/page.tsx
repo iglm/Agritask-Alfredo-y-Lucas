@@ -33,7 +33,7 @@ const managementItems = [
   {
     href: '/supplies',
     title: 'Gestión de Insumos',
-    description: 'Controla tu inventario de productos y materiales.',
+    description: 'Registra y define los insumos utilizados en tus labores.',
     icon: <SprayCan className="h-8 w-8 text-primary" />,
   },
   {

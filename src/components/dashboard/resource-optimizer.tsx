@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, SlidersHorizontal, AlertTriangle, Check, Info, ShoppingCart } from 'lucide-react';
+import { Loader2, ShieldCheck, SlidersHorizontal, AlertTriangle, Check, Info } from 'lucide-react';
 import { optimizeResources, ResourceOptimizerOutput } from '@/ai/flows/resource-optimizer-flow';
 import { Task, Staff, Supply } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -15,9 +15,6 @@ import { addDays, startOfToday, isWithinInterval, parseISO, isValid } from 'date
 const actionConfig = {
   reassignTask: {
     icon: <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-500" />,
-  },
-  createPurchaseOrder: {
-    icon: <ShoppingCart className="h-4 w-4 text-destructive" />,
   },
   informational: {
     icon: <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />,
@@ -34,13 +31,6 @@ type ReassignTaskPayload = {
   taskId: string;
   fromStaffId: string;
   toStaffId: string;
-};
-
-type CreatePurchaseOrderPayload = {
-    supplyId: string;
-    supplyName: string;
-    requiredQuantity: number;
-    currentStock: number;
 };
 
 interface ResourceOptimizerProps {
@@ -104,7 +94,7 @@ export function ResourceOptimizer({ title, description, tasks, staff, supplies, 
 
     try {
       const response = await optimizeResources({
-        jsonData: JSON.stringify({ tasks: upcomingTasks, staff, supplies }),
+        jsonData: JSON.stringify({ tasks: upcomingTasks, staff }),
         workWeekJournals: 5,
       });
       setResult(response);
@@ -137,14 +127,6 @@ export function ResourceOptimizer({ title, description, tasks, staff, supplies, 
     } catch(e: any) {
         toast({ variant: 'destructive', title: 'Error', description: e.message || 'No se pudo reasignar la labor.' });
     }
-  };
-
-  const handleCreatePurchaseOrder = (payload: CreatePurchaseOrderPayload) => {
-      router.push('/financials');
-      toast({
-          title: 'Redirigiendo a Finanzas',
-          description: `Registra un egreso para comprar ${payload.supplyName}.`,
-      });
   };
 
   return (
@@ -182,8 +164,6 @@ export function ResourceOptimizer({ title, description, tasks, staff, supplies, 
                   
                   const uniqueActionId = suggestion.action.type === 'reassignTask' 
                     ? suggestion.action.payload.taskId 
-                    : suggestion.action.type === 'createPurchaseOrder'
-                    ? suggestion.action.payload.supplyId
                     : `${index}`; // Fallback for informational
                     
                   const isActionCompleted = completedActions.includes(uniqueActionId);
@@ -218,17 +198,6 @@ export function ResourceOptimizer({ title, description, tasks, staff, supplies, 
                                     ) : (
                                         'Hacerlo por mí'
                                     )}
-                                </Button>
-                            )}
-
-                            {suggestion.action.type === 'createPurchaseOrder' && (
-                                <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    className="text-primary hover:bg-primary/10 hover:text-primary h-auto py-1 px-2"
-                                    onClick={() => handleCreatePurchaseOrder(suggestion.action.payload as CreatePurchaseOrderPayload)}
-                                >
-                                    Crear Egreso
                                 </Button>
                             )}
                         </div>
