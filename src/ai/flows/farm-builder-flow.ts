@@ -93,8 +93,7 @@ const farmEntityExtractionPrompt = ai.definePrompt({
         *   If a relative sowing date is given (e.g., "10 meses de sembrado"), you MUST calculate the exact date based on 'currentDate' ({{currentDate}}) and format it as 'YYYY-MM-DD'.
         *   Generate descriptive names for lots and staff if not provided.
     5.  **Defaults:** Use a default 'baseDailyRate' of 45000 for staff if not specified. Default 'employmentType' is 'Temporal'.
-    6.  **Safety Rails:** Limit generation to 25 lots and 25 staff members.
-    7.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the basic entities you are creating. Example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores."
+    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the basic entities you are creating. Example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores."
 
     **USER DESCRIPTION:**
     "{{description}}"
