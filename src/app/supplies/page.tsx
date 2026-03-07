@@ -4,22 +4,18 @@ import { useState, useEffect } from "react";
 import { SuppliesTable } from "@/components/supplies/supplies-table";
 import { SupplyForm } from "@/components/supplies/supply-form";
 import { PageHeader } from "@/components/page-header";
-import { supplyUnits, type Supply } from "@/lib/types";
+import { type Supply } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Loader2, Trash2 } from "lucide-react";
-import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { collection, query, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export default function SuppliesPage() {
-  const { firestore, user } = useFirebase();
+  const { supplies: allSupplies, isLoading, addSupply, updateSupply, deleteSupply } = useAppData();
   const { toast } = useToast();
-
-  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: allSupplies, isLoading } = useCollection<Supply>(suppliesQuery);
-
+  
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredSupplies, setFilteredSupplies] = useState<Supply[]>([]);
   const [editingSupply, setEditingSupply] = useState<Supply | undefined>(undefined);
@@ -38,32 +34,6 @@ export default function SuppliesPage() {
 
     setFilteredSupplies(suppliesToFilter);
   }, [allSupplies, searchTerm]);
-
-  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
-    console.error(`SuppliesPage Error (${operation} on ${path}):`, error);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
-    throw error;
-  };
-
-  const addSupply = (data: Omit<Supply, 'id' | 'userId'>) => {
-    if (!user || !firestore) throw new Error("Not authenticated");
-    const newDocRef = doc(collection(firestore, 'supplies'));
-    const newSupply: Supply = { ...data, id: newDocRef.id, userId: user.uid };
-    setDoc(newDocRef, newSupply).catch(error => handleWriteError(error, newDocRef.path, 'create', newSupply));
-  };
-
-  const updateSupply = (data: Supply) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'supplies', data.id);
-    const payload = { ...data, userId: user.uid };
-    setDoc(docRef, payload, { merge: true }).catch(error => handleWriteError(error, docRef.path, 'update', payload));
-  };
-
-  const deleteSupply = (id: string) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'supplies', id);
-    deleteDoc(docRef).catch(error => handleWriteError(error, docRef.path, 'delete'));
-  };
   
   const handleAddSupply = () => {
     setEditingSupply(undefined);
@@ -80,18 +50,27 @@ export default function SuppliesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!supplyToDelete) return;
-    deleteSupply(supplyToDelete.id);
-    toast({
-      title: "Insumo eliminado",
-      description: `El insumo "${supplyToDelete.name}" ha sido eliminado.`,
-    });
-    setIsDeleteDialogOpen(false);
-    setSupplyToDelete(null);
+    try {
+      await deleteSupply(supplyToDelete.id);
+      toast({
+        title: "Insumo eliminado",
+        description: `El insumo "${supplyToDelete.name}" ha sido eliminado.`,
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el insumo.",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setSupplyToDelete(null);
+    }
   };
 
-  const handleFormSubmit = (values: Omit<Supply, 'id' | 'userId'>) => {
+  const handleFormSubmit = async (values: Omit<Supply, 'id' | 'userId'>) => {
     const isDuplicated = (allSupplies || []).some(s => 
       s.id !== editingSupply?.id &&
       s.name.toLowerCase().trim() === values.name.toLowerCase().trim()
@@ -106,21 +85,29 @@ export default function SuppliesPage() {
       return;
     }
     
-    if (editingSupply) {
-      updateSupply({ ...values, id: editingSupply.id, userId: editingSupply.userId });
-      toast({
-        title: "¡Insumo actualizado!",
-        description: "Los detalles del insumo han sido actualizados.",
-      });
-    } else {
-      addSupply(values);
-      toast({
-        title: "¡Insumo creado!",
-        description: "El nuevo insumo ha sido agregado al catálogo.",
+    try {
+      if (editingSupply) {
+        await updateSupply({ ...values, id: editingSupply.id, userId: editingSupply.userId });
+        toast({
+          title: "¡Insumo actualizado!",
+          description: "Los detalles del insumo han sido actualizados.",
+        });
+      } else {
+        await addSupply(values);
+        toast({
+          title: "¡Insumo creado!",
+          description: "El nuevo insumo ha sido agregado al catálogo.",
+        });
+      }
+      setIsSheetOpen(false);
+      setEditingSupply(undefined);
+    } catch(e) {
+       toast({
+        variant: "destructive",
+        title: "Error al guardar",
+        description: "No se pudo guardar el insumo.",
       });
     }
-    setIsSheetOpen(false);
-    setEditingSupply(undefined);
   };
 
   return (

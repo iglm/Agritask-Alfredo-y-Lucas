@@ -13,11 +13,7 @@ import { DataAuditor } from "@/components/dashboard/data-auditor";
 import { ResourceOptimizer } from "@/components/dashboard/resource-optimizer";
 import { handleExportAll } from "@/lib/export";
 import { useLocalization } from "@/context/localization-context";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { Lot, Task, Transaction, Staff, Supply, ProductiveUnit } from "@/lib/types";
-import { query, collection, where, doc, setDoc } from 'firebase/firestore';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useAppData, useFirebase } from "@/firebase";
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -26,64 +22,7 @@ export default function DashboardPage() {
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   
   const { firestore, user } = useFirebase();
-
-  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
-
-  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
-
-  const transactionsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
-  
-  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: staff, isLoading: staffLoading } = useCollection<Staff>(staffQuery);
-
-  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
-
-  const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: productiveUnits, isLoading: productiveUnitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
-
-  const isLoading = lotsLoading || tasksLoading || transactionsLoading || staffLoading || suppliesLoading || productiveUnitsLoading;
-
-  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
-    if (!user || !firestore) throw new Error("Not authenticated");
-    const newDocRef = doc(collection(firestore, 'tasks'));
-    const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
-    await setDoc(newDocRef, newTask);
-    return newTask;
-  };
-
-  const updateTask = async (data: Task) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'tasks', data.id);
-    const originalTask = tasks?.find(t => t.id === data.id);
-    const isNowFinalized = data.status === 'Finalizado' && originalTask?.status !== 'Finalizado';
-
-    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-
-    if (isNowFinalized) {
-        if (data.isRecurring && data.recurrenceFrequency && data.recurrenceInterval && data.recurrenceInterval > 0) {
-            const baseDateString = data.endDate || data.startDate;
-            const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
-            let newStartDate: Date;
-
-            switch (data.recurrenceFrequency) {
-                case 'días': newStartDate = addDays(baseDateForRecurrence, data.recurrenceInterval); break;
-                case 'semanas': newStartDate = addWeeks(baseDateForRecurrence, data.recurrenceInterval); break;
-                case 'meses': newStartDate = addMonths(baseDateForRecurrence, data.recurrenceInterval); break;
-                default: console.error("Invalid recurrence frequency"); return;
-            }
-
-            const { id, userId, endDate, status, progress, supplyCost, actualCost, ...restOfTaskData } = data;
-            const nextTaskData: Omit<Task, 'id' | 'userId'> = { ...restOfTaskData, startDate: format(newStartDate, 'yyyy-MM-dd'), endDate: undefined, status: 'Por realizar', progress: 0, supplyCost: 0, actualCost: 0, observations: `Labor recurrente generada automáticamente.`, dependsOn: undefined, };
-            await addTask(nextTaskData);
-            toast({ title: 'Labor recurrente creada', description: `Se ha programado la siguiente labor "${data.type}" para el ${format(newStartDate, "PPP", { locale: es })}.` });
-        }
-    }
-  };
-
+  const { lots, tasks, transactions, staff, supplies, productiveUnits, isLoading, updateTask } = useAppData();
 
   const { 
     totalLots, 

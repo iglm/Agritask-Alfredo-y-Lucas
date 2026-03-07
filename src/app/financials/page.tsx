@@ -2,78 +2,32 @@
 
 import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
-import { useFirebase, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { Loader2, Trash2 } from "lucide-react";
-import { Transaction, Lot, ProductiveUnit } from "@/lib/types";
+import { Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TransactionsTable } from "@/components/financials/transactions-table";
 import { TransactionForm } from "@/components/financials/transaction-form";
 import { format, parseISO } from "date-fns";
-import { collection, query, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export default function FinancialsPage() {
-  const { firestore, user } = useFirebase();
+  const { 
+    transactions: allTransactions, 
+    lots, 
+    productiveUnits, 
+    isLoading, 
+    addTransaction, 
+    updateTransaction, 
+    deleteTransaction 
+  } = useAppData();
   const { toast } = useToast();
-
-  const transactionsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'transactions'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const productiveUnitsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'productiveUnits'), where('userId', '==', user.uid)) : null, [firestore, user]);
-
-  const { data: allTransactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
-  const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
-  const { data: productiveUnits, isLoading: unitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
-
-  const isLoading = transactionsLoading || lotsLoading || unitsLoading;
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
-    console.error(`FinancialsPage Error (${operation} on ${path}):`, error);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
-    throw error;
-  };
-
-  const addTransaction = (data: Omit<Transaction, 'id' | 'userId'>) => {
-    if (!user || !firestore) throw new Error("Not authenticated");
-    const newDocRef = doc(collection(firestore, 'transactions'));
-    const newTransaction: Transaction = { ...data, id: newDocRef.id, userId: user.uid };
-    setDoc(newDocRef, newTransaction)
-      .catch(error => handleWriteError(error, newDocRef.path, 'create', newTransaction));
-  };
-
-  const updateTransaction = (data: Transaction) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'transactions', data.id);
-    const payload = { ...data, userId: user.uid };
-    setDoc(docRef, payload, { merge: true })
-      .catch(error => handleWriteError(error, docRef.path, 'update', payload));
-  };
-
-  const deleteTransaction = (id: string) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'transactions', id);
-    deleteDoc(docRef)
-      .then(() => {
-        toast({
-          title: "Transacción eliminada",
-          description: `La transacción ha sido eliminada permanentemente.`,
-        });
-      })
-      .catch(error => {
-        handleWriteError(error, docRef.path, 'delete');
-        toast({
-          variant: "destructive",
-          title: "Error al eliminar",
-          description: "No se pudo eliminar la transacción.",
-        });
-      });
-  };
 
   const sortedTransactions = useMemo(() => {
     if (!allTransactions) return [];
@@ -101,33 +55,54 @@ export default function FinancialsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!transactionToDelete) return;
-    deleteTransaction(transactionToDelete.id);
-    setIsDeleteDialogOpen(false);
-    setTransactionToDelete(null);
+    try {
+      await deleteTransaction(transactionToDelete.id);
+      toast({
+        title: "Transacción eliminada",
+        description: `La transacción ha sido eliminada permanentemente.`,
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar la transacción.",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    }
   };
 
-  const handleFormSubmit = (values: Omit<Transaction, 'id' | 'userId'>) => {
+  const handleFormSubmit = async (values: Omit<Transaction, 'id' | 'userId'>) => {
     const dataToSubmit = {
       ...values,
       date: format(values.date as any, 'yyyy-MM-dd'),
     };
-    if (editingTransaction) {
-      updateTransaction({ ...dataToSubmit, id: editingTransaction.id, userId: editingTransaction.userId });
+    try {
+      if (editingTransaction) {
+        await updateTransaction({ ...dataToSubmit, id: editingTransaction.id, userId: editingTransaction.userId });
+        toast({
+          title: "¡Transacción actualizada!",
+          description: "El registro financiero ha sido actualizado.",
+        });
+      } else {
+        await addTransaction(dataToSubmit);
+        toast({
+          title: "¡Transacción creada!",
+          description: "El nuevo registro financiero ha sido guardado.",
+        });
+      }
+      setIsSheetOpen(false);
+      setEditingTransaction(undefined);
+    } catch (e) {
       toast({
-        title: "¡Transacción actualizada!",
-        description: "El registro financiero ha sido actualizado.",
-      });
-    } else {
-      addTransaction(dataToSubmit);
-      toast({
-        title: "¡Transacción creada!",
-        description: "El nuevo registro financiero ha sido guardado.",
+        variant: "destructive",
+        title: "Error al guardar",
+        description: "No se pudo guardar la transacción.",
       });
     }
-    setIsSheetOpen(false);
-    setEditingTransaction(undefined);
   };
 
   return (

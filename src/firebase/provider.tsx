@@ -1,15 +1,18 @@
-'use client';
+"use client";
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, Unsubscribe, doc, onSnapshot, collection, query, where, setDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { Firestore, Unsubscribe, doc, onSnapshot, collection, query, where, setDoc, deleteDoc, writeBatch, getDocs, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import type { UserProfile, Lot, Staff, Task, ProductiveUnit, Supply, Transaction, SubLot } from '@/lib/types';
+import type { UserProfile, Lot, Staff, Task, ProductiveUnit, Supply, Transaction, SubLot, SupplyUsage } from '@/lib/types';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useCollection } from './firestore/use-collection';
+import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 // CRUD Operations
-const createCRUDFunctions = (firestore: Firestore, user: User) => ({
+const createCRUDFunctions = (firestore: Firestore, user: User, toast: ReturnType<typeof useToast>['toast']) => ({
   addLot: (data: Omit<Lot, 'id' | 'userId'>) => {
     const newDocRef = doc(collection(firestore, 'lots'));
     return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
@@ -49,8 +52,59 @@ const createCRUDFunctions = (firestore: Firestore, user: User) => ({
     const newDocRef = doc(collection(firestore, 'tasks'));
     return setDoc(newDocRef, { ...data, id: newDocRef.id, userId: user.uid });
   },
-  updateTask: (data: Task) => setDoc(doc(firestore, 'tasks', data.id), { ...data, userId: user.uid }, { merge: true }),
-  deleteTask: (id: string) => deleteDoc(doc(firestore, 'tasks', id)),
+  updateTask: async (data: Task, originalTask?: Task) => {
+    const docRef = doc(firestore, 'tasks', data.id);
+    const isNowFinalized = data.status === 'Finalizado' && originalTask?.status !== 'Finalizado';
+    
+    await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
+
+    if (isNowFinalized) {
+      const laborCost = data.actualCost - (data.supplyCost || 0);
+      if (laborCost > 0) {
+        const transactionData: Omit<Transaction, 'id' | 'userId'> = {
+          type: 'Egreso',
+          date: data.endDate || data.startDate,
+          description: `Costo de mano de obra para la labor: ${data.type}`,
+          amount: laborCost,
+          category: 'Mano de Obra',
+          lotId: data.lotId,
+        };
+        const newTransactionRef = doc(collection(firestore, 'transactions'));
+        await setDoc(newTransactionRef, { ...transactionData, id: newTransactionRef.id, userId: user.uid });
+        toast({ title: 'Cierre Financiero Automático', description: `Se creó un egreso de $${laborCost.toLocaleString()} por la mano de obra.` });
+      }
+    }
+    
+    if (isNowFinalized && data.isRecurring && data.recurrenceFrequency && data.recurrenceInterval && data.recurrenceInterval > 0) {
+      const baseDateString = data.endDate || data.startDate;
+      const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
+      let newStartDate: Date;
+
+      switch (data.recurrenceFrequency) {
+          case 'días': newStartDate = addDays(baseDateForRecurrence, data.recurrenceInterval); break;
+          case 'semanas': newStartDate = addWeeks(baseDateForRecurrence, data.recurrenceInterval); break;
+          case 'meses': newStartDate = addMonths(baseDateForRecurrence, data.recurrenceInterval); break;
+          default: console.error("Invalid recurrence frequency"); return;
+      }
+
+      const { id, userId, endDate, status, progress, supplyCost, actualCost, ...restOfTaskData } = data;
+      const nextTaskData: Omit<Task, 'id' | 'userId'> = { ...restOfTaskData, startDate: format(newStartDate, 'yyyy-MM-dd'), endDate: undefined, status: 'Por realizar', progress: 0, supplyCost: 0, actualCost: 0, observations: `Labor recurrente generada automáticamente.`, dependsOn: undefined, };
+      
+      const newDocRef = doc(collection(firestore, 'tasks'));
+      await setDoc(newDocRef, { ...nextTaskData, id: newDocRef.id, userId: user.uid });
+
+      toast({ title: 'Labor recurrente creada', description: `Se ha programado la siguiente labor "${data.type}" para el ${format(newStartDate, "PPP", { locale: es })}.` });
+    }
+  },
+  deleteTask: async (id: string) => {
+    const batch = writeBatch(firestore);
+    const taskRef = doc(firestore, 'tasks', id);
+    const usagesQuery = collection(firestore, 'tasks', id, 'supplyUsages');
+    const usagesSnapshot = await getDocs(usagesQuery);
+    usagesSnapshot.forEach(d => batch.delete(d.ref));
+    batch.delete(taskRef);
+    return batch.commit();
+  },
   
   addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => {
     const newDocRef = doc(collection(firestore, 'transactions'));
@@ -65,6 +119,42 @@ const createCRUDFunctions = (firestore: Firestore, user: User) => ({
   },
   updateSubLot: (data: SubLot) => setDoc(doc(firestore, 'lots', data.lotId, 'sublots', data.id), { ...data, userId: user.uid }, { merge: true }),
   deleteSubLot: (lotId: string, subLotId: string) => deleteDoc(doc(firestore, 'lots', lotId, 'sublots', subLotId)),
+
+  addSupplyUsage: async (taskId: string, supplyId: string, quantityUsed: number, date: string, allSupplies: Supply[], allTasks: Task[]) => {
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const usageRef = doc(collection(firestore, 'tasks', taskId, 'supplyUsages'));
+    const batch = writeBatch(firestore);
+
+    const taskData = allTasks.find(t => t.id === taskId);
+    const supplyData = allSupplies.find(s => s.id === supplyId);
+
+    if (!taskData || !supplyData) {
+        throw new Error('La labor o el insumo no existen.');
+    }
+
+    const costAtTimeOfUse = supplyData.costPerUnit * quantityUsed;
+    const newUsage: SupplyUsage = { id: usageRef.id, userId: user.uid, taskId, supplyId, supplyName: supplyData.name, quantityUsed, costAtTimeOfUse, date };
+    
+    batch.set(usageRef, newUsage);
+    batch.update(taskRef, { supplyCost: (taskData.supplyCost || 0) + costAtTimeOfUse, actualCost: (taskData.actualCost || 0) + costAtTimeOfUse });
+
+    await batch.commit();
+    return newUsage;
+  },
+
+  deleteSupplyUsage: async (usage: SupplyUsage, allTasks: Task[]) => {
+    const { id, taskId, costAtTimeOfUse } = usage;
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const usageRef = doc(firestore, 'tasks', taskId, 'supplyUsages', id);
+    const batch = writeBatch(firestore);
+
+    const taskData = allTasks.find(t => t.id === taskId);
+    if (taskData) {
+        batch.update(taskRef, { supplyCost: Math.max(0, (taskData.supplyCost || 0) - costAtTimeOfUse), actualCost: Math.max(0, (taskData.actualCost || 0) - costAtTimeOfUse) });
+    }
+    batch.delete(usageRef);
+    await batch.commit();
+  },
 });
 
 // Context State
@@ -98,30 +188,13 @@ interface UserHookResult {
   userError: Error | null;
 }
 
-export interface AppDataHookResult extends Omit<AppDataContextState, 'crudFunctions'> {
-  // Explicitly list functions for better intellisense
-  addLot: (data: Omit<Lot, 'id' | 'userId'>) => Promise<void>;
-  updateLot: (data: Lot) => Promise<void>;
-  deleteLot: (id: string) => Promise<void>;
-  addProductiveUnit: (data: Omit<ProductiveUnit, 'id' | 'userId'>) => Promise<void>;
-  updateProductiveUnit: (data: ProductiveUnit) => Promise<void>;
-  deleteProductiveUnit: (id: string) => Promise<void>;
-  addStaff: (data: Omit<Staff, 'id' | 'userId'>) => Promise<void>;
-  updateStaff: (data: Staff) => Promise<void>;
-  deleteStaff: (id: string) => Promise<void>;
-  addSupply: (data: Omit<Supply, 'id' | 'userId'>) => Promise<void>;
-  updateSupply: (data: Supply) => Promise<void>;
-  deleteSupply: (id: string) => Promise<void>;
-  addTask: (data: Omit<Task, 'id' | 'userId'>) => Promise<void>;
+export interface AppDataHookResult extends Omit<AppDataContextState, 'crudFunctions'>, Omit<ReturnType<typeof createCRUDFunctions>, 'addSupplyUsage' | 'deleteSupplyUsage' | 'updateTask'> {
+  // Overwrite specific functions to include data dependencies
   updateTask: (data: Task) => Promise<void>;
-  deleteTask: (id: string) => Promise<void>;
-  addTransaction: (data: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
-  updateTransaction: (data: Transaction) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
-  addSubLot: (lotId: string, data: Omit<SubLot, 'id' | 'userId' | 'lotId'>) => Promise<void>;
-  updateSubLot: (data: SubLot) => Promise<void>;
-  deleteSubLot: (lotId: string, subLotId: string) => Promise<void>;
+  addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => Promise<SupplyUsage>;
+  deleteSupplyUsage: (usage: SupplyUsage) => Promise<void>;
 }
+
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
@@ -139,6 +212,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, fi
   const [userError, setUserError] = useState<Error | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setProfileLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -190,10 +264,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, fi
 
   const crudFunctions = useMemo(() => {
     if (firestore && user) {
-      return createCRUDFunctions(firestore, user);
+      return createCRUDFunctions(firestore, user, toast);
     }
     return null;
-  }, [firestore, user]);
+  }, [firestore, user, toast]);
   
   const contextValue = useMemo((): FirebaseContextState => ({
     areServicesAvailable: !!(firebaseApp && firestore && auth),
@@ -245,12 +319,24 @@ export const useAppData = (): AppDataHookResult => {
     if (!crudFunctions) {
       // This is a temporary state while user is logging in, so we return empty functions
       const emptyFunc = () => Promise.resolve();
+      const emptySupplyFunc = () => Promise.reject(new Error("Not available"));
+
       return {
         lots: [], tasks: [], staff: [], supplies: [], transactions: [], productiveUnits: [], isLoading: true,
         addLot: emptyFunc, updateLot: emptyFunc, deleteLot: emptyFunc, addProductiveUnit: emptyFunc, updateProductiveUnit: emptyFunc, deleteProductiveUnit: emptyFunc, addStaff: emptyFunc, updateStaff: emptyFunc, deleteStaff: emptyFunc, addSupply: emptyFunc, updateSupply: emptyFunc, deleteSupply: emptyFunc, addTask: emptyFunc, updateTask: emptyFunc, deleteTask: emptyFunc, addTransaction: emptyFunc, updateTransaction: emptyFunc, deleteTransaction: emptyFunc, addSubLot: emptyFunc, updateSubLot: emptyFunc, deleteSubLot: emptyFunc,
+        addSupplyUsage: emptySupplyFunc, deleteSupplyUsage: emptyFunc
       };
     }
-    return { lots, tasks, staff, supplies, transactions, productiveUnits, isLoading, ...crudFunctions };
+    
+    // Bind data dependencies to the functions that need them
+    const boundCrudFunctions = {
+      ...crudFunctions,
+      updateTask: (data: Task) => crudFunctions.updateTask(data, tasks?.find(t => t.id === data.id)),
+      addSupplyUsage: (taskId: string, supplyId: string, quantityUsed: number, date: string) => crudFunctions.addSupplyUsage(taskId, supplyId, quantityUsed, date, supplies || [], tasks || []),
+      deleteSupplyUsage: (usage: SupplyUsage) => crudFunctions.deleteSupplyUsage(usage, tasks || []),
+    };
+
+    return { lots, tasks, staff, supplies, transactions, productiveUnits, isLoading, ...boundCrudFunctions };
 };
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (T & {__memo?: boolean}) {

@@ -4,21 +4,29 @@ import { useState, useEffect } from "react";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { TaskForm } from "@/components/tasks/task-form";
 import { PageHeader } from "@/components/page-header";
-import { taskCategories, type Task, type Staff, type Lot, type Supply, type SupplyUsage } from "@/lib/types";
+import { taskCategories, type Task } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { collection, query, where, doc, setDoc, deleteDoc, writeBatch, getDocs, getDoc } from 'firebase/firestore';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 export default function TasksPage() {
-  const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const {
+    tasks: allTasks,
+    lots,
+    staff,
+    supplies,
+    isLoading,
+    addTask,
+    updateTask,
+    deleteTask,
+    addSupplyUsage,
+    deleteSupplyUsage
+  } = useAppData();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -27,21 +35,6 @@ export default function TasksPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Data Queries
-  const tasksQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: allTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
-  
-  const lotsQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'lots'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: lots, isLoading: isLotsLoading } = useCollection<Lot>(lotsQuery);
-
-  const staffQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'staff'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: staff, isLoading: isStaffLoading } = useCollection<Staff>(staffQuery);
-
-  const suppliesQuery = useMemoFirebase(() => user && firestore ? query(collection(firestore, 'supplies'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: supplies, isLoading: isSuppliesLoading } = useCollection<Supply>(suppliesQuery);
-
-  const isLoading = isTasksLoading || isLotsLoading || isStaffLoading || isSuppliesLoading;
   
   useEffect(() => {
     let tasksToFilter = allTasks || [];
@@ -58,140 +51,6 @@ export default function TasksPage() {
 
     setFilteredTasks(tasksToFilter);
   }, [allTasks, filterCategory, searchTerm]);
-  
-  // Action Handlers
-  const handleWriteError = (error: any, path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any) => {
-    console.error(`TasksPage Error (${operation} on ${path}):`, error);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData }));
-  };
-
-  const addTask = async (data: Omit<Task, 'id' | 'userId'>): Promise<Task> => {
-    if (!user || !firestore) throw new Error("Not authenticated");
-    const newDocRef = doc(collection(firestore, 'tasks'));
-    const newTask: Task = { ...data, id: newDocRef.id, userId: user.uid };
-    try {
-        await setDoc(newDocRef, newTask);
-        return newTask;
-    } catch (error) {
-        handleWriteError(error, newDocRef.path, 'create', newTask);
-        throw error;
-    }
-  };
-
-  const updateTask = async (data: Task) => {
-    if (!user || !firestore) return;
-    const docRef = doc(firestore, 'tasks', data.id);
-    try {
-        const originalTask = allTasks?.find(t => t.id === data.id);
-        const isNowFinalized = data.status === 'Finalizado' && originalTask?.status !== 'Finalizado';
-
-        await setDoc(docRef, { ...data, userId: user.uid }, { merge: true });
-
-        if (isNowFinalized) {
-            const laborCost = data.actualCost - data.supplyCost;
-            if (laborCost > 0) {
-                const transactionData: Omit<Transaction, 'id' | 'userId'> = {
-                    type: 'Egreso',
-                    date: data.endDate || data.startDate,
-                    description: `Costo de mano de obra para la labor: ${data.type}`,
-                    amount: laborCost,
-                    category: 'Mano de Obra',
-                    lotId: data.lotId,
-                };
-                const newTransactionRef = doc(collection(firestore, 'transactions'));
-                await setDoc(newTransactionRef, { ...transactionData, id: newTransactionRef.id, userId: user.uid });
-                toast({ title: 'Cierre Financiero Automático', description: `Se creó un egreso de $${laborCost.toLocaleString()} por la mano de obra.` });
-            }
-        }
-        
-        if (isNowFinalized && data.isRecurring && data.recurrenceFrequency && data.recurrenceInterval && data.recurrenceInterval > 0) {
-            const baseDateString = data.endDate || data.startDate;
-            const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
-            let newStartDate: Date;
-
-            switch (data.recurrenceFrequency) {
-                case 'días': newStartDate = addDays(baseDateForRecurrence, data.recurrenceInterval); break;
-                case 'semanas': newStartDate = addWeeks(baseDateForRecurrence, data.recurrenceInterval); break;
-                case 'meses': newStartDate = addMonths(baseDateForRecurrence, data.recurrenceInterval); break;
-                default: console.error("Invalid recurrence frequency"); return;
-            }
-
-            const { id, userId, endDate, status, progress, supplyCost, actualCost, ...restOfTaskData } = data;
-            const nextTaskData: Omit<Task, 'id' | 'userId'> = { ...restOfTaskData, startDate: format(newStartDate, 'yyyy-MM-dd'), endDate: undefined, status: 'Por realizar', progress: 0, supplyCost: 0, actualCost: 0, observations: `Labor recurrente generada automáticamente.`, dependsOn: undefined, };
-            await addTask(nextTaskData);
-            toast({ title: 'Labor recurrente creada', description: `Se ha programado la siguiente labor "${data.type}" para el ${format(newStartDate, "PPP", { locale: es })}.` });
-        }
-    } catch (error) {
-        handleWriteError(error, docRef.path, 'update', { ...data, userId: user.uid });
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    if (!user || !firestore) return;
-    const taskRef = doc(firestore, 'tasks', id);
-    try {
-        const batch = writeBatch(firestore);
-        const usagesQuery = collection(firestore, 'tasks', id, 'supplyUsages');
-        const usagesSnapshot = await getDocs(usagesQuery);
-        
-        usagesSnapshot.forEach(usageDoc => {
-            batch.delete(usageDoc.ref);
-        });
-
-        batch.delete(taskRef);
-        await batch.commit();
-    } catch (error) {
-        handleWriteError(error, taskRef.path, 'delete');
-    }
-  };
-  
-  const addSupplyUsage = async (taskId: string, supplyId: string, quantityUsed: number, date: string): Promise<SupplyUsage> => {
-    if (!user || !firestore) throw new Error("Not authenticated");
-    const taskRef = doc(firestore, 'tasks', taskId);
-    const supplyRef = doc(firestore, 'supplies', supplyId);
-    const usageRef = doc(collection(firestore, 'tasks', taskId, 'supplyUsages'));
-    const batch = writeBatch(firestore);
-
-    try {
-        const [taskDoc, supplyDoc] = await Promise.all([getDoc(taskRef), getDoc(supplyDoc)]);
-        if (!taskDoc.exists() || !supplyDoc.exists()) throw new Error('La labor o el insumo no existen.');
-        const taskData = taskDoc.data() as Task;
-        const supplyData = supplyDoc.data() as Supply;
-
-        const costAtTimeOfUse = supplyData.costPerUnit * quantityUsed;
-        const newUsage: SupplyUsage = { id: usageRef.id, userId: user.uid, taskId, supplyId, supplyName: supplyData.name, quantityUsed, costAtTimeOfUse, date };
-        
-        batch.set(usageRef, newUsage);
-        batch.update(taskRef, { supplyCost: (taskData.supplyCost || 0) + costAtTimeOfUse, actualCost: (taskData.actualCost || 0) + costAtTimeOfUse });
-
-        await batch.commit();
-        return newUsage;
-    } catch (error: any) {
-        handleWriteError(error, usageRef.path, 'create', { taskId, supplyId, quantityUsed, date });
-        throw error;
-    }
-  };
-
-  const deleteSupplyUsage = async (usage: SupplyUsage) => {
-    if (!user || !firestore) return;
-    const { id, taskId, costAtTimeOfUse } = usage;
-    const taskRef = doc(firestore, 'tasks', taskId);
-    const usageRef = doc(firestore, 'tasks', taskId, 'supplyUsages', id);
-    const batch = writeBatch(firestore);
-
-    try {
-        const taskDoc = await getDoc(taskRef);
-        if (taskDoc.exists()) {
-            const taskData = taskDoc.data() as Task;
-            batch.update(taskRef, { supplyCost: Math.max(0, (taskData.supplyCost || 0) - costAtTimeOfUse), actualCost: Math.max(0, (taskData.actualCost || 0) - costAtTimeOfUse) });
-        }
-        batch.delete(usageRef);
-        await batch.commit();
-    } catch (error: any) {
-        handleWriteError(error, usageRef.path, 'delete');
-        throw error;
-    }
-  };
 
   const handleFilterByCategory = (category: string) => setFilterCategory(category);
 
@@ -218,24 +77,33 @@ export default function TasksPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!taskToDelete) return;
-    deleteTask(taskToDelete.id);
-    toast({ title: "Labor eliminada", description: `La labor "${taskToDelete.type}" ha sido eliminada.` });
-    setIsDeleteDialogOpen(false);
-    setTaskToDelete(null);
+    try {
+      await deleteTask(taskToDelete.id);
+      toast({ title: "Labor eliminada", description: `La labor "${taskToDelete.type}" ha sido eliminada.` });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Error al eliminar', description: 'No se pudo eliminar la labor.'});
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    }
   };
 
-  const handleFormSubmit = (values: Omit<Task, 'id' | 'userId'>) => {
-    if (editingTask) {
-      updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
-      toast({ title: "¡Labor actualizada!", description: "Los detalles de la labor han sido actualizados." });
-    } else {
-      addTask(values);
-      toast({ title: "¡Labor creada!", description: "La nueva labor ha sido agregada a tu lista." });
+  const handleFormSubmit = async (values: Omit<Task, 'id' | 'userId'>) => {
+    try {
+      if (editingTask) {
+        await updateTask({ ...values, id: editingTask.id, userId: editingTask.userId });
+        toast({ title: "¡Labor actualizada!", description: "Los detalles de la labor han sido actualizados." });
+      } else {
+        await addTask(values);
+        toast({ title: "¡Labor creada!", description: "La nueva labor ha sido agregada a tu lista." });
+      }
+      setIsSheetOpen(false);
+      setEditingTask(undefined);
+    } catch(e) {
+      toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la labor.'});
     }
-    setIsSheetOpen(false);
-    setEditingTask(undefined);
   };
 
   return (
