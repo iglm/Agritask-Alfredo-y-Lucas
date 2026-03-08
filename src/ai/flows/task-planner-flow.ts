@@ -8,6 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { cultivationPlans } from '@/ai/knowledge/agronomic-plans';
+import { addWeeks, format } from 'date-fns';
 
 // Define the structure for a single proposed task by the AI
 const ProposedTaskSchema = z.object({
@@ -23,7 +24,6 @@ const TaskPlannerInputSchema = z.object({
   crop: z.string().describe("The primary crop grown in this lot (e.g., 'Café', 'Aguacate')."),
   sowingDate: z.string().describe("The lot's sowing date in 'yyyy-MM-dd' format. This is the reference point for the entire plan."),
   areaHectares: z.number().describe("The area of the lot in hectares, used to scale the effort required for tasks."),
-  knowledgeBase: z.string().describe("The expert agronomic knowledge base as a JSON string. This is the primary source of truth."),
 });
 export type TaskPlannerInput = z.infer<typeof TaskPlannerInputSchema>;
 
@@ -39,64 +39,34 @@ export type TaskPlannerOutput = z.infer<typeof TaskPlannerOutputSchema>;
  * @returns A promise that resolves to the list of proposed tasks.
  */
 export async function generateTaskPlan(
-    input: Omit<TaskPlannerInput, 'knowledgeBase'>
+    input: TaskPlannerInput
 ): Promise<TaskPlannerOutput> {
+    
+    // This flow is now deterministic and doesn't need an LLM call.
     const cropKey = input.crop.toLowerCase() as keyof typeof cultivationPlans;
-    const plan = cultivationPlans[cropKey] || cultivationPlans.default;
+    const standardPlan = cultivationPlans[cropKey] || cultivationPlans.default;
 
-    if (!plan) {
+    if (!standardPlan || !standardPlan.plan) {
         throw new Error(`No se encontró un plan agronómico para el cultivo: ${input.crop}`);
     }
 
-    return taskPlannerFlow({
-        ...input,
-        knowledgeBase: JSON.stringify(plan),
+    const plannedTasks = standardPlan.plan.map(taskTemplate => {
+        const timingValue = parseInt(taskTemplate.timing.split(' ')[1]);
+        const baseDate = new Date(input.sowingDate.replace(/-/g, '/'));
+        
+        // Assumes timing is in weeks
+        const startDate = addWeeks(baseDate, timingValue);
+        
+        const plannedJournals = Math.round(taskTemplate.baseJournalsPerHa * input.areaHectares);
+
+        return {
+            category: taskTemplate.category as TaskPlannerOutput['plannedTasks'][0]['category'],
+            type: taskTemplate.type,
+            startDate: format(startDate, 'yyyy-MM-dd'),
+            plannedJournals: plannedJournals > 0 ? plannedJournals : 1,
+            observations: taskTemplate.observations,
+        };
     });
+
+    return { plannedTasks };
 }
-
-
-// Define the AI prompt for task planning
-const taskPlannerPrompt = ai.definePrompt({
-  name: 'taskPlannerPrompt',
-  input: {schema: TaskPlannerInputSchema},
-  output: {schema: TaskPlannerOutputSchema},
-  prompt: `
-    You are an AI assistant that adapts a pre-defined, expert agronomic plan to a user's specific lot.
-
-    STRICT INSTRUCTIONS:
-    1.  Your response MUST be a valid JSON object that conforms to the specified output schema.
-    2.  Your SOLE SOURCE OF TRUTH is the 'knowledgeBase' JSON provided below. Do NOT invent tasks, categories, or observations.
-    3.  Your only job is to calculate the 'startDate' for each task and estimate 'plannedJournals'.
-    4.  'startDate' Calculation: The 'knowledgeBase' provides a 'timing' (e.g., "week 8"). Calculate the exact date by adding that offset to the user's 'sowingDate'. Assume 1 month = 4 weeks.
-    5.  'plannedJournals' Estimation: The 'knowledgeBase' provides a 'baseJournalsPerHa'. You MUST calculate the 'plannedJournals' by multiplying this base value by the user's 'areaHectares'. Round the result to the nearest integer.
-    6.  Copy the 'category', 'type', and 'observations' directly from the 'knowledgeBase'. Do not alter them.
-    7.  Generate a plan for a full 12-month cycle.
-
-    USER'S LOT DATA:
-    -   Crop: {{{crop}}}
-    -   Sowing Date: {{{sowingDate}}}
-    -   Area: {{{areaHectares}}} hectares
-
-    AGRONOMIC KNOWLEDGE BASE (Primary Source of Truth):
-    \`\`\`json
-    {{{knowledgeBase}}}
-    \`\`\`
-  `,
-});
-
-
-// Define the Genkit flow
-const taskPlannerFlow = ai.defineFlow(
-  {
-    name: 'taskPlannerFlow',
-    inputSchema: TaskPlannerInputSchema,
-    outputSchema: TaskPlannerOutputSchema,
-  },
-  async (input) => {
-    const {output} = await taskPlannerPrompt(input);
-    if (!output || !output.plannedTasks) {
-        throw new Error("The AI planner did not return a valid task plan.");
-    }
-    return output;
-  }
-);
