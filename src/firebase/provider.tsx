@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, Unsubscribe, doc, onSnapshot, collection, query, where, setDoc, deleteDoc, writeBatch, getDocs, getDoc } from 'firebase/firestore';
+import { Firestore, Unsubscribe, doc, onSnapshot, collection, query, where, setDoc, deleteDoc, writeBatch, getDocs, getDoc, collectionGroup } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import type { UserProfile, Lot, Staff, Task, ProductiveUnit, Supply, Transaction, SubLot, SupplyUsage } from '@/lib/types';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -165,6 +165,7 @@ interface AppDataContextState {
   supplies: Supply[] | null;
   transactions: Transaction[] | null;
   productiveUnits: ProductiveUnit[] | null;
+  supplyUsages: SupplyUsage[] | null;
   isLoading: boolean;
   crudFunctions: ReturnType<typeof createCRUDFunctions> | null;
 }
@@ -252,6 +253,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, fi
   const suppliesQuery = useCollectionQuery('supplies');
   const transactionsQuery = useCollectionQuery('transactions');
   const productiveUnitsQuery = useCollectionQuery('productiveUnits');
+  const supplyUsagesQuery = useMemoFirebase(
+    () => user && firestore ? query(collectionGroup(firestore, 'supplyUsages'), where('userId', '==', user.uid)) : null,
+    [firestore, user]
+  );
 
   const { data: lots, isLoading: lotsLoading } = useCollection<Lot>(lotsQuery);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksQuery);
@@ -259,8 +264,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, fi
   const { data: supplies, isLoading: suppliesLoading } = useCollection<Supply>(suppliesQuery);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: productiveUnits, isLoading: unitsLoading } = useCollection<ProductiveUnit>(productiveUnitsQuery);
+  const { data: supplyUsages, isLoading: supplyUsagesLoading } = useCollection<SupplyUsage>(supplyUsagesQuery);
 
-  const isDataLoading = lotsLoading || tasksLoading || staffLoading || suppliesLoading || transactionsLoading || unitsLoading;
+  const isDataLoading = lotsLoading || tasksLoading || staffLoading || suppliesLoading || transactionsLoading || unitsLoading || supplyUsagesLoading;
 
   const crudFunctions = useMemo(() => {
     if (firestore && user) {
@@ -284,9 +290,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children, fi
     supplies,
     transactions,
     productiveUnits,
+    supplyUsages,
     isLoading: isDataLoading,
     crudFunctions,
-  }), [firebaseApp, firestore, auth, user, profile, isUserLoading, isProfileLoading, userError, lots, tasks, staff, supplies, transactions, productiveUnits, isDataLoading, crudFunctions]);
+  }), [firebaseApp, firestore, auth, user, profile, isUserLoading, isProfileLoading, userError, lots, tasks, staff, supplies, transactions, productiveUnits, supplyUsages, isDataLoading, crudFunctions]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
@@ -315,14 +322,14 @@ export const useUser = (): UserHookResult => {
 };
 
 export const useAppData = (): AppDataHookResult => {
-    const { lots, tasks, staff, supplies, transactions, productiveUnits, isLoading, crudFunctions } = useFirebase();
+    const { lots, tasks, staff, supplies, transactions, productiveUnits, supplyUsages, isLoading, crudFunctions } = useFirebase();
     if (!crudFunctions) {
       // This is a temporary state while user is logging in, so we return empty functions
       const emptyFunc = () => Promise.resolve();
       const emptySupplyFunc = () => Promise.reject(new Error("Not available"));
 
       return {
-        lots: [], tasks: [], staff: [], supplies: [], transactions: [], productiveUnits: [], isLoading: true,
+        lots: [], tasks: [], staff: [], supplies: [], transactions: [], productiveUnits: [], supplyUsages: [], isLoading: true,
         addLot: emptyFunc, updateLot: emptyFunc, deleteLot: emptyFunc, addProductiveUnit: emptyFunc, updateProductiveUnit: emptyFunc, deleteProductiveUnit: emptyFunc, addStaff: emptyFunc, updateStaff: emptyFunc, deleteStaff: emptyFunc, addSupply: emptyFunc, updateSupply: emptyFunc, deleteSupply: emptyFunc, addTask: emptyFunc, updateTask: emptyFunc, deleteTask: emptyFunc, addTransaction: emptyFunc, updateTransaction: emptyFunc, deleteTransaction: emptyFunc, addSubLot: emptyFunc, updateSubLot: emptyFunc, deleteSubLot: emptyFunc,
         addSupplyUsage: emptySupplyFunc, deleteSupplyUsage: emptyFunc
       };
@@ -336,7 +343,7 @@ export const useAppData = (): AppDataHookResult => {
       deleteSupplyUsage: (usage: SupplyUsage) => crudFunctions.deleteSupplyUsage(usage, tasks || []),
     };
 
-    return { lots, tasks, staff, supplies, transactions, productiveUnits, isLoading, ...boundCrudFunctions };
+    return { lots, tasks, staff, supplies, transactions, productiveUnits, supplyUsages, isLoading, ...boundCrudFunctions };
 };
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (T & {__memo?: boolean}) {

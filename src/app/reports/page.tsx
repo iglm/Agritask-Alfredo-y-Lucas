@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppData, useCollection, useFirebase, useMemoFirebase } from "@/firebase";
+import { useAppData } from "@/firebase";
 import { PageHeader } from "@/components/page-header";
 import { FinancialTrendsChart } from "@/components/dashboard/FinancialTrendsChart";
 import { ProfitabilityByLotChart } from "@/components/dashboard/ProfitabilityByLotChart";
@@ -11,17 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SupplyConsumptionChart } from "@/components/dashboard/SupplyConsumptionChart";
 import { SupplyUsageByLotReport } from "@/components/reports/SupplyUsageByLotReport";
 import { SupportCostsBreakdownChart } from "@/components/dashboard/SupportCostsBreakdownChart";
-import { SupplyUsage } from "@/lib/types";
-import { collectionGroup, query, where } from "firebase/firestore";
 
 export default function ReportsPage() {
-  const { firestore, user } = useFirebase();
-  const { lots, tasks, transactions, staff, supplies, isLoading: isAppDataLoading } = useAppData();
-
-  const supplyUsagesQuery = useMemoFirebase(() => user && firestore ? query(collectionGroup(firestore, 'supplyUsages'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: supplyUsages, isLoading: supplyUsagesLoading } = useCollection<SupplyUsage>(supplyUsagesQuery);
-
-  const isLoading = isAppDataLoading || supplyUsagesLoading;
+  const { lots, tasks, transactions, staff, supplies, supplyUsages, isLoading } = useAppData();
 
   if (isLoading) {
     return (
