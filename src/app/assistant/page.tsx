@@ -178,6 +178,45 @@ export default function AssistantPage() {
               systemMessageContent = `✅ ${transPayload.type} de $${transPayload.amount.toLocaleString()} registrado: "${transPayload.description}" (Lote: ${lotName}).`;
             }
             break;
+          
+          case 'CREATE_HARVEST_AND_SALE':
+            {
+              const { payload } = action;
+              const lot = lots?.find(l => l.id === payload.lotId);
+              if (!lot) throw new Error(`Lote con ID '${payload.lotId}' no encontrado.`);
+
+              // 1. Create a dummy, finalized Harvest task for record-keeping
+              const harvestTask = {
+                  type: `Venta de Cosecha: ${payload.description}`,
+                  lotId: payload.lotId,
+                  responsibleId: staff?.[0]?.id || 'admin', // Assign to first staff or a default
+                  startDate: payload.date,
+                  endDate: payload.date,
+                  category: 'Cosecha' as const,
+                  status: 'Finalizado' as const,
+                  progress: 100,
+                  plannedJournals: 0, // No journals as it's a direct sale record
+                  harvestedQuantity: payload.quantityKg,
+                  plannedCost: 0,
+                  supplyCost: 0,
+                  actualCost: 0,
+              };
+              await addTask(harvestTask);
+
+              // 2. Create the income transaction
+              const incomeTransaction = {
+                  type: 'Ingreso' as const,
+                  date: payload.date,
+                  description: payload.description,
+                  amount: payload.totalAmount,
+                  category: 'Venta de Cosecha',
+                  lotId: payload.lotId,
+              };
+              await addTransaction(incomeTransaction);
+              
+              systemMessageContent = `✅ Venta registrada en lote '${lot.name}': ${payload.quantityKg} kg por $${payload.totalAmount.toLocaleString()}.`;
+            }
+            break;
 
           case 'INCOMPREHENSIBLE':
             logMessage('error', action.payload.reason || "No pude entender tu instrucción.");

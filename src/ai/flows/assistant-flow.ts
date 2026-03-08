@@ -144,6 +144,20 @@ const CreateTransactionActionSchema = z.object({
     payload: CreateTransactionPayloadSchema,
 });
 
+// -- HARVEST & SALE --
+const CreateHarvestAndSalePayloadSchema = z.object({
+    lotId: z.string().describe("The ID of the lot where the harvest originated."),
+    description: z.string().describe("A descriptive title for the income transaction. E.g., 'Venta de 1500 kg de café pergamino seco'."),
+    quantityKg: z.number().describe("The total kilograms of the product sold."),
+    totalAmount: z.number().describe("The total income amount from the sale."),
+    date: z.string().describe("The date of the sale in YYYY-MM-DD format."),
+});
+
+const CreateHarvestAndSaleActionSchema = z.object({
+    action: z.enum(["CREATE_HARVEST_AND_SALE"]),
+    payload: CreateHarvestAndSalePayloadSchema,
+});
+
 
 // -- UNION & PLAN --
 const IncomprehensibleActionSchema = z.object({
@@ -163,6 +177,7 @@ const ActionSchema = z.union([
     UpdateStaffActionSchema,
     CreateSupplyActionSchema,
     CreateTransactionActionSchema,
+    CreateHarvestAndSaleActionSchema,
     IncomprehensibleActionSchema
 ]);
 
@@ -215,15 +230,14 @@ const dispatcherPrompt = ai.definePrompt({
     STRICT INSTRUCTIONS:
     1.  Your response MUST be a valid JSON object that conforms to the 'PlanSchema'.
     2.  First, create a concise, conversational 'summary' of the actions you are about to take.
-    3.  Then, create a 'plan' which is an ARRAY of action objects for creation, update, or deletion.
-    4.  Use the 'context' JSON data to find the correct IDs from names ('productiveUnitId', 'lotId', 'responsibleId', 'supplyId'). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
-    5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots", "add 50 workers"), you MUST respond with an 'INCOMPREHENSIBLE' action. Your reason should be: "Aún no puedo procesar creaciones masivas. Para eso, usa el Constructor IA desde el menú principal.".
-    6.  For commands involving multiple, distinct actions (e.g., "create a lot and then update a worker"), create a separate action object for EACH request in the 'plan' array.
-    7.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
-    8.  **Handle Updates:** If the command implies modification ("corrige", "cambia", "actualiza"), generate an 'UPDATE_LOT' or 'UPDATE_STAFF' action. Find the entity's ID from context. The 'updates' object in the payload MUST ONLY contain the fields being changed.
-    9.  **Handle Deletions:** If the command implies deletion ("borra", "elimina", "quita"), generate a 'DELETE_LOT' action. Find the entity's ID and name from context. DO NOT allow deletion of staff or productive units via this command.
-    10. **Supply Planning:** If a 'CREATE_TASK' command mentions supplies (e.g., "con 2 bultos de urea"), parse quantity and name, find the 'supplyId' from context, and add it to 'plannedSupplies'.
-    11. **DETECT ANALYTICAL QUERIES:** Your role is for data entry/modification. If the user asks a question or requests analysis, summary, or optimization (e.g., '¿Hay problemas?', 'Analiza mis costos'), you MUST respond with a single 'INCOMPREHENSIBLE' action. The reason MUST be: "Esa es una excelente pregunta, pero mi especialidad es registrar y modificar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
+    3.  Then, create a 'plan' which is an ARRAY of action objects.
+    4.  Use the 'context' JSON data to find the correct IDs from names ('lotId', etc.). If a name is ambiguous or not found, use an 'INCOMPREHENSIBLE' action.
+    5.  CRITICAL: If the user asks for bulk creation (e.g., "create 10 lots"), respond with an 'INCOMPREHENSIBLE' action: "Aún no puedo procesar creaciones masivas. Para eso, usa el Constructor IA.".
+    6.  **NEW: Handle Harvest & Sale:** If the command implies a sale of a harvested product (e.g., "registra la venta de 1500 kg de café del lote El Filo a 8000 por kg"), you MUST generate a 'CREATE_HARVEST_AND_SALE' action. Calculate the 'totalAmount' by multiplying quantity and price. The description should be clear, e.g., "Venta de 1500 kg de café".
+    7.  **Handle Simple Transactions:** For simple expenses or incomes not related to a harvest sale (e.g., "gasto de 50.000 en gasolina"), use the 'CREATE_TRANSACTION' action.
+    8.  **Handle Updates & Deletions:** Use 'UPDATE_LOT' or 'DELETE_LOT' for modification commands ("corrige", "borra", etc.).
+    9.  Calculate dates based on 'currentDate' ({{currentDate}}). Resolve relative dates like "mañana" to 'YYYY-MM-DD' format.
+    10. **DETECT ANALYTICAL QUERIES:** Your role is for data entry/modification. If the user asks a question or requests analysis (e.g., '¿Hay problemas?', 'Analiza mis costos'), you MUST respond with an 'INCOMPREHENSIBLE' action: "Esa es una excelente pregunta, pero mi especialidad es registrar y modificar datos. Para análisis detallados, por favor usa los Agentes de IA especializados en el Panel Principal."
     
     CONTEXT DATA (Productive Units, Lots, Staff, and Supplies):
     \`\`\`json
@@ -234,42 +248,34 @@ const dispatcherPrompt = ai.definePrompt({
 
     --- EXAMPLES OF YOUR REQUIRED JSON OUTPUT ---
 
-    // Example: Create Supply
-    // User: "Registra el insumo 'Urea' en Bultos a 90.000."
+    // Example: Create Harvest & Sale (NEW)
+    // User: "Registra la venta de 1500 kg de café del lote El Filo a 8000 por kg."
     {
-      "summary": "Entendido. Registraré el insumo 'Urea'.",
+      "summary": "Entendido. Registraré la venta de 1500 kg de café del lote El Filo y crearé el ingreso correspondiente.",
       "plan": [{
-        "action": "CREATE_SUPPLY",
+        "action": "CREATE_HARVEST_AND_SALE",
         "payload": {
-          "name": "Urea",
-          "unitOfMeasure": "Bulto",
-          "costPerUnit": 90000
+          "lotId": "id_del_lote_el_filo",
+          "description": "Venta de 1500 kg de café",
+          "quantityKg": 1500,
+          "totalAmount": 12000000,
+          "date": "{{currentDate}}"
         }
       }]
     }
 
-    // Example: Update Lot
-    // User: "Corrige el área del lote El Filo a 12 hectáreas."
+    // Example: Create Simple Transaction
+    // User: "Registra un gasto de 150.000 en transporte."
     {
-      "summary": "Confirmado, actualizaré el área del lote El Filo.",
+      "summary": "OK. Registraré el gasto de transporte.",
       "plan": [{
-        "action": "UPDATE_LOT",
-        "payload": { 
-            "id": "id_de_el_filo", 
-            "updates": { "areaHectares": 12 }
-        }
-      }]
-    }
-
-    // Example: Delete Lot
-    // User: "Por favor borra el lote La Zanja"
-    {
-      "summary": "Atención: Se procederá a eliminar el lote 'La Zanja' y todos sus datos asociados.",
-      "plan": [{
-        "action": "DELETE_LOT",
+        "action": "CREATE_TRANSACTION",
         "payload": {
-          "id": "id_de_la_zanja",
-          "name": "La Zanja"
+          "type": "Egreso",
+          "description": "Transporte",
+          "amount": 150000,
+          "category": "Transporte",
+          "date": "{{currentDate}}"
         }
       }]
     }
