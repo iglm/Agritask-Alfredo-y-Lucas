@@ -10,15 +10,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies, PlannedSupply, type SupplyUsage } from "@/lib/types"
+import { taskCategories, type Task, type Lot, type Staff, taskStatuses, type Supply, recurrenceFrequencies, PlannedSupply, type SupplyUsage, TaskComment } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
+import { CalendarIcon, PlusCircle, Send, Trash2 } from "lucide-react"
 import { format, isValid, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { Slider } from "../ui/slider"
 import { SupplyUsageManager } from "./supply-usage-manager"
 import { Switch } from "../ui/switch"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useUser } from "@/firebase"
 
 const taskFormSchema = z.object({
   type: z.string().min(2, { message: "El tipo de labor es obligatorio." }),
@@ -43,6 +44,13 @@ const taskFormSchema = z.object({
   isRecurring: z.boolean().optional(),
   recurrenceInterval: z.coerce.number().optional(),
   recurrenceFrequency: z.enum(recurrenceFrequencies).optional(),
+  comments: z.array(
+    z.object({
+        author: z.string(),
+        text: z.string(),
+        timestamp: z.string(),
+    })
+  ).optional(),
 }).refine(data => {
     if (data.isRecurring) {
         return data.recurrenceInterval && data.recurrenceInterval > 0 && data.recurrenceFrequency;
@@ -86,6 +94,9 @@ const getInitialDate = (dateValue: any): Date | undefined => {
 };
 
 export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupplyUsage, deleteSupplyUsage }: TaskFormProps) {
+  const { profile } = useUser();
+  const [newCommentText, setNewCommentText] = useState("");
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     // Initialize dates as undefined to prevent hydration errors.
@@ -108,6 +119,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupp
       isRecurring: task?.isRecurring ?? false,
       recurrenceInterval: task?.recurrenceInterval ?? '',
       recurrenceFrequency: task?.recurrenceFrequency ?? undefined,
+      comments: task?.comments ?? [],
     }
   });
 
@@ -128,6 +140,21 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupp
   const getLotName = (lotId: string) => lots.find(l => l.id === lotId)?.name || 'Lote no encontrado';
   const isRecurring = form.watch('isRecurring');
   const taskCategory = form.watch('category');
+  const comments = form.watch('comments');
+
+  const handleAddComment = () => {
+    if (!newCommentText.trim()) return;
+
+    const newComment: TaskComment = {
+        author: profile?.name || "Usuario",
+        text: newCommentText.trim(),
+        timestamp: new Date().toISOString(),
+    };
+
+    form.setValue('comments', [...(form.getValues('comments') || []), newComment]);
+    setNewCommentText("");
+  }
+
 
   function handleFormSubmit(values: TaskFormValues) {
     const responsible = staff.find(s => s.id === values.responsibleId);
@@ -554,7 +581,7 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupp
           name="observations"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Observaciones</FormLabel>
+              <FormLabel>Observaciones Generales</FormLabel>
               <FormControl>
                 <Textarea placeholder="Ej: Llovió durante 2 horas, se retrasó la labor..." {...field} />
               </FormControl>
@@ -562,6 +589,39 @@ export function TaskForm({ task, onSubmit, lots, staff, tasks, supplies, addSupp
             </FormItem>
           )}
         />
+
+        {task?.id && (
+            <div className="space-y-4 rounded-lg border p-4">
+                <h3 className="font-medium">Historial de Novedades</h3>
+                <div className="space-y-3">
+                    {comments && comments.length > 0 ? (
+                        comments.sort((a,b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()).map((comment, index) => (
+                            <div key={index} className="text-sm p-3 bg-muted/50 rounded-md">
+                                <p className="text-foreground">{comment.text}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    - {comment.author} el {format(parseISO(comment.timestamp), 'dd MMM yyyy, h:mm a', { locale: es })}
+                                </p>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-2">No hay novedades registradas.</p>
+                    )}
+                </div>
+                <div className="flex items-start gap-2 pt-2">
+                    <Textarea 
+                        placeholder="Añadir una nueva novedad..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        className="flex-1"
+                        rows={2}
+                    />
+                    <Button type="button" size="icon" onClick={handleAddComment} disabled={!newCommentText.trim()}>
+                        <Send className="h-4 w-4"/>
+                        <span className="sr-only">Añadir novedad</span>
+                    </Button>
+                </div>
+            </div>
+        )}
         <Button type="submit" className="w-full">{task?.id ? "Actualizar Labor" : "Crear Labor"}</Button>
       </form>
     </Form>

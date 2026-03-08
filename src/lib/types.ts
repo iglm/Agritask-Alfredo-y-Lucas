@@ -57,6 +57,12 @@ export type PlannedSupply = {
   quantity: number;
 };
 
+export type TaskComment = {
+  author: string;
+  text: string;
+  timestamp: string;
+};
+
 export type Task = {
   id: string;
   userId?: string;
@@ -80,6 +86,7 @@ export type Task = {
   harvestedQuantity?: number;
   observations?: string;
   plannedSupplies?: PlannedSupply[];
+  comments?: TaskComment[];
 };
 
 export type ProductiveUnit = {

@@ -389,6 +389,29 @@
               "quantity"
             ]
           }
+        },
+        "comments": {
+          "type": "array",
+          "description": "A log of comments or updates related to the task.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "author": {
+                "type": "string",
+                "description": "Name of the person who made the comment."
+              },
+              "text": {
+                "type": "string",
+                "description": "The content of the comment."
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the comment was made."
+              }
+            },
+            "required": ["author", "text", "timestamp"]
+          }
         }
       },
       "required": [
