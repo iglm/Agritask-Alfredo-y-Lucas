@@ -43,19 +43,18 @@ export interface InternalQuery extends Query<DocumentData> {
  * Handles nullable references/queries gracefully by returning an empty array.
  * 
  * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
+ * use useMemoFirebase to memoize it.
  *  
  * @template T Optional type for document data. Defaults to any.
- * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
- * The Firestore CollectionReference or Query. Waits if null/undefined.
+ * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} memoizedTargetRefOrQuery -
+ * The Firestore CollectionReference or Query. Must be memoized with useMemoFirebase.
  * @param {object} options - Optional settings for the hook.
  * @param {number} options.retryCount - Number of times to retry on network-like errors. Defaults to 3.
  * @param {number} options.retryDelay - Delay between retries in ms. Defaults to 1000.
  * @returns {UseCollectionResult<T>} Object with data, isLoading, error. Data is always an array.
  */
 export function useCollection<T = any>(
-    memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>))  | null | undefined,
     options: { retryCount?: number; retryDelay?: number } = {}
 ): UseCollectionResult<T> {
   const { retryCount = 3, retryDelay = 1000 } = options;
@@ -64,6 +63,10 @@ export function useCollection<T = any>(
   const [data, setData] = useState<ResultItemType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+
+  if (memoizedTargetRefOrQuery && !(memoizedTargetRefOrQuery as any).__memo) {
+    throw new Error('Query/Reference passed to useCollection was not properly memoized using useMemoFirebase. This will cause infinite loops.');
+  }
 
   useEffect(() => {
     if (!memoizedTargetRefOrQuery) {
@@ -142,9 +145,6 @@ export function useCollection<T = any>(
       if (unsubscribe) unsubscribe();
     };
   }, [memoizedTargetRefOrQuery, retryCount, retryDelay]);
-
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
-  }
+  
   return { data, isLoading, error };
 }

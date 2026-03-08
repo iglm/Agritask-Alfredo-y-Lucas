@@ -346,9 +346,10 @@ export const useAppData = (): AppDataHookResult => {
     return { lots, tasks, staff, supplies, transactions, productiveUnits, supplyUsages, isLoading, ...boundCrudFunctions };
 };
 
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (T & {__memo?: boolean}) {
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
   const memoized = useMemo(factory, deps);
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as T & {__memo?: boolean}).__memo = true;
+  if(typeof memoized === 'object' && memoized !== null) {
+    (memoized as any).__memo = true;
+  }
   return memoized;
 }
