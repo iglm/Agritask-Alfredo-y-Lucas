@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { LotsTable } from "@/components/lots/lots-table";
 import { LotForm } from "@/components/lots/lot-form";
 import { PageHeader } from "@/components/page-header";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Trash2 } from "lucide-react";
+import { Download, Loader2, Trash2, Building } from "lucide-react";
 import { Lot, SubLot, ProductiveUnit } from "@/lib/types";
 import { useAppData } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { SubLotForm } from "@/components/lots/sub-lot-form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tractor, PlusCircle } from 'lucide-react';
+
 
 export default function LotsPage() {
   const { lots: allLots, tasks: allTasks, productiveUnits: allUnits, isLoading, addLot, updateLot, deleteLot, addSubLot, updateSubLot, deleteSubLot, addTransaction, addTask, staff, transactions } = useAppData();
@@ -21,7 +25,6 @@ export default function LotsPage() {
   
   const [isLotSheetOpen, setIsLotSheetOpen] = useState(false);
   const [isSubLotSheetOpen, setIsSubLotSheetOpen] = useState(false);
-  const [filteredLots, setFilteredLots] = useState<Lot[]>([]);
   
   const [editingLot, setEditingLot] = useState<Lot | undefined>(undefined);
   const [editingSubLot, setEditingSubLot] = useState<SubLot | undefined>(undefined);
@@ -33,16 +36,21 @@ export default function LotsPage() {
   const [isLotDeleteDialogOpen, setIsLotDeleteDialogOpen] = useState(false);
   const [isSubLotDeleteDialogOpen, setIsSubLotDeleteDialogOpen] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  // Group lots by productive unit
+  const { lotsByUnit, unassignedLots } = useMemo(() => {
+    if (!allLots || !allUnits) return { lotsByUnit: [], unassignedLots: [] };
+    
+    const lotsByUnitMap = allUnits.map(unit => ({
+      ...unit,
+      lots: allLots.filter(lot => lot.productiveUnitId === unit.id)
+    }));
 
-  useEffect(() => {
-    if (allLots) {
-      const filtered = (allLots || []).filter(lot => 
-        lot.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredLots(filtered);
-    }
-  }, [allLots, searchTerm]);
+    const assignedLotIds = new Set(lotsByUnitMap.flatMap(g => g.lots.map(l => l.id)));
+    const unassignedLots = allLots.filter(lot => !lot.productiveUnitId || !allUnits.find(u => u.id === lot.productiveUnitId));
+
+    return { lotsByUnit: lotsByUnitMap, unassignedLots };
+  }, [allLots, allUnits]);
+
 
   // --- Lot Handlers ---
   const handleAddLot = async () => {
@@ -53,7 +61,6 @@ export default function LotsPage() {
             title: "Primero crea una Unidad Productiva",
             description: "Necesitas registrar al menos una finca antes de poder añadir un lote.",
         });
-        // Optionally, you could redirect them to the productive unit creation page
         return;
     }
     setIsLotSheetOpen(true);
@@ -185,51 +192,104 @@ export default function LotsPage() {
 
 
   const handleExport = () => {
-    if (filteredLots.length > 0) {
-      exportToCsv(`lotes-${new Date().toISOString()}.csv`, filteredLots);
+    if (allLots && allLots.length > 0) {
+      exportToCsv(`lotes-${new Date().toISOString()}.csv`, allLots);
     } else {
       toast({
         title: "No hay datos para exportar",
-        description: "Filtra los datos que deseas exportar.",
       })
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader title="Gestión de Lotes" actionButtonText="Agregar Nuevo Lote" onActionButtonClick={handleAddLot}>
         <div className="flex items-center gap-2">
-            <Input 
-              placeholder="Buscar por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[200px]"
-            />
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
         </div>
       </PageHeader>
       
-      {isLoading ? (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <LotsTable 
-          lots={filteredLots} 
-          tasks={allTasks || []} 
-          transactions={transactions || []}
-          staff={staff || []}
-          productiveUnits={allUnits || []}
-          onEditLot={handleEditLot} 
-          onDeleteLot={handleDeleteLotRequest}
-          onAddLot={handleAddLot}
-          onAddSubLot={handleAddSubLot}
-          onEditSubLot={handleEditSubLot}
-          onDeleteSubLot={handleDeleteSubLotRequest}
-          addTask={addTask}
+      {(!allLots || allLots.length === 0) ? (
+         <EmptyState
+          icon={<Tractor className="h-10 w-10" />}
+          title="Crea tu primer lote"
+          description="Empieza a organizar tu finca añadiendo tu primer lote de terreno."
+          action={
+            <Button onClick={handleAddLot}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Agregar Nuevo Lote
+            </Button>
+          }
         />
+      ) : (
+        <Accordion type="multiple" defaultValue={allUnits?.map(u => u.id) || ['unassigned']} className="w-full">
+          {lotsByUnit.map(unitGroup => (
+            <AccordionItem value={unitGroup.id} key={unitGroup.id}>
+              <AccordionTrigger className="hover:bg-muted/50 px-4 rounded-md">
+                <div className="flex items-center gap-3">
+                  <Building className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-lg font-semibold">{unitGroup.farmName}</span>
+                  <Badge variant="secondary">{unitGroup.lots.length} Lote(s)</Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-0">
+                <LotsTable 
+                  lots={unitGroup.lots}
+                  isInsideCard={true}
+                  tasks={allTasks || []} 
+                  transactions={transactions || []}
+                  staff={staff || []}
+                  productiveUnits={allUnits || []}
+                  onEditLot={handleEditLot} 
+                  onDeleteLot={handleDeleteLotRequest}
+                  onAddLot={handleAddLot}
+                  onAddSubLot={handleAddSubLot}
+                  onEditSubLot={handleEditSubLot}
+                  onDeleteSubLot={handleDeleteSubLotRequest}
+                  addTask={addTask}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+          {unassignedLots.length > 0 && (
+             <AccordionItem value="unassigned">
+              <AccordionTrigger className="hover:bg-muted/50 px-4 rounded-md text-amber-600">
+                <div className="flex items-center gap-3">
+                  <Building className="h-5 w-5" />
+                  <span className="text-lg font-semibold">Lotes Sin Asignar</span>
+                  <Badge variant="outline">{unassignedLots.length} Lote(s)</Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-0">
+                 <LotsTable 
+                  lots={unassignedLots}
+                  isInsideCard={true}
+                  tasks={allTasks || []} 
+                  transactions={transactions || []}
+                  staff={staff || []}
+                  productiveUnits={allUnits || []}
+                  onEditLot={handleEditLot} 
+                  onDeleteLot={handleDeleteLotRequest}
+                  onAddLot={handleAddLot}
+                  onAddSubLot={handleAddSubLot}
+                  onEditSubLot={handleEditSubLot}
+                  onDeleteSubLot={handleDeleteSubLotRequest}
+                  addTask={addTask}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
       )}
 
       <Sheet open={isLotSheetOpen} onOpenChange={setIsLotSheetOpen}>

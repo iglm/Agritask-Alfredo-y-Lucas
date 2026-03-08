@@ -126,22 +126,6 @@ export function LotsTable({ lots, tasks, transactions, staff, productiveUnits, o
   const productiveUnitMap = new Map(productiveUnits.map(unit => [unit.id, unit.farmName]));
 
 
-  if (!isInsideCard && lots.length === 0) {
-    return (
-        <EmptyState
-          icon={<Tractor className="h-10 w-10" />}
-          title="Crea tu primer lote"
-          description="Empieza a organizar tu finca añadiendo tu primer lote de terreno."
-          action={
-            <Button onClick={onAddLot}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Agregar Nuevo Lote
-            </Button>
-          }
-        />
-    )
-  }
-
   return (
     <TableWrapper>
       <CardContent className="p-0">
@@ -283,10 +267,26 @@ export function LotsTable({ lots, tasks, transactions, staff, productiveUnits, o
                 )
               })
             ) : (
-              isInsideCard && (
+                isInsideCard ? (
                 <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       No hay lotes en esta unidad.
+                    </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={8} className="h-96 p-0">
+                      <EmptyState
+                        icon={<Tractor className="h-10 w-10" />}
+                        title="Crea tu primer lote"
+                        description="Empieza a organizar tu finca añadiendo tu primer lote de terreno."
+                        action={
+                          <Button onClick={onAddLot}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Agregar Nuevo Lote
+                          </Button>
+                        }
+                      />
                     </TableCell>
                 </TableRow>
               )
