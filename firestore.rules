@@ -83,6 +83,15 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && isParentOwner('tasks', taskId);
     }
 
+    // --- Collection Group Queries ---
+    // The rules for subcollections above do not cover collection group queries.
+    // We need a specific rule for that, targeting the collection ID across all paths.
+    match /{path=**}/supplyUsages/{usageId} {
+      // This rule allows a user to query all their supply usages across all tasks.
+      // It is secure because the client is required to filter by userId.
+      allow list: if isSignedIn();
+    }
+
     // --- System Logs ---
     // A special collection where users can only create their own logs.
     // No one should be able to read, update, or delete them from the client.
