@@ -27,58 +27,6 @@ export default function SetupPage() {
   const { firestore, user, productiveUnits, lots, staff, isLoading: appDataLoading } = useAppData();
   const router = useRouter();
 
-  const addUnit = (batch: any, data: any) => {
-    if (!user || !firestore) throw new Error("User or Firestore not available");
-    const newDocRef = doc(collection(firestore, 'productiveUnits'));
-    const newUnit = { ...data, id: newDocRef.id, userId: user.uid };
-    batch.set(newDocRef, newUnit);
-    return newUnit;
-  };
-
-  const addLot = (batch: any, unitId: string, data: any) => {
-    if (!user || !firestore) throw new Error("User or Firestore not available");
-    const newDocRef = doc(collection(firestore, 'lots'));
-    const type = data.crop && data.crop.length > 0 ? 'Productivo' : 'Soporte';
-    const newLot = { ...data, type, id: newDocRef.id, userId: user.uid, productiveUnitId: unitId };
-    batch.set(newDocRef, newLot);
-    return newLot;
-  };
-  
-  const addStaff = (batch: any, data: any) => {
-    if (!user || !firestore) throw new Error("User or Firestore not available");
-    const newDocRef = doc(collection(firestore, 'staff'));
-    const newStaff = { ...data, id: newDocRef.id, userId: user.uid };
-    batch.set(newDocRef, newStaff);
-    return newStaff;
-  };
-
-  const addTask = (batch: any, lotId: string, responsibleId: string, responsibleRate: number, data: any) => {
-    if (!user || !firestore) throw new Error("User or Firestore not available");
-    const newDocRef = doc(collection(firestore, 'tasks'));
-    const taskData = {
-        ...data,
-        lotId,
-        responsibleId,
-        id: newDocRef.id,
-        userId: user.uid,
-        status: 'Por realizar' as const,
-        progress: 0,
-        plannedCost: (data.plannedJournals || 0) * responsibleRate,
-        supplyCost: 0,
-        actualCost: 0,
-    };
-    batch.set(newDocRef, taskData);
-    return taskData;
-  };
-
-  const addSupply = (batch: any, data: any) => {
-    if (!user || !firestore) throw new Error("User or Firestore not available");
-    const newDocRef = doc(collection(firestore, 'supplies'));
-    const newSupply = { ...data, id: newDocRef.id, userId: user.uid };
-    batch.set(newDocRef, newSupply);
-    return newSupply;
-  };
-
 
   const handleGeneratePlan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,9 +64,58 @@ export default function SetupPage() {
         return;
     }
 
+    // --- Helper functions defined inside the handler to ensure correct scope ---
+    const addUnit = (batch: any, data: any) => {
+      const newDocRef = doc(collection(firestore, 'productiveUnits'));
+      const newUnit = { ...data, id: newDocRef.id, userId: user.uid };
+      batch.set(newDocRef, newUnit);
+      return newUnit;
+    };
+
+    const addLot = (batch: any, unitId: string, data: any) => {
+      const newDocRef = doc(collection(firestore, 'lots'));
+      const type = data.crop && data.crop.length > 0 ? 'Productivo' : 'Soporte';
+      const newLot = { ...data, type, id: newDocRef.id, userId: user.uid, productiveUnitId: unitId };
+      batch.set(newDocRef, newLot);
+      return newLot;
+    };
+    
+    const addStaff = (batch: any, data: any) => {
+      const newDocRef = doc(collection(firestore, 'staff'));
+      const newStaff = { ...data, id: newDocRef.id, userId: user.uid };
+      batch.set(newDocRef, newStaff);
+      return newStaff;
+    };
+
+    const addTask = (batch: any, lotId: string, responsibleId: string, responsibleRate: number, data: any) => {
+      const newDocRef = doc(collection(firestore, 'tasks'));
+      const taskData = {
+          ...data,
+          lotId,
+          responsibleId,
+          id: newDocRef.id,
+          userId: user.uid,
+          status: 'Por realizar' as const,
+          progress: 0,
+          plannedCost: (data.plannedJournals || 0) * responsibleRate,
+          supplyCost: 0,
+          actualCost: 0,
+      };
+      batch.set(newDocRef, taskData);
+      return taskData;
+    };
+
+    const addSupply = (batch: any, data: any) => {
+      const newDocRef = doc(collection(firestore, 'supplies'));
+      const newSupply = { ...data, id: newDocRef.id, userId: user.uid };
+      batch.set(newDocRef, newSupply);
+      return newSupply;
+    };
+    // --- End of helper functions ---
+
+
     const existingUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : undefined;
 
-    // Check for conflict: AI wants to create a unit, but one already exists.
     if (existingUnit && plan.productiveUnit) {
       toast({
         variant: "destructive",
@@ -145,7 +142,6 @@ export default function SetupPage() {
              throw new Error("No hay una unidad productiva existente ni una nueva para construir. Por favor, describe la finca que quieres crear.");
         }
 
-        // 2. Create Lots
         const createdLots: Lot[] = [];
         if (plan.lots) {
             plan.lots.forEach(lotData => {
@@ -154,7 +150,6 @@ export default function SetupPage() {
             });
         }
         
-        // 3. Create Staff
         const createdStaff: Staff[] = [];
         if (plan.staff) {
             plan.staff.forEach(staffData => {
@@ -163,14 +158,12 @@ export default function SetupPage() {
             });
         }
         
-        // 4. Create Supplies
         if (plan.supplies) {
             plan.supplies.forEach(supplyData => {
                 addSupply(batch, supplyData);
             });
         }
 
-        // 5. Create Tasks
         if (plan.tasks) {
             const allLotsForAssignment = [...createdLots, ...(lots || [])];
             const allStaffForAssignment = [...createdStaff, ...(staff || [])];
@@ -194,7 +187,6 @@ export default function SetupPage() {
             description: `Se han añadido los nuevos elementos a ${unitName}.`,
         });
         
-        // Redirect to a relevant page after creation
         router.push('/lotes');
 
     } catch (error: any) {
