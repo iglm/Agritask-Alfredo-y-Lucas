@@ -28,6 +28,19 @@ export default function SetupPage() {
   const router = useRouter();
 
 
+  const formatDateSafely = (dateString?: string) => {
+    if (!dateString) return "Fecha inválida";
+    try {
+      const date = parseISO(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if invalid
+      }
+      return format(date, "dd MMM yyyy", { locale: es });
+    } catch (e) {
+      return dateString; // Fallback to original string on any error
+    }
+  };
+
   const handleGeneratePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
@@ -338,7 +351,7 @@ export default function SetupPage() {
                                      <div key={index} className="text-sm p-2 bg-muted/40 rounded">
                                          <div className="flex justify-between">
                                             <span className="font-semibold text-foreground">{task.type}</span>
-                                            <Badge variant='outline'>{format(parseISO(task.startDate), "dd MMM yyyy", { locale: es })}</Badge>
+                                            <Badge variant='outline'>{formatDateSafely(task.startDate)}</Badge>
                                          </div>
                                          <p className='text-muted-foreground'>Lote: {task.lotName}, Jornales: {task.plannedJournals}.</p>
                                      </div>
