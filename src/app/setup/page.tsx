@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan, Trash2, SquarePen } from 'lucide-react';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useToast } from '@/hooks/use-toast';
-import { useAppData } from '@/firebase';
+import { useAppData, useFirebase } from '@/firebase';
 import { Lot, Staff, Task } from '@/lib/types';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -29,7 +29,8 @@ export default function SetupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
-  const { firestore, user, productiveUnits, lots, staff, isLoading: appDataLoading } = useAppData();
+  const { productiveUnits, lots, staff, isLoading: appDataLoading } = useAppData();
+  const { firestore, user } = useFirebase();
   const router = useRouter();
 
   const [editingTask, setEditingTask] = useState<{ task: ProposedTask; index: number } | null>(null);
@@ -39,13 +40,15 @@ export default function SetupPage() {
   const formatDateSafely = (dateString?: string) => {
     if (!dateString) return "Fecha inválida";
     try {
+      // Attempt to parse the date string. This handles 'yyyy-MM-dd' and other ISO-like formats.
       const date = new Date(dateString.replace(/-/g, '/'));
+      // Check if the parsed date is valid.
       if (isNaN(date.getTime())) {
-        return dateString;
+        return dateString; // Return original string if invalid
       }
       return format(date, "dd MMM yyyy", { locale: es });
     } catch (e) {
-      return dateString;
+      return dateString; // Return original string on any parsing error
     }
   };
 
