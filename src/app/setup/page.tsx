@@ -71,19 +71,15 @@ export default function SetupPage() {
     e.preventDefault();
     if (!description.trim()) return;
 
-    if (productiveUnits && productiveUnits.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Límite alcanzado",
-        description: "Ya tienes una unidad productiva. El Constructor IA solo se puede usar para la configuración inicial.",
-      });
-      return;
-    }
+    const existingUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : undefined;
     
     setIsLoading(true);
     setPlan(null);
     try {
-      const result = await buildFarmFromDescription({ description });
+      const result = await buildFarmFromDescription({ 
+        description,
+        existingUnit: existingUnit ? { id: existingUnit.id, farmName: existingUnit.farmName || 'Finca sin nombre' } : undefined,
+       });
       setPlan(result);
     } catch (error: any) {
       console.error("Error generating farm plan:", error);
@@ -107,11 +103,14 @@ export default function SetupPage() {
         return;
     }
 
-    if (productiveUnits && productiveUnits.length > 0) {
+    const existingUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : undefined;
+
+    // Check for conflict: AI wants to create a unit, but one already exists.
+    if (existingUnit && plan.productiveUnit) {
       toast({
         variant: "destructive",
-        title: "Límite alcanzado",
-        description: "Ya existe una unidad productiva. No se puede crear otra.",
+        title: "Conflicto en el Plan",
+        description: "El plan intenta crear una nueva finca, pero ya tienes una. Ajusta tu descripción para solo añadir lotes o personal.",
       });
       return;
     }
@@ -119,15 +118,25 @@ export default function SetupPage() {
     setIsCreating(true);
     try {
         const batch = writeBatch(firestore);
+        let unitId: string;
+        let unitName: string;
 
-        // 1. Create Productive Unit
-        const newUnit = addUnit(batch, plan.productiveUnit);
+        if (existingUnit) {
+            unitId = existingUnit.id;
+            unitName = existingUnit.farmName || 'tu finca';
+        } else if (plan.productiveUnit) {
+            const newUnit = addUnit(batch, plan.productiveUnit);
+            unitId = newUnit.id;
+            unitName = newUnit.farmName || 'la nueva finca';
+        } else {
+             throw new Error("No hay una unidad productiva existente ni una nueva para construir. Por favor, describe la finca que quieres crear.");
+        }
 
         // 2. Create Lots
         const createdLots: Lot[] = [];
         if (plan.lots) {
             plan.lots.forEach(lotData => {
-                const newLot = addLot(batch, newUnit.id, lotData);
+                const newLot = addLot(batch, unitId, lotData);
                 createdLots.push(newLot);
             });
         }
@@ -156,7 +165,7 @@ export default function SetupPage() {
 
         toast({
             title: '¡Construcción Exitosa!',
-            description: `Se ha creado la finca ${newUnit.farmName} con todos sus componentes.`,
+            description: `Se han añadido los nuevos elementos a ${unitName}.`,
         });
         
         // Redirect to a relevant page after creation
@@ -167,7 +176,7 @@ export default function SetupPage() {
         toast({
             variant: "destructive",
             title: "Error en la Construcción",
-            description: "No se pudo guardar la estructura de la finca. Revisa la consola para más detalles.",
+            description: error.message || "No se pudo guardar la estructura de la finca. Revisa la consola para más detalles.",
         });
     } finally {
         setIsCreating(false);
@@ -185,8 +194,7 @@ export default function SetupPage() {
         <CardHeader>
           <CardTitle>Describe tu Operación</CardTitle>
           <CardDescription>
-            Usa lenguaje natural para describir tu finca. La IA generará un plan de construcción que podrás aprobar.
-            Sé lo más detallado posible para obtener los mejores resultados.
+            Usa lenguaje natural para describir tu finca o para añadir nuevos lotes y personal. La IA generará un plan de construcción que podrás aprobar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -195,7 +203,11 @@ export default function SetupPage() {
                 id="farm-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe tu finca. Por ejemplo: 'Crea una finca cafetera de 20 hectáreas en Jardín, Antioquia, con 8 lotes de 2.5 Ha cada uno, sembrados hace 3 años. Registra también 10 trabajadores y programa 3 fertilizaciones al año.'"
+                placeholder={
+                  (productiveUnits && productiveUnits.length > 0) 
+                  ? "Ya tienes una finca. Describe los lotes o trabajadores que quieres añadir. Ej: 'Añadir 5 lotes de café de 2 hectáreas cada uno y registrar 8 nuevos trabajadores.'" 
+                  : "Describe tu finca. Por ejemplo: 'Crea una finca cafetera de 20 hectáreas en Jardín, Antioquia, con 8 lotes de 2.5 Ha cada uno, sembrados hace 3 años. Registra también 10 trabajadores.'"
+                }
                 className="min-h-[150px] text-base"
                 rows={6}
                 disabled={isLoading || isCreating}
@@ -212,10 +224,12 @@ export default function SetupPage() {
                       <CardDescription>{plan.summary}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4 text-muted-foreground"/>
-                          <span>Finca: <span className="font-semibold">{plan.productiveUnit.farmName || 'Finca Sin Nombre'}</span></span>
-                      </div>
+                      {plan.productiveUnit && (
+                        <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4 text-muted-foreground"/>
+                            <span>Finca a crear: <span className="font-semibold">{plan.productiveUnit.farmName || 'Finca Sin Nombre'}</span></span>
+                        </div>
+                      )}
                        <div className="flex items-center gap-2">
                           <Tractor className="h-4 w-4 text-muted-foreground"/>
                           <span>Lotes a crear: <span className="font-semibold">{plan.lots?.length || 0}</span></span>

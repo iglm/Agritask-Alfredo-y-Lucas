@@ -49,7 +49,7 @@ const TaskCreateSchema = z.object({
 // The final output schema for the entire plan
 const FarmPlanSchema = z.object({
     summary: z.string().describe("Un resumen conciso en lenguaje natural de las acciones que la IA va a ejecutar. Ej: 'Entendido, crearé la finca La Esperanza con 10 lotes y 20 trabajadores.'"),
-    productiveUnit: ProductiveUnitCreateSchema.describe("La finca principal a crear. Solo puede haber una."),
+    productiveUnit: ProductiveUnitCreateSchema.optional().describe("La finca principal a crear. Solo se crea si no hay una 'existingUnit'."),
     lots: z.array(LotCreateSchema).optional().describe("Una lista de lotes a crear dentro de la finca."),
     staff: z.array(StaffCreateSchema).optional().describe("Una lista de colaboradores a registrar."),
     tasks: z.array(TaskCreateSchema).optional().describe("A list of standard agronomic tasks to create for the new productive lots."),
@@ -60,12 +60,16 @@ const FarmPlanSchema = z.object({
 const FarmBuilderInputSchema = z.object({
   description: z.string().describe("La descripción en lenguaje natural que proporciona el usuario."),
   currentDate: z.string().describe("La fecha actual en formato YYYY-MM-DD para resolver fechas relativas."),
+  existingUnit: z.object({
+    id: z.string(),
+    farmName: z.string(),
+  }).optional().describe("Información de la unidad productiva existente, si la hay."),
 });
 
 export type FarmBuilderInput = z.infer<typeof FarmBuilderInputSchema>;
 export type FarmBuilderOutput = z.infer<typeof FarmPlanSchema>;
 
-export async function buildFarmFromDescription(input: Pick<FarmBuilderInput, 'description'>): Promise<FarmBuilderOutput> {
+export async function buildFarmFromDescription(input: Omit<FarmBuilderInput, 'currentDate'>): Promise<FarmBuilderOutput> {
     const today = new Date();
     const contextWithDate = {
         ...input,
@@ -81,22 +85,40 @@ const farmEntityExtractionPrompt = ai.definePrompt({
   // The output schema is the same, but we only expect it to fill in units, lots, staff, and user-defined tasks.
   output: { schema: FarmPlanSchema },
   prompt: `
-    You are an agricultural data architect. Your purpose is to translate a user's description of their farm into a structured JSON plan.
+    You are an agricultural data architect. Your purpose is to translate a user's description into a structured JSON plan for their farm.
 
     **CRITICAL DIRECTIVES:**
-    1.  **Output:** Your output MUST be a single, valid JSON object that strictly adheres to the 'FarmPlanSchema'.
-    2.  **Entity Extraction:** Parse the user's description to create ONE 'productiveUnit', and OPTIONALLY, arrays of 'lots' and 'staff'.
-    3.  **Task Extraction:** Parse the user's description for **explicit recurring tasks only** (e.g., "3 fertilizaciones al año", "guadañada cada 2 meses"). You MUST create these as tasks in the 'tasks' array. For "3 al año", infer an interval of 4 and a frequency of 'meses'. The startDate should be a sensible date after the lot's sowingDate, if provided. The task's 'lotName' must match a lot being created. **DO NOT invent tasks that are not explicitly mentioned by the user.**
+    1.  **Context Awareness:**
+        *   If 'existingUnit' is **NOT** provided, you MUST parse the user's description to create ONE 'productiveUnit'. The user is setting up their farm for the first time.
+        *   If 'existingUnit' **IS** provided ({{existingUnit.farmName}} with ID {{existingUnit.id}}), you MUST **NOT** create a new 'productiveUnit'. The user is adding to their existing farm. Your generated plan must omit the 'productiveUnit' field.
+
+    2.  **Output:** Your output MUST be a single, valid JSON object that strictly adheres to the 'FarmPlanSchema'.
+
+    3.  **Entity Extraction:** Parse the user's description for 'lots' and 'staff' to create. Also parse for **explicit recurring tasks** (e.g., "3 fertilizaciones al año", "guadañada cada 2 meses"). You MUST create these as tasks in the 'tasks' array. For "3 al año", infer an interval of 4 and a frequency of 'meses'. The startDate should be a sensible date after the lot's sowingDate, if provided. **DO NOT invent tasks that are not explicitly mentioned by the user.**
+
     4.  **Calculations & Logic:**
         *   Calculate the area for each lot if a total area and number of lots are given.
-        *   Create a default farm name if not provided.
+        *   If creating a new unit, create a default farm name if not provided.
         *   If a relative sowing date is given (e.g., "10 meses de sembrado"), you MUST calculate the exact date based on 'currentDate' ({{currentDate}}) and format it as 'YYYY-MM-DD'.
         *   Generate descriptive names for lots and staff if not provided.
+
     5.  **Defaults:** Use a default 'baseDailyRate' of 45000 for staff if not specified. Default 'employmentType' is 'Temporal'.
-    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation of the basic entities you are creating. Example: "Entendido. Voy a crear la finca, X lotes y Y trabajadores."
+
+    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation.
+        *   If creating a new farm: "Entendido. Voy a crear la finca, X lotes y Y trabajadores."
+        *   If adding to an existing farm: "Entendido. Voy a añadir X lotes y Y trabajadores a tu finca '{{#if existingUnit}}{{existingUnit.farmName}}{{else}}existente{{/if}}'."
 
     **USER DESCRIPTION:**
     "{{description}}"
+
+    **EXISTING FARM CONTEXT:**
+    {{#if existingUnit}}
+    -   **Finca Actual:** {{existingUnit.farmName}} (ID: {{existingUnit.id}})
+    -   **Modo:** Añadir nuevas entidades.
+    {{else}}
+    -   **Finca Actual:** Ninguna.
+    -   **Modo:** Creación inicial de finca.
+    {{/if}}
   `,
 });
 
