@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan } from 'lucide-react';
+import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan, Trash2 } from 'lucide-react';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/firebase';
@@ -17,6 +17,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+type ProposedTask = FarmBuilderOutput extends { tasks?: (infer T)[] } ? T : never;
 
 export default function SetupPage() {
   const [description, setDescription] = useState('');
@@ -31,7 +33,8 @@ export default function SetupPage() {
   const formatDateSafely = (dateString?: string) => {
     if (!dateString) return "Fecha inválida";
     try {
-      const date = parseISO(dateString);
+      // Attempt to parse, assuming it could be various formats, but ISO is expected.
+      const date = new Date(dateString.replace(/-/g, '/')); // More lenient parsing
       if (isNaN(date.getTime())) {
         return dateString; // Return original string if invalid
       }
@@ -218,6 +221,30 @@ export default function SetupPage() {
       return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
+  const tasksByLot = (plan?.tasks || []).reduce((acc, task, index) => {
+    const lotName = task.lotName || 'Sin Lote Asignado';
+    if (!acc[lotName]) {
+        acc[lotName] = [];
+    }
+    acc[lotName].push({ ...task, originalIndex: index });
+    return acc;
+  }, {} as Record<string, (ProposedTask & { originalIndex: number })[]>);
+
+  const handleRemoveTask = (taskIndexToRemove: number) => {
+    setPlan(prevPlan => {
+      if (!prevPlan || !prevPlan.tasks) return prevPlan;
+      
+      const newTasks = prevPlan.tasks.filter((_, index) => index !== taskIndexToRemove);
+      const newSummary = `Plan ajustado. Se construirán ${prevPlan.lots?.length || 0} lotes, ${prevPlan.staff?.length || 0} colaboradores, ${prevPlan.supplies?.length || 0} insumos y se programarán ${newTasks.length} labores.`;
+
+      return {
+        ...prevPlan,
+        summary: newSummary,
+        tasks: newTasks,
+      };
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Constructor IA de Fincas" />
@@ -336,30 +363,55 @@ export default function SetupPage() {
                              </AccordionItem>
                         )}
                         {plan.tasks && plan.tasks.length > 0 && (
-                             <AccordionItem value="tasks" className='bg-background/50 rounded-md border px-4'>
-                             <AccordionTrigger className='py-3'>
-                                 <div className="flex items-center gap-3">
-                                 <CalendarCheck className="h-5 w-5 text-muted-foreground" />
-                                 <span className='font-semibold'>Labores a Programar</span>
-                                 <Badge variant="secondary">{plan.tasks.length}</Badge>
-                                 </div>
-                             </AccordionTrigger>
-                             <AccordionContent className='pb-2'>
-                                 <ScrollArea className="h-64">
-                                 <div className="p-1 space-y-2">
-                                     {plan.tasks.map((task, index) => (
-                                     <div key={index} className="text-sm p-2 bg-muted/40 rounded">
-                                         <div className="flex justify-between">
-                                            <span className="font-semibold text-foreground">{task.type}</span>
-                                            <Badge variant='outline'>{formatDateSafely(task.startDate)}</Badge>
-                                         </div>
-                                         <p className='text-muted-foreground'>Lote: {task.lotName}, Jornales: {task.plannedJournals}.</p>
-                                     </div>
-                                     ))}
-                                 </div>
-                                 </ScrollArea>
-                             </AccordionContent>
-                             </AccordionItem>
+                            <AccordionItem value="tasks" className='bg-background/50 rounded-md border px-4'>
+                                <AccordionTrigger className='py-3'>
+                                    <div className="flex items-center gap-3">
+                                        <CalendarCheck className="h-5 w-5 text-muted-foreground" />
+                                        <span className='font-semibold'>Labores a Programar</span>
+                                        <Badge variant="secondary">{plan.tasks.length}</Badge>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className='pb-2'>
+                                    <ScrollArea className="h-72">
+                                        <Accordion type="multiple" className="w-full space-y-1 p-1">
+                                            {Object.entries(tasksByLot).map(([lotName, lotTasks]) => (
+                                                <AccordionItem key={lotName} value={lotName} className="bg-muted/40 rounded-md border px-3">
+                                                    <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                                                        <div className="flex items-center gap-2">
+                                                            <span>Lote: <span className="font-semibold">{lotName}</span></span>
+                                                            <Badge variant="outline">{lotTasks.length} labores</Badge>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="pt-2 pb-1">
+                                                        <div className="space-y-2">
+                                                            {lotTasks.map((task) => (
+                                                                <div key={task.originalIndex} className="text-xs p-2 bg-background/50 rounded flex items-start gap-2">
+                                                                    <div className="flex-grow">
+                                                                        <div className="flex justify-between">
+                                                                            <span className="font-semibold text-foreground">{task.type}</span>
+                                                                            <Badge variant='outline' className="text-xs">{formatDateSafely(task.startDate)}</Badge>
+                                                                        </div>
+                                                                        <p className='text-muted-foreground'>Categoría: {task.category}, Jornales: {task.plannedJournals}.</p>
+                                                                    </div>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-5 w-5 text-destructive hover:bg-destructive/10"
+                                                                        onClick={(e) => { e.stopPropagation(); handleRemoveTask(task.originalIndex); }}
+                                                                    >
+                                                                        <Trash2 className="h-3 w-3" />
+                                                                        <span className="sr-only">Eliminar labor</span>
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </ScrollArea>
+                                </AccordionContent>
+                            </AccordionItem>
                         )}
                     </Accordion>
                   </CardContent>
