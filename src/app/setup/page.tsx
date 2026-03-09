@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor } from 'lucide-react';
+import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan } from 'lucide-react';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/firebase';
@@ -19,7 +19,7 @@ export default function SetupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
-  const { firestore, user, productiveUnits, isLoading: appDataLoading } = useAppData();
+  const { firestore, user, productiveUnits, lots, staff, isLoading: appDataLoading } = useAppData();
   const router = useRouter();
 
   const addUnit = (batch: any, data: any) => {
@@ -64,6 +64,14 @@ export default function SetupPage() {
     };
     batch.set(newDocRef, taskData);
     return taskData;
+  };
+
+  const addSupply = (batch: any, data: any) => {
+    if (!user || !firestore) throw new Error("User or Firestore not available");
+    const newDocRef = doc(collection(firestore, 'supplies'));
+    const newSupply = { ...data, id: newDocRef.id, userId: user.uid };
+    batch.set(newDocRef, newSupply);
+    return newSupply;
   };
 
 
@@ -150,16 +158,29 @@ export default function SetupPage() {
             });
         }
         
-        // 4. Create Tasks
-        if (plan.tasks && createdLots.length > 0 && createdStaff.length > 0) {
-            plan.tasks.forEach((taskData, index) => {
-                const targetLot = createdLots.find(l => l.name === taskData.lotName);
-                if (targetLot) {
-                    const responsible = createdStaff[index % createdStaff.length];
-                    addTask(batch, targetLot.id, responsible.id, responsible.baseDailyRate, taskData);
-                }
+        // 4. Create Supplies
+        if (plan.supplies) {
+            plan.supplies.forEach(supplyData => {
+                addSupply(batch, supplyData);
             });
         }
+
+        // 5. Create Tasks
+        if (plan.tasks) {
+            const allLotsForAssignment = [...createdLots, ...(lots || [])];
+            const allStaffForAssignment = [...createdStaff, ...(staff || [])];
+
+            if (allStaffForAssignment.length > 0) {
+                plan.tasks.forEach((taskData, index) => {
+                    const targetLot = allLotsForAssignment.find(l => l.name === taskData.lotName);
+                    if (targetLot) {
+                        const responsible = allStaffForAssignment[index % allStaffForAssignment.length];
+                        addTask(batch, targetLot.id, responsible.id, responsible.baseDailyRate, taskData);
+                    }
+                });
+            }
+        }
+
 
         await batch.commit();
 
@@ -206,7 +227,7 @@ export default function SetupPage() {
                 placeholder={
                   (productiveUnits && productiveUnits.length > 0) 
                   ? "Ya tienes una finca. Describe los lotes o trabajadores que quieres añadir. Ej: 'Añadir 5 lotes de café de 2 hectáreas cada uno y registrar 8 nuevos trabajadores.'" 
-                  : "Describe tu finca. Por ejemplo: 'Crea una finca cafetera de 20 hectáreas en Jardín, Antioquia, con 8 lotes de 2.5 Ha cada uno, sembrados hace 3 años. Registra también 10 trabajadores.'"
+                  : "Describe tu finca. Por ejemplo: 'Crea una finca cafetera de 20 hectáreas en Jardín, Antioquia, con 8 lotes de 2.5 Ha cada uno, sembrados hace 3 años. Registra también 10 trabajadores y el insumo Urea.'"
                 }
                 className="min-h-[150px] text-base"
                 rows={6}
@@ -237,6 +258,10 @@ export default function SetupPage() {
                        <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-muted-foreground"/>
                           <span>Colaboradores a registrar: <span className="font-semibold">{plan.staff?.length || 0}</span></span>
+                      </div>
+                       <div className="flex items-center gap-2">
+                          <SprayCan className="h-4 w-4 text-muted-foreground"/>
+                          <span>Insumos a crear: <span className="font-semibold">{plan.supplies?.length || 0}</span></span>
                       </div>
                       {plan.tasks && plan.tasks.length > 0 && (
                           <div className="flex items-center gap-2">

@@ -7,8 +7,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { employmentTypes, Task } from '@/lib/types';
-import { subMonths, format, addWeeks } from 'date-fns';
+import { employmentTypes, Task, supplyUnits } from '@/lib/types';
+import { subMonths, format } from 'date-fns';
 import { cultivationPlans } from '@/ai/knowledge/agronomic-plans';
 
 // Schemas for what can be created. Optional fields are for the AI to infer.
@@ -45,14 +45,21 @@ const TaskCreateSchema = z.object({
   recurrenceFrequency: z.enum(['días', 'semanas', 'meses']).optional().describe("The frequency of the recurrence."),
 });
 
+const SupplyCreateSchema = z.object({
+  name: z.string().describe("El nombre del insumo, ej: 'Urea', 'Glifosato'."),
+  unitOfMeasure: z.enum(supplyUnits).describe("La unidad de medida. Si no se especifica, inferir la más común para ese tipo de insumo (ej: 'Bulto' para fertilizantes)."),
+  costPerUnit: z.number().describe("El costo por unidad del insumo, si se especifica."),
+});
+
 
 // The final output schema for the entire plan
 const FarmPlanSchema = z.object({
-    summary: z.string().describe("Un resumen conciso en lenguaje natural de las acciones que la IA va a ejecutar. Ej: 'Entendido, crearé la finca La Esperanza con 10 lotes y 20 trabajadores.'"),
+    summary: z.string().describe("Un resumen conciso y conversacional de las acciones que la IA va a ejecutar. Ej: 'Entendido, crearé la finca La Esperanza con 10 lotes, 20 trabajadores y el insumo Urea.'"),
     productiveUnit: ProductiveUnitCreateSchema.optional().describe("La finca principal a crear. Solo se crea si no hay una 'existingUnit'."),
     lots: z.array(LotCreateSchema).optional().describe("Una lista de lotes a crear dentro de la finca."),
     staff: z.array(StaffCreateSchema).optional().describe("Una lista de colaboradores a registrar."),
     tasks: z.array(TaskCreateSchema).optional().describe("A list of standard agronomic tasks to create for the new productive lots."),
+    supplies: z.array(SupplyCreateSchema).optional().describe("Una lista de insumos a crear si el usuario los menciona."),
 });
 
 
@@ -78,35 +85,38 @@ export async function buildFarmFromDescription(input: Omit<FarmBuilderInput, 'cu
   return farmBuilderFlow(contextWithDate);
 }
 
-// This prompt is now much simpler. It only extracts entities and user-defined recurring tasks.
-const farmEntityExtractionPrompt = ai.definePrompt({
-  name: 'farmEntityExtractionPrompt',
+const farmBuilderPrompt = ai.definePrompt({
+  name: 'farmBuilderPrompt',
   input: { schema: FarmBuilderInputSchema },
-  // The output schema is the same, but we only expect it to fill in units, lots, staff, and user-defined tasks.
   output: { schema: FarmPlanSchema },
   prompt: `
-    You are an agricultural data architect. Your purpose is to translate a user's description into a structured JSON plan for their farm.
+    You are a world-class agricultural operations architect AI. Your mission is to act as a strategic partner, transforming a user's high-level description into a comprehensive, actionable, and intelligent farm setup plan in JSON format.
 
-    **CRITICAL DIRECTIVES:**
-    1.  **Context Awareness:**
-        *   If 'existingUnit' is **NOT** provided, you MUST parse the user's description to create ONE 'productiveUnit'. The user is setting up their farm for the first time.
-        *   If 'existingUnit' **IS** provided ({{existingUnit.farmName}} with ID {{existingUnit.id}}), you MUST **NOT** create a new 'productiveUnit'. The user is adding to their existing farm. Your generated plan must omit the 'productiveUnit' field.
+    **CORE DIRECTIVE: Be Proactive and Intelligent. Your goal is to save the user work.**
 
-    2.  **Output:** Your output MUST be a single, valid JSON object that strictly adheres to the 'FarmPlanSchema'.
+    1.  **Analyze the User's Request:**
+        *   **Entities:** Extract every entity mentioned: Finca (Productive Unit), Lotes, Personal (Staff), and also any specific **Insumos (Supplies)** like 'Urea', 'glifosato', etc.
+        *   **Context:** Check if an 'existingUnit' is provided. If so, you are ADDING to an existing farm. If not, you are CREATING a new one. Your 'summary' and plan must reflect this.
 
-    3.  **Entity Extraction:** Parse the user's description for 'lots' and 'staff' to create. Also parse for **explicit recurring tasks** (e.g., "3 fertilizaciones al año", "guadañada cada 2 meses"). You MUST create these as tasks in the 'tasks' array. For "3 al año", infer an interval of 4 and a frequency of 'meses'. The startDate should be a sensible date after the lot's sowingDate, if provided. **DO NOT invent tasks that are not explicitly mentioned by the user.**
+    2.  **Generate a Comprehensive Plan (This is your main task):**
+        *   **Productive Unit:** Create one if it doesn't exist.
+        *   **Lots & Staff:** Create the number of lots and staff requested. Generate sensible names if not provided.
+        *   **SUPPLIES (NEW):** If the user mentions any supplies, add them to the 'supplies' array in your plan. Infer the 'unitOfMeasure' and a typical 'costPerUnit' if not provided (e.g., Urea is often in 'Bulto' and costs around 90000).
+        *   **INTELLIGENT TASK GENERATION (CRITICAL):** Do not just create what the user explicitly asks for. You MUST create a full, logical 12-month agronomic plan for any productive lots.
+            *   Use the **Agronomic Knowledge Base** provided below to generate a standard set of tasks (fertilizations, pest control, etc.).
+            *   Calculate the 'startDate' for each task based on the lot's 'sowingDate' and the 'timing' from the knowledge base. The current date is {{currentDate}}.
+            *   Calculate the 'plannedJournals' for each task by multiplying the 'baseJournalsPerHa' from the knowledge base by the lot's 'areaHectares'.
+            *   Also include any **explicitly requested recurring tasks** (e.g., "guadaña cada 2 meses").
+            *   The 'lotName' in each task MUST match the name of a lot you are creating in the same plan.
 
-    4.  **Calculations & Logic:**
-        *   Calculate the area for each lot if a total area and number of lots are given.
-        *   If creating a new unit, create a default farm name if not provided.
-        *   If a relative sowing date is given (e.g., "10 meses de sembrado"), you MUST calculate the exact date based on 'currentDate' ({{currentDate}}) and format it as 'YYYY-MM-DD'.
-        *   Generate descriptive names for lots and staff if not provided.
+    3.  **Provide a Conversational Summary:**
+        *   Your 'summary' is crucial. It's your chance to act as a partner.
+        *   Example: "¡Entendido! Estoy diseñando la finca 'La Esmeralda'. He creado 8 lotes de café y 10 colaboradores. Más importante aún, he generado un plan agronómico inicial de 12 meses para tus lotes de café, incluyendo fertilizaciones y control de broca. También vi que mencionaste 'Urea', así que lo añadí a tu lista de insumos. ¿Procedemos con la construcción?"
 
-    5.  **Defaults:** Use a default 'baseDailyRate' of 45000 for staff if not specified. Default 'employmentType' is 'Temporal'.
-
-    6.  **Summary:** The 'summary' field MUST be a brief, conversational confirmation.
-        *   If creating a new farm: "Entendido. Voy a crear la finca, X lotes y Y trabajadores."
-        *   If adding to an existing farm: "Entendido. Voy a añadir X lotes y Y trabajadores a tu finca '{{#if existingUnit}}{{existingUnit.farmName}}{{else}}existente{{/if}}'."
+    **AGRONOMIC KNOWLEDGE BASE (Use this to create the 'tasks'):**
+    \`\`\`json
+    ${JSON.stringify(cultivationPlans)}
+    \`\`\`
 
     **USER DESCRIPTION:**
     "{{description}}"
@@ -130,63 +140,15 @@ const farmBuilderFlow = ai.defineFlow(
     outputSchema: FarmPlanSchema,
   },
   async (input) => {
-    // Step 1: AI call to get the basic structure (units, lots, staff, user-defined tasks).
-    const { output: initialPlan } = await farmEntityExtractionPrompt(input);
-    if (!initialPlan) {
-      throw new Error("El Constructor IA no pudo generar un plan inicial válido.");
+    // Step 1: Call the new, all-powerful prompt.
+    const { output: comprehensivePlan } = await farmBuilderPrompt(input);
+    if (!comprehensivePlan) {
+      throw new Error("El Constructor IA no pudo generar un plan válido.");
     }
     
-    let standardTasksGenerated = false;
-
-    // Step 2: Programmatically enhance the plan with standard agronomic tasks.
-    if (initialPlan.lots) {
-        const generatedTasks: z.infer<typeof TaskCreateSchema>[] = [];
-        
-        for (const lot of initialPlan.lots) {
-            if (lot.crop && lot.sowingDate) {
-                const cropKey = lot.crop.toLowerCase() as keyof typeof cultivationPlans;
-                const standardPlan = cultivationPlans[cropKey] || cultivationPlans['default'];
-
-                if (standardPlan && standardPlan.plan) {
-                    standardTasksGenerated = true;
-                    standardPlan.plan.forEach(taskTemplate => {
-                        const timingValue = parseInt(taskTemplate.timing.split(' ')[1]);
-                        const baseDate = new Date(lot.sowingDate!.replace(/-/g, '/'));
-                        
-                        // Assumes timing is in weeks for now, as per the knowledge base structure
-                        const startDate = addWeeks(baseDate, timingValue);
-                        
-                        const plannedJournals = Math.round(taskTemplate.baseJournalsPerHa * lot.areaHectares);
-
-                        generatedTasks.push({
-                            lotName: lot.name,
-                            category: taskTemplate.category as Task['category'],
-                            type: taskTemplate.type,
-                            startDate: format(startDate, 'yyyy-MM-dd'),
-                            plannedJournals: plannedJournals > 0 ? plannedJournals : 1,
-                            observations: taskTemplate.observations,
-                        });
-                    });
-                }
-            }
-        }
-        
-        if (generatedTasks.length > 0) {
-            if (!initialPlan.tasks) {
-                initialPlan.tasks = [];
-            }
-            initialPlan.tasks.push(...generatedTasks);
-        }
-    }
-    
-    // Step 3: Update summary message.
-    if (standardTasksGenerated) {
-        initialPlan.summary += " Además, generaré el plan de labores estándar para los lotes de cultivo.";
-    }
-
-    // Step 4: Final date fixing (keeping the original robust logic).
-    if (initialPlan.lots) {
-        initialPlan.lots.forEach(lot => {
+    // Step 2: Final date fixing (keeping this robust logic as a safeguard).
+    if (comprehensivePlan.lots) {
+        comprehensivePlan.lots.forEach(lot => {
             if (lot.sowingDate && lot.sowingDate.includes('meses')) {
                 const monthsAgo = parseInt(lot.sowingDate.split(' ')[0]);
                 if (!isNaN(monthsAgo)) {
@@ -196,6 +158,6 @@ const farmBuilderFlow = ai.defineFlow(
         });
     }
 
-    return initialPlan;
+    return comprehensivePlan;
   }
 );
