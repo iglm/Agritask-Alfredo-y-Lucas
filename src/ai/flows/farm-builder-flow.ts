@@ -8,7 +8,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { employmentTypes, Task, supplyUnits } from '@/lib/types';
-import { subMonths, format } from 'date-fns';
 import { cultivationPlans } from '@/ai/knowledge/agronomic-plans';
 
 // Schemas for what can be created. Optional fields are for the AI to infer.
@@ -141,24 +140,13 @@ const farmBuilderFlow = ai.defineFlow(
     outputSchema: FarmPlanSchema,
   },
   async (input) => {
-    // Step 1: Call the new, all-powerful prompt.
+    // Call the prompt.
     const { output: comprehensivePlan } = await farmBuilderPrompt(input);
     if (!comprehensivePlan) {
       throw new Error("El Constructor IA no pudo generar un plan válido.");
     }
     
-    // Step 2: Final date fixing (keeping this robust logic as a safeguard).
-    if (comprehensivePlan.lots) {
-        comprehensivePlan.lots.forEach(lot => {
-            if (lot.sowingDate && lot.sowingDate.includes('meses')) {
-                const monthsAgo = parseInt(lot.sowingDate.split(' ')[0]);
-                if (!isNaN(monthsAgo)) {
-                    lot.sowingDate = format(subMonths(new Date(input.currentDate), monthsAgo), 'yyyy-MM-dd');
-                }
-            }
-        });
-    }
-
+    // No more brittle date fixing. We trust the AI to follow the prompt's schema.
     return comprehensivePlan;
   }
 );
