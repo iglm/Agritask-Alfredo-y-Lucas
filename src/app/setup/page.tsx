@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan, Trash2 } from 'lucide-react';
+import { Loader2, Sparkles, Home, Users, Check, CalendarCheck, X, Tractor, SprayCan, Trash2, SquarePen } from 'lucide-react';
 import { buildFarmFromDescription, FarmBuilderOutput } from '@/ai/flows/farm-builder-flow';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/firebase';
@@ -17,6 +17,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ProposedTaskForm } from '@/components/setup/proposed-task-form';
+
 
 type ProposedTask = FarmBuilderOutput extends { tasks?: (infer T)[] } ? T : never;
 
@@ -29,18 +32,20 @@ export default function SetupPage() {
   const { firestore, user, productiveUnits, lots, staff, isLoading: appDataLoading } = useAppData();
   const router = useRouter();
 
+  const [editingTask, setEditingTask] = useState<{ task: ProposedTask; index: number } | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
   const formatDateSafely = (dateString?: string) => {
     if (!dateString) return "Fecha inválida";
     try {
-      // Attempt to parse, assuming it could be various formats, but ISO is expected.
-      const date = new Date(dateString.replace(/-/g, '/')); // More lenient parsing
+      const date = new Date(dateString.replace(/-/g, '/'));
       if (isNaN(date.getTime())) {
-        return dateString; // Return original string if invalid
+        return dateString;
       }
       return format(date, "dd MMM yyyy", { locale: es });
     } catch (e) {
-      return dateString; // Fallback to original string on any error
+      return dateString;
     }
   };
 
@@ -76,11 +81,10 @@ export default function SetupPage() {
 
   const handleApproveAndBuild = async () => {
     if (!plan || !firestore || !user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No hay un plan para construir o no se ha iniciado sesión.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'No hay plan para construir o no se ha iniciado sesión.' });
         return;
     }
 
-    // --- Helper functions defined inside the handler to ensure correct scope ---
     const addUnit = (batch: any, data: any) => {
       const newDocRef = doc(collection(firestore, 'productiveUnits'));
       const newUnit = { ...data, id: newDocRef.id, userId: user.uid };
@@ -127,8 +131,6 @@ export default function SetupPage() {
       batch.set(newDocRef, newSupply);
       return newSupply;
     };
-    // --- End of helper functions ---
-
 
     const existingUnit = productiveUnits && productiveUnits.length > 0 ? productiveUnits[0] : undefined;
 
@@ -226,6 +228,7 @@ export default function SetupPage() {
     if (!acc[lotName]) {
         acc[lotName] = [];
     }
+    // We keep track of the original index to allow editing/deleting
     acc[lotName].push({ ...task, originalIndex: index });
     return acc;
   }, {} as Record<string, (ProposedTask & { originalIndex: number })[]>);
@@ -244,6 +247,28 @@ export default function SetupPage() {
       };
     });
   };
+
+  const handleEditTask = (task: ProposedTask, index: number) => {
+    setEditingTask({ task, index });
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleSaveEditedTask = (updatedTask: ProposedTask) => {
+    if (editingTask === null) return;
+    
+    setPlan(prevPlan => {
+        if (!prevPlan || !prevPlan.tasks) return prevPlan;
+
+        const newTasks = [...prevPlan.tasks];
+        newTasks[editingTask.index] = updatedTask;
+
+        return { ...prevPlan, tasks: newTasks };
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingTask(null);
+  };
+
 
   return (
     <div>
@@ -391,17 +416,32 @@ export default function SetupPage() {
                                                                             <span className="font-semibold text-foreground">{task.type}</span>
                                                                             <Badge variant='outline' className="text-xs">{formatDateSafely(task.startDate)}</Badge>
                                                                         </div>
-                                                                        <p className='text-muted-foreground'>Categoría: {task.category}, Jornales: {task.plannedJournals}.</p>
+                                                                        <p className='text-muted-foreground mt-1'>{task.observations}</p>
+                                                                        <div className="flex gap-4 text-xs mt-2">
+                                                                            <span>Categoría: <span className="font-medium">{task.category}</span></span>
+                                                                            <span>Jornales: <span className="font-medium">{task.plannedJournals}</span></span>
+                                                                        </div>
                                                                     </div>
-                                                                    <Button 
-                                                                        variant="ghost" 
-                                                                        size="icon" 
-                                                                        className="h-5 w-5 text-destructive hover:bg-destructive/10"
-                                                                        onClick={(e) => { e.stopPropagation(); handleRemoveTask(task.originalIndex); }}
-                                                                    >
-                                                                        <Trash2 className="h-3 w-3" />
-                                                                        <span className="sr-only">Eliminar labor</span>
-                                                                    </Button>
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon" 
+                                                                            className="h-5 w-5 text-muted-foreground hover:text-primary"
+                                                                            onClick={(e) => { e.stopPropagation(); handleEditTask(task, task.originalIndex); }}
+                                                                        >
+                                                                            <SquarePen className="h-3 w-3" />
+                                                                            <span className="sr-only">Editar labor</span>
+                                                                        </Button>
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon" 
+                                                                            className="h-5 w-5 text-destructive hover:bg-destructive/10"
+                                                                            onClick={(e) => { e.stopPropagation(); handleRemoveTask(task.originalIndex); }}
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                            <span className="sr-only">Eliminar labor</span>
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -431,6 +471,21 @@ export default function SetupPage() {
 
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Editar Labor Propuesta</DialogTitle>
+            </DialogHeader>
+            {editingTask && (
+                <ProposedTaskForm 
+                    task={editingTask.task} 
+                    onSubmit={handleSaveEditedTask} 
+                />
+            )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
