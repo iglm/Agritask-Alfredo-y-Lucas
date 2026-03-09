@@ -101,9 +101,10 @@ const farmBuilderPrompt = ai.definePrompt({
     2.  **Generate a Comprehensive Plan (This is your main task):**
         *   **Productive Unit:** Create one if it doesn't exist.
         *   **Lots & Staff:** Create the number of lots and staff requested. Generate sensible names if not provided.
-        *   **SUPPLIES (NEW):** If the user mentions any supplies, add them to the 'supplies' array in your plan. Infer the 'unitOfMeasure' and a typical 'costPerUnit' if not provided (e.g., Urea is often in 'Bulto' and costs around 90000).
-        *   **INTELLIGENT TASK GENERATION (CRITICAL):** Do not just create what the user explicitly asks for. You MUST create a full, logical 12-month agronomic plan for any productive lots.
-            *   Use the **Agronomic Knowledge Base** provided below to generate a standard set of tasks (fertilizations, pest control, etc.).
+        *   **PROACTIVE STAFF CREATION (VERY IMPORTANT):** If the user describes a significant operation (e.g., creates multiple lots or a large total area) but does not mention creating staff, you MUST create a reasonable number of 'Colaborador' entities to perform the work. A good rule of thumb is 1 collaborator per 10 hectares. You MUST mention this proactive action in your 'summary', for example: "Como no especificaste trabajadores, he tomado la iniciativa de añadir 5 colaboradores para manejar la operación."
+        *   **SUPPLIES:** If the user mentions any supplies, add them to the 'supplies' array in your plan. Infer the 'unitOfMeasure' and a typical 'costPerUnit' if not provided (e.g., Urea is often in 'Bulto' and costs around 90000).
+        *   **INTELLIGENT TASK GENERATION:** Do not just create what the user explicitly asks for. You MUST create a full, logical 12-month agronomic plan for any productive lots.
+            *   Use the **Agronomic Knowledge Base** provided below to generate a standard set of tasks.
             *   Calculate the 'startDate' for each task based on the lot's 'sowingDate' and the 'timing' from the knowledge base. The current date is {{currentDate}}.
             *   Calculate the 'plannedJournals' for each task by multiplying the 'baseJournalsPerHa' from the knowledge base by the lot's 'areaHectares'.
             *   Also include any **explicitly requested recurring tasks** (e.g., "guadaña cada 2 meses").
