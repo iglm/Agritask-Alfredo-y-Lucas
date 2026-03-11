@@ -10,7 +10,7 @@ import { Bot, Loader2, Send } from 'lucide-react';
 import { dispatchAction, DispatcherOutput } from '@/ai/flows/assistant-flow';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAppData } from '@/firebase';
 import { writeBatch } from 'firebase/firestore';
@@ -153,7 +153,7 @@ export default function AssistantPage() {
               await addTask(taskData);
               
               const lotName = lots?.find(l => l.id === payload.lotId)?.name || 'Desconocido';
-              const formattedDate = format(new Date(payload.startDate.replace(/-/g, '/')), 'PPP', {locale: es});
+              const formattedDate = format(parseISO(payload.startDate), 'PPP', {locale: es});
               let supplyMessage = '';
               if (payload.plannedSupplies && payload.plannedSupplies.length > 0) {
                   supplyMessage = ` con ${payload.plannedSupplies.length} insumo(s) planificado(s).`
@@ -172,7 +172,7 @@ export default function AssistantPage() {
               const { payload: transPayload } = action;
               await addTransaction({
                   ...transPayload,
-                  date: format(new Date(transPayload.date.replace(/-/g, '/')), 'yyyy-MM-dd')
+                  date: format(parseISO(transPayload.date), 'yyyy-MM-dd')
               });
               const lotName = transPayload.lotId ? lots?.find(l => l.id === transPayload.lotId)?.name : 'General';
               systemMessageContent = `✅ ${transPayload.type} de $${transPayload.amount.toLocaleString()} registrado: "${transPayload.description}" (Lote: ${lotName}).`;

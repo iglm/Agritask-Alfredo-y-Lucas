@@ -8,7 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { cultivationPlans } from '@/ai/knowledge/agronomic-plans';
-import { addWeeks, format } from 'date-fns';
+import { addWeeks, format, parseISO } from 'date-fns';
 
 // Define the structure for a single proposed task by the AI
 const ProposedTaskSchema = z.object({
@@ -52,7 +52,7 @@ export async function generateTaskPlan(
 
     const plannedTasks = standardPlan.plan.map(taskTemplate => {
         const timingValue = parseInt(taskTemplate.timing.split(' ')[1]);
-        const baseDate = new Date(input.sowingDate.replace(/-/g, '/'));
+        const baseDate = parseISO(input.sowingDate);
         
         // Assumes timing is in weeks
         const startDate = addWeeks(baseDate, timingValue);
