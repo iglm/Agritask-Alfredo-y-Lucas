@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DateRange } from 'react-day-picker';
-import { addDays, format, differenceInDays, startOfDay } from 'date-fns';
+import { addDays, format, differenceInDays, startOfDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -244,7 +244,7 @@ export function AttendanceReportGenerator({ staff }: Props) {
                         <TableBody>
                             {reportData.map(record => (
                             <TableRow key={record.id}>
-                                <TableCell>{format(new Date(record.date.replace(/-/g, '/')), 'PPP', { locale: es })}</TableCell>
+                                <TableCell>{format(parseISO(record.date), 'PPP', { locale: es })}</TableCell>
                                 <TableCell>
                                     <span className={cn(record.status === 'Presente' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-500')}>{record.status}</span>
                                 </TableCell>
