@@ -7,7 +7,7 @@ import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import type { UserProfile, Lot, Staff, Task, ProductiveUnit, Supply, Transaction, SubLot, SupplyUsage } from '@/lib/types';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useCollection } from './firestore/use-collection';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,7 +77,7 @@ const createCRUDFunctions = (firestore: Firestore, user: User, toast: ReturnType
     
     if (isNowFinalized && data.isRecurring && data.recurrenceFrequency && data.recurrenceInterval && data.recurrenceInterval > 0) {
       const baseDateString = data.endDate || data.startDate;
-      const baseDateForRecurrence = new Date(baseDateString.replace(/-/g, '/'));
+      const baseDateForRecurrence = parseISO(baseDateString);
       let newStartDate: Date;
 
       switch (data.recurrenceFrequency) {
