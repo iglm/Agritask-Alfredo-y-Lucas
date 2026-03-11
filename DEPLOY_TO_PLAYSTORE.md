@@ -64,7 +64,7 @@ Este es el paso más técnico, pero es crucial.
       "target": {
         "namespace": "android_app",
         "package_name": "com.example.placeholder",
-        "sha256_cert_fingerprints": ["00:00:00..."]
+        "sha256_cert_fingerprints": ["00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"]
       }
     }]
     ```
@@ -76,7 +76,7 @@ Este es el paso más técnico, pero es crucial.
       "target": {
         "namespace": "android_app",
         "package_name": "com.agritaskmaster.app",
-        "sha256_cert_fingerprints": ["A1:B2:C3..."]
+        "sha256_cert_fingerprints": ["A1:B2:C3:D4:E5:F6:A1:B2:C3:D4:E5:F6:A1:B2:C3:D4:E5:F6:A1:B2:C3:D4:E5:F6:A1:B2:C3:D4:E5:F6:A1:B2"]
       }
     }]
     ```
