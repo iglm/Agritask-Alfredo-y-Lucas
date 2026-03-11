@@ -136,3 +136,35 @@ Página dedicada a la visualización de datos a través de gráficos interactivo
 -   **Detalle de Funcionalidades:**
     -   **Inicio de Sesión con Google:** Acceso seguro y rápido.
     -   **Modo Offline:** La aplicación es funcional sin conexión. Los datos se guardan en el caché local de Firestore y se sincronizan automáticamente al recuperar la conexión. Un indicador visual muestra el estado de la conexión en tiempo real.
+
+---
+
+## 4. Análisis Técnico Detallado (Análisis de IA del Código Fuente)
+
+Esta es una descripción técnica y funcional detallada de la aplicación, basada en el análisis de su código fuente y arquitectura, incluyendo módulos críticos que no suelen estar detallados en un README estándar:
+
+### 4.1. Propósito y Arquitectura Core
+Agritask es una plataforma de gestión agrícola (SaaS) diseñada para la optimización de granjas. Está construida con Next.js, TypeScript y Firebase. Su arquitectura destaca por eliminar el manejo manual de estados offline en favor de la persistencia nativa de Firestore, centralizando la lógica en un `DataProvider` para usuarios autenticados.
+
+### 4.2. El Motor de Inteligencia Artificial (Genkit)
+La aplicación integra Google Genkit con el modelo Gemini 2.5 Flash, configurado específicamente para optimizar costos y velocidad. El sistema utiliza "Flows" (flujos de trabajo de IA) para automatizar tareas complejas:
+
+-   **Constructor de Fincas (Farm Builder):** Permite configurar una finca completa (lotes, personal, insumos y tareas) a partir de una descripción en lenguaje natural. No solo crea las entidades, sino que genera automáticamente un plan agronómico de 12 meses basado en una base de conocimientos integrada.
+-   **Optimizador de Recursos:** Analiza la carga de trabajo del personal. Si detecta desequilibrios (un trabajador con >1.5x la carga de otro) o tiempos muertos excesivos en labores como fumigación, sugiere reasignaciones de tareas específicas.
+-   **Detector de Anomalías:** Monitorea discrepancias financieras (sobrecostos >15%), retrasos críticos en siembras o cosechas, e inconsistencias en los datos (como fechas de fin anteriores a las de inicio).
+-   **Planificador Agronómico:** Genera planes deterministas basados en el tipo de cultivo, calculando fechas de inicio y jornales necesarios según el área del lote.
+
+### 4.3. Modelo de Datos y Entidades
+El sistema utiliza un esquema de tipos riguroso que define la operación:
+
+-   **Lotes (Lots) y Sub-lotes:** Distingue entre lotes "Productivos" y de "Soporte". Almacena datos técnicos como densidad de siembra, distancia entre plantas, mortalidad acumulada y pH del suelo.
+-   **Personal (Staff):** Clasifica por tipo de contrato (Permanente, Temporal, Contratista) y gestiona el costo base del jornal.
+-   **Labores (Tasks):** Es el eje operativo. Gestiona categorías (Preparación, Siembra, Mantenimiento, Cosecha, Post-Cosecha), estados de progreso, costos planeados vs. reales, y recurrencia.
+-   **Insumos (Supplies):** Controla el inventario por unidades (Kg, Lt, Bultos, etc.) y rastrea el costo exacto al momento de su uso en una labor.
+-   **Finanzas (Transactions):** Categoriza ingresos (ventas, subsidios) y egresos (mano de obra, insumos, administración).
+
+### 4.4. Funcionalidades de Gestión Avanzada
+
+-   **Gestión de Asistencia:** Sistema para registrar la presencia o ausencia del personal con motivos específicos.
+-   **Sistema de Logs y Diagnóstico:** Incluye un `SystemLog` que captura errores con "huellas digitales" (fingerprints), severidad y un diagnóstico automático por IA para facilitar la resolución de problemas técnicos.
+-   **Internacionalización (i18n):** Soporte completo para español e inglés, localizado en archivos JSON que cubren desde la navegación hasta indicadores del panel.
